@@ -1,0 +1,38 @@
+Options +FollowSymLinks
+RewriteEngine on
+
+# supports the following submit/ajax URLs:
+#   - submit/home/login
+#   - submit/home/login/
+#   - submit/home/login/&name=daniel&password=password
+# the following are *not* supported:
+#   - submit
+#   - submit/
+#   - submit/home
+#   - submit/home/&name=daniel
+
+RewriteRule ^submit/([A-Za-z0-9_]+)/([A-Za-z0-9_]+)$ /submit/$1/$2/ [R]
+RewriteRule ^submit/([A-Za-z0-9_]+)/([A-Za-z0-9_]+)/$ /index.php?mode=submit&page=$1&submit=$2
+RewriteRule ^submit/([A-Za-z0-9_]+)/([A-Za-z0-9_]+)/(.*)$ /index.php?mode=submit&page=$1&submit=$2$3
+
+RewriteRule ^ajax/([A-Za-z0-9_]+)/([A-Za-z0-9_]+)$ /ajax/$1/$2/ [R]
+RewriteRule ^ajax/([A-Za-z0-9_]+)/([A-Za-z0-9_]+)/$ /index.php?mode=ajax&page=$1&request=$2
+RewriteRule ^ajax/([A-Za-z0-9_]+)/([A-Za-z0-9_]+)/(.*)$ /index.php?mode=ajax&page=$1&request=$2$3
+
+# supports the following page URLs
+#   - page/home
+#   - page/home/
+#   - page/home/&message=help
+# the following are *not* supported:
+#   - page
+#   - page/
+#   - /page/home/message=help (badly formatted page name)
+
+RewriteRule ^page/([A-Za-z0-9_]+)$ /page/$1/ [R]
+RewriteRule ^page/([A-Za-z0-9_]+)/$ /index.php?mode=page&page=$1
+RewriteRule ^page/([A-Za-z0-9_]+)/(.*)$ /index.php?mode=page&page=$1$2
+
+#empty URL automatically goes to the home page
+
+RewriteRule ^$ index.php?mode=page&page=home
+
