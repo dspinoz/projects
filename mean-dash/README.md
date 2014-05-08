@@ -1,4 +1,11 @@
 
+Getting Started:
+
+npm install
+bower install
+
+
+
 Layout:
 
 - app
@@ -24,6 +31,20 @@ Layout:
 - bower.json <!-- tells bower which files we need -->
 - package.json <!-- tells npm which packages we need -->
 - server.js <!-- set up our node application -->
+
+- public 
+----- lib <!-- third party apps -->
+----- js
+---------- controllers 
+-------------------- MainCtrl.js
+-------------------- NerdCtrl.js
+-------------------- GeekCtrl.js
+---------- services
+-------------------- GeekService.js
+-------------------- NerdService.js
+---------- app.js 
+---------- appRoutes.js
+
 
 
 Credits
