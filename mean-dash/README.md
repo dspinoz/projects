@@ -8,7 +8,9 @@ bower install
 ```
 
 1. Create a mongo database: ```mean-dash-dev```
+
 1. Verify ```config/db.js```
+
 1. Run 
 > ```
 node server.js
