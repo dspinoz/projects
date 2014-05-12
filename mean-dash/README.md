@@ -63,7 +63,7 @@ nodemon server.js
 
 > node_modules -- created by npm install --
 
-> public -- all frontend and angular stuff --
+> public -- all frontend (angular) --
 
 >> libs -- created by bower install --
 
