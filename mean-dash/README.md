@@ -21,7 +21,17 @@ Development:
   
   > nodemon server.js
 
+Routes:
 
+  /hi -- hello world --
+  
+  /signup -- passport create user --
+  /login  -- passport login --
+  /profile -- passport private page --
+  /logout --logout --
+  
+  /todo -- todo app --
+  /api/todos -- REST API for todo app --
 
 Layout:
 
