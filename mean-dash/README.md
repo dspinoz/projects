@@ -1,15 +1,25 @@
 
 Getting Started:
 
-  npm install
-  bower install
+  1. Install dependencies
+  
+    > npm install
+    > bower install
 
-  Create a mongo database:
-    mean-dash-dev
+  2. Create a mongo database: mean-dash-dev
     
-  Verify config/db.js
+  3. Verify config/db.js
     
-  node server.js
+  4. Run 
+  
+    > node server.js
+
+
+Development:
+
+  Use nodemon to automatically refresh files: npm install nodemon
+  
+  > nodemon server.js
 
 
 
