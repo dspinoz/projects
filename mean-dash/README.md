@@ -27,6 +27,7 @@ Layout:
 
   app
     model -- data models --
+      todo.js
       user.js 
     routes.js
   config -- configuration modules --
@@ -35,6 +36,7 @@ Layout:
   node_modules -- created by npm install --
   public -- all frontend and angular stuff --
     libs -- created by bower install --
+    todo.js -- todo angular --
     hello.html -- hello world --
   views -- templated pages --
     index.ejs  -- home page --
