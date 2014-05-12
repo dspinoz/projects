@@ -17,18 +17,18 @@ Automatically refresh files
 
 # Routes
 
-| URI | Description |
-| --- | ----------- |
+* Example
 | /hi | hello world |
 
-  
-  /signup -- passport create user --
-  /login  -- passport login --
-  /profile -- passport private page --
-  /logout --logout --
-  
-  /todo -- todo app --
-  /api/todos -- REST API for todo app --
+* Passport
+| /signup | passport create user |
+| /login | passport login |
+| /profile | passport private page |
+| /logout | passport logout |
+
+* Todo
+| /todo | entry point for app |
+| /api/todos | REST API for todo app |
 
 # Layout
 
