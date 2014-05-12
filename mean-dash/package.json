@@ -2,7 +2,12 @@
   "name": "mean-dash",
   "main": "server.js",
   "dependencies": {
-    "express": "~3.5.0",
-    "mongoose": "~3.6.13"
+    "express": "3.x.x",
+    "mongoose": "latest",
+    "ejs" : "latest",
+    "passport" : "latest",
+    "passport-local" : "latest",
+    "connect-flash" : "latest",
+    "bcrypt-nodejs" : "latest"
   }
 }

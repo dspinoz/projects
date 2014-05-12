@@ -3,6 +3,7 @@ Getting Started:
 
 npm install
 bower install
+node server.js
 
 
 
@@ -46,9 +47,18 @@ Layout:
 ---------- appRoutes.js
 
 
+Dependencies:
+  Express is the web framework.
+  Ejs is the templating engine.
+  Mongoose is object modeling for our MongoDB database.
+  Passport will help us authenticating with different methods.
+  Connect-flash allows for passing session flashdata messages.
+  Bcrypt-nodejs gives us the ability to hash the password.
+
+
 
 Credits
 http://scotch.io/bar-talk/setting-up-a-mean-stack-single-page-application 
-
+http://scotch.io/tutorials/javascript/easy-node-authentication-setup-and-local
 
 
