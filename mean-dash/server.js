@@ -17,8 +17,12 @@ var port = process.env.PORT || 8080; // set our port
 mongoose.connect(db.url); // connect to our mongoDB database (uncomment after you enter in your own credentials in config/db.js)
 
 app.configure(function() {
+  
+  // the order of app middleware is important - invoked sequentially!
+  app.use(express.logger('dev')); // log every request to the console
+  
   app.use(express.static(__dirname + '/public')); 	// set the static files location /public/img will be /img for users
-  app.use(express.logger('dev')); 					// log every request to the console
+  //app.use(express.logger('dev')); 					// log only non-public content
   app.use(express.bodyParser()); 						// have the ability to pull information from html in POST
   app.use(express.methodOverride()); 					// have the ability to simulate DELETE and PUT
   
