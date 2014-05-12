@@ -46,6 +46,12 @@ module.exports = function(app, passport) {
     req.logout();
     res.redirect('/');
   });
+  
+  // public views - automatically rendered by visiting http://server/*.html
+  // custom public routes
+  app.get('/hi', function(req, res) {
+		res.sendfile('./public/hello.html'); 
+	});
 
 };
 

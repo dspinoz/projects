@@ -35,6 +35,7 @@ Layout:
   node_modules -- created by npm install --
   public -- all frontend and angular stuff --
     libs -- created by bower install --
+    hello.html -- hello world --
   views -- templated pages --
     index.ejs  -- home page --
     login.ejs  -- authenticate --

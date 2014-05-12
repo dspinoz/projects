@@ -1,6 +1,9 @@
 {
   "name": "mean-dash",
   "main": "server.js",
+  "version": "",
+  "description": "",
+  "author": "dspinoz",
   "dependencies": {
     "express": "3.x.x",
     "mongoose": "latest",
