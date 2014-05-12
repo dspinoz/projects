@@ -1,29 +1,26 @@
 
 # Getting Started
 
-  1. Install dependencies
-  
-    > npm install
-    > bower install
-
-  2. Create a mongo database: mean-dash-dev
-    
-  3. Verify config/db.js
-    
-  4. Run 
-  
-    > node server.js
-
+1. Install dependencies  
+> ```npm install```
+> ```bower install```
+2. Create a mongo database: ```mean-dash-dev```
+3. Verify ```config/db.js```
+4. Run 
+> ```node server.js```
 
 # Development
 
-* Use nodemon to automatically refresh files: npm install nodemon
-
-  > ```nodemon server.js```
+Automatically refresh files
+> ```npm install nodemon```
+> ```nodemon server.js```
 
 # Routes
 
-  /hi -- hello world --
+| URI | Description |
+| --- | ----------- |
+| /hi | hello world |
+
   
   /signup -- passport create user --
   /login  -- passport login --
