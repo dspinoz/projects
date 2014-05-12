@@ -2,59 +2,87 @@
 # Getting Started
 
 1. Install dependencies  
-> ```npm install```
-> ```bower install```
-2. Create a mongo database: ```mean-dash-dev```
-3. Verify ```config/db.js```
-4. Run 
-> ```node server.js```
+> ```
+npm install
+bower install```
 
-# Development
+1. Create a mongo database: ```mean-dash-dev```
+1. Verify ```config/db.js```
+1. Run 
+> ```
+node server.js```
 
-Automatically refresh files
+# Development Tips
+
+1. Automatically refresh files
 > ```npm install nodemon```
 > ```nodemon server.js```
 
 # Routes
 
 * Example
+
 | /hi | hello world |
 
 * Passport
+
 | /signup | passport create user |
 | /login | passport login |
 | /profile | passport private page |
 | /logout | passport logout |
 
 * Todo
+
 | /todo | entry point for app |
 | /api/todos | REST API for todo app |
 
 # Layout
 
-  app
-    model -- data models --
-      todo.js
-      user.js 
-    routes.js
-  config -- configuration modules --
-    db.js  -- database --
-    passport.js -- user strategies --
-  node_modules -- created by npm install --
-  public -- all frontend and angular stuff --
-    libs -- created by bower install --
-    todo.js -- todo angular --
-    hello.html -- hello world --
-  views -- templated pages --
-    index.ejs  -- home page --
-    login.ejs  -- authenticate --
-    signup.ejs -- register --
-    profile.ejs -- user account view --
-  .gitignore -- tells git to ignore generated files --
-  .bowerrc -- tells bower where to put files (public/libs) --
-  bower.json -- tells bower which packages we need --
-  package.json -- tells npm which packages we need --
-  server.js -- bootstrap - set up our node application --
+> app
+
+>> model -- data models --
+
+>>> todo.js
+
+>>> user.js 
+
+>> routes.js
+    
+> config -- configuration modules --
+
+>> db.js  -- database --
+
+>> passport.js -- user strategies --
+
+> node_modules -- created by npm install --
+
+> public -- all frontend and angular stuff --
+
+>> libs -- created by bower install --
+
+>> todo.js -- todo angular --
+
+>> hello.html -- hello world --
+    
+> views -- templated pages --
+
+>> index.ejs  -- home page --
+
+>> login.ejs  -- authenticate --
+
+>> signup.ejs -- register --
+
+>> profile.ejs -- user account view --
+    
+> .gitignore -- tells git to ignore generated files --
+
+> .bowerrc -- tells bower where to put files (public/libs) --
+
+> bower.json -- tells bower which packages we need --
+
+> package.json -- tells npm which packages we need --
+
+> server.js -- bootstrap - set up our node application --
 
 
 # Dependencies
