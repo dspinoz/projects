@@ -1,50 +1,57 @@
 
 Getting Started:
 
-npm install
-bower install
-node server.js
+  npm install
+  bower install
+
+  Create a mongo database:
+    mean-dash-dev
+    
+  Verify config/db.js
+    
+  node server.js
 
 
 
 Layout:
 
-- app
------ routes.js
-- config
-	----- db.js 
-- node_modules <!-- created by npm install -->
-- public <!-- all frontend and angular stuff -->
------ css
------ js
----------- controllers <!-- angular controllers -->
----------- services <!-- angular services -->
----------- app.js <!-- angular application -->
----------- appRoutes.js <!-- angular routes -->
------ img
------ libs <!-- created by bower install -->
------ views 
----------- home.html
----------- nerd.html
----------- geek.html
------ index.html
-- .bowerrc <!-- tells bower where to put files (public/libs) -->
-- bower.json <!-- tells bower which files we need -->
-- package.json <!-- tells npm which packages we need -->
-- server.js <!-- set up our node application -->
-
-- public 
------ lib <!-- third party apps -->
------ js
----------- controllers 
--------------------- MainCtrl.js
--------------------- NerdCtrl.js
--------------------- GeekCtrl.js
----------- services
--------------------- GeekService.js
--------------------- NerdService.js
----------- app.js 
----------- appRoutes.js
+  app
+    model -- data models --
+      user.js 
+    routes.js
+  config -- configuration modules --
+    db.js  -- database --
+    passport.js -- user strategies --
+  node_modules -- created by npm install --
+  public -- all frontend and angular stuff --
+    css
+    js
+      controllers -- angular controllers --
+        MainCtrl.js
+        NerdCtrl.js
+        GeekCtrl.js
+      services -- angular services --
+        GeekService.js
+        NerdService.js
+      app.js -- angular application --
+      appRoutes.js -- angular routes --
+    img
+    libs -- created by bower install; third-party apps --
+    views 
+      home.html
+      nerd.html
+      geek.html
+      index.html
+  views -- for passport
+    index.ejs  -- home page --
+    login.ejs
+    signup.ejs -- register --
+    profile.ejs -- user account view --
+  .gitignore -- tells git to ignore generated files --
+  .bowerrc -- tells bower where to put files (public/libs) --
+  bower.json -- tells bower which files we need --
+  package.json -- tells npm which packages we need --
+  server.js -- bootstrap - set up our node application --
 
 
 Dependencies:
