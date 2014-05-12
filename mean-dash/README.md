@@ -34,32 +34,15 @@ Layout:
     passport.js -- user strategies --
   node_modules -- created by npm install --
   public -- all frontend and angular stuff --
-    css
-    js
-      controllers -- angular controllers --
-        MainCtrl.js
-        NerdCtrl.js
-        GeekCtrl.js
-      services -- angular services --
-        GeekService.js
-        NerdService.js
-      app.js -- angular application --
-      appRoutes.js -- angular routes --
-    img
-    libs -- created by bower install; third-party apps --
-    views 
-      home.html
-      nerd.html
-      geek.html
-      index.html
-  views -- for passport
+    libs -- created by bower install --
+  views -- templated pages --
     index.ejs  -- home page --
-    login.ejs
+    login.ejs  -- authenticate --
     signup.ejs -- register --
     profile.ejs -- user account view --
   .gitignore -- tells git to ignore generated files --
   .bowerrc -- tells bower where to put files (public/libs) --
-  bower.json -- tells bower which files we need --
+  bower.json -- tells bower which packages we need --
   package.json -- tells npm which packages we need --
   server.js -- bootstrap - set up our node application --
 
@@ -75,7 +58,6 @@ Dependencies:
 
 
 Credits
-http://scotch.io/bar-talk/setting-up-a-mean-stack-single-page-application 
 http://scotch.io/tutorials/javascript/easy-node-authentication-setup-and-local
-
+http://scotch.io/tutorials/javascript/creating-a-single-page-todo-app-with-node-and-angular
 
