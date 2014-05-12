@@ -1,5 +1,5 @@
 
-Getting Started:
+# Getting Started
 
   1. Install dependencies
   
@@ -15,13 +15,13 @@ Getting Started:
     > node server.js
 
 
-Development:
+# Development
 
-  Use nodemon to automatically refresh files: npm install nodemon
-  
-  > nodemon server.js
+* Use nodemon to automatically refresh files: npm install nodemon
 
-Routes:
+  > ```nodemon server.js```
+
+# Routes
 
   /hi -- hello world --
   
@@ -33,7 +33,7 @@ Routes:
   /todo -- todo app --
   /api/todos -- REST API for todo app --
 
-Layout:
+# Layout
 
   app
     model -- data models --
@@ -60,17 +60,15 @@ Layout:
   server.js -- bootstrap - set up our node application --
 
 
-Dependencies:
-  Express is the web framework.
-  Ejs is the templating engine.
-  Mongoose is object modeling for our MongoDB database.
-  Passport will help us authenticating with different methods.
-  Connect-flash allows for passing session flashdata messages.
-  Bcrypt-nodejs gives us the ability to hash the password.
+# Dependencies
+* Express is the web framework.
+* Ejs is the templating engine.
+* Mongoose is object modeling for our MongoDB database.
+* Passport will help us authenticating with different methods.
+* Connect-flash allows for passing session flashdata messages.
+* Bcrypt-nodejs gives us the ability to hash the password.
 
-
-
-Credits
-http://scotch.io/tutorials/javascript/easy-node-authentication-setup-and-local
-http://scotch.io/tutorials/javascript/creating-a-single-page-todo-app-with-node-and-angular
+# Credits
+* http://scotch.io/tutorials/javascript/easy-node-authentication-setup-and-local
+* http://scotch.io/tutorials/javascript/creating-a-single-page-todo-app-with-node-and-angular
 
