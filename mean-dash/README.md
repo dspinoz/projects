@@ -46,8 +46,14 @@ nodemon server.js
 
 | URI |  Description |
 | ------- | ------------ |
-| /todo | entry point for app |
+| /todo | Create a list of items and delete them once they are complete |
 | /api/todos | REST API for todo app |
+
+#### Polls
+
+| URI |  Description |
+| ------- | ------------ |
+| /polls | Application for recording polls and the choices users' make |
 
 # Layout
 
@@ -58,6 +64,7 @@ nodemon server.js
     <ul>
       <li><code>todo.js</code></li>
       <li><code>user.js</code></li>
+      <li><code>poll.js</code></li>
     </ul>
   </ul>
   <ul>
@@ -77,15 +84,27 @@ nodemon server.js
       <li><code>services/</code> Angular services</li>
       <ul>
         <li><code>todo.js</code> Todo Angular service</li>
+        <li><code>polls.js</code> Polls Angular service</li>
       </ul>
       <li><code>controllers/</code> Angular controllers</li>
       <ul>
         <li><code>todo.js</code> Todo Angular controller</li>
+        <li><code>polls.js</code> Polls Angular controller</li>
       </ul>
-      <li><code>todo.js</code> Todo Angular application</li>
+      <li><code>todo.js</code> Todo application routes</li>
+      <li><code>polls.js</code> Polls application routes</li>
+    </ul>
+    <ul>
+      <li><code>polls/</code> Polls-specific pages</li>
+      <ul>
+        <li><code>new.html</code> Angular template for creating a new poll</li>
+        <li><code>item.html</code> Angular template for poll item</li>
+        <li><code>list</code> Angular template for listing polls</li>
+      </ul>
     </ul>
     <li><code>hello.html</code> Hello world page</li>
     <li><code>todo.html</code> Todo front-end</li>
+    <li><code>polls.html</code> Polls front-end</li>
   </ul>
   <li><code>views/</code> Templated pages</li>
   <ul>
@@ -113,3 +132,4 @@ nodemon server.js
 # Credits
 * http://scotch.io/tutorials/javascript/easy-node-authentication-setup-and-local
 * http://scotch.io/tutorials/javascript/creating-a-single-page-todo-app-with-node-and-angular
+* http://www.ibm.com/developerworks/library/wa-nodejs-polling-app/

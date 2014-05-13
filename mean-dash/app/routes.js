@@ -1,5 +1,6 @@
 // models
 var Todo = require('./models/todo');
+var Poll = require('./models/poll');
 
 module.exports = function(app, passport) {
   // handle things like api calls
@@ -116,6 +117,62 @@ module.exports = function(app, passport) {
   app.get('/todo', function(req, res) {
 		res.sendfile('./public/todo.html'); 
 	});
+  
+  app.get('/polls', function(req, res) {
+    res.sendfile('./public/polls.html');
+  });
+  
+  // ============================POLLS===============================
+  
+  // get a list of polls
+  app.get('/polls/polls', function(req, res) { 
+    Poll.find({}, 'question', function(error, polls) {
+      res.json(polls);
+    });
+  });
+  
+  // get a single poll
+  app.get('/polls/:id', function(req, res) {  
+    var pollId = req.params.id;
+    Poll.findById(pollId, '', { lean: true }, function(err, poll) {
+      if(poll) {
+        var userVoted = false,
+            userChoice,
+            totalVotes = 0;
+        for(c in poll.choices) {
+          var choice = poll.choices[c]; 
+          for(v in choice.votes) {
+            var vote = choice.votes[v];
+            totalVotes++;
+            if(vote.ip === (req.header('x-forwarded-for') || req.ip)) {
+              userVoted = true;
+              userChoice = { _id: choice._id, text: choice.text };
+            }
+          }
+        }
+        poll.userVoted = userVoted;
+        poll.userChoice = userChoice;
+        poll.totalVotes = totalVotes;
+        res.json(poll);
+      } else {
+        res.json({error:true});
+      }
+    });
+  });
+  
+  app.post('/polls', function(req, res) {
+    var reqBody = req.body,
+        choices = reqBody.choices.filter(function(v) { return v.text != ''; }),
+        pollObj = {question: reqBody.question, choices: choices};
+    var poll = new Poll(pollObj);
+    poll.save(function(err, doc) {
+      if(err || !doc) {
+        throw 'Error';
+      } else {
+        res.json(doc);
+      }   
+    });
+  });
 
 };
 
