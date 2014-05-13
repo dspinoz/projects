@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang='en' ng-app="polls">
+  <head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1, user-scalable=no'>
+    <title>TTT</title>
+    <link rel='stylesheet' href='//netdna.bootstrapcdn.com/bootstrap/3.0.1/css/bootstrap.min.css'>
+    <script src='//ajax.googleapis.com/ajax/libs/angularjs/1.0.8/angular.min.js'></script>
+    <script src='//ajax.googleapis.com/ajax/libs/angularjs/1.0.8/angular-resource.min.js'></script>
+    
+    <link rel='stylesheet' href='/css/polls.css'>
+    <script src="/js/controllers/polls.js"></script>
+    <script src="/js/services/polls.js"></script>
+    <script src="/js/polls.js"></script>
+  </head>
+  <body ng-controller="PollListCtrl">
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="navbar-header">
+        <a class="navbar-brand" href="/polls">TTT</a>
+      </div>
+    </nav>
+    <div class="container">
+      <div ng-view></div>
+    </div>
+  </body>
+</html>
+
+
+
+
