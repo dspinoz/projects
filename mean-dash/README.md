@@ -44,16 +44,27 @@ nodemon server.js
 
 #### Todo
 
-| URI |  Description |
-| ------- | ------------ |
-| /todo | Create a list of items and delete them once they are complete |
-| /api/todos | REST API for todo app |
+| Method | URI | Description |
+| ------ | --- | ----------- |
+| GET | /todo | Create a list of items and delete them once they are complete |
+| GET | /api/todos | List all the todos in the database |
+| POST | /api/todos | Create a new todo | 
+| DELETE | /api/todos/:todo_id | Delete a todo |
 
 #### Polls
 
-| URI |  Description |
-| ------- | ------------ |
-| /polls | Application for recording polls and the choices users' make |
+| Method | URI | Description |
+| ------ | --- | ----------- |
+| GET | /polls | Application for recording polls and the choices users' make |
+| GET | /polls/polls | Get the list of polls |
+| POST | /polls/polls | Create new Poll |
+| GET | /polls/:id | Get details for a particular poll |
+
+| WebSocket | Description |
+| --------- | ----------- |
+| send:vote | Record a vote for a poll |
+| emit:myvote | Notify the voting client of a vote |
+| emit:broadcast:vote | Notify other clients of a vote |
 
 # Layout
 
