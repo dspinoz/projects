@@ -8,9 +8,10 @@ SRPMS=SRPMS
 SOURCES=$(wildcard *.src.rpm)
 SPECS=$(wildcard *.spec)
 
+.PHONY: clean all
+
 all: dst dst/a
-	echo "ALL"
-	touch all
+	@echo "Successful Build"
 
 dst: 
 	echo INIT
@@ -23,11 +24,10 @@ dst/a: src/a
 src/a:
 	echo SOURCE
 
-.PHONY: clean
 
 clean:
 	echo CLEAN
-	$(RM) -r dst all
+	$(RM) -r dst
 
 
 
