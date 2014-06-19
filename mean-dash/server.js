@@ -4,6 +4,8 @@ var app     = express();
 var mongoose= require('mongoose');
 var passport = require('passport');
 var flash  = require('connect-flash');
+var http    = require('http');
+var socketio = require('socket.io');
 
 // configuration ===========================================
   
@@ -37,10 +39,20 @@ app.configure(function() {
 });
 
 // routes ==================================================
-require('./app/routes')(app, passport); // configure our routes
+var routes = require('./app/routes');
+routes(app, passport); // configure our routes
 
 // start app ===============================================
-app.listen(port);										// startup our app at http://localhost:8080
+
+var server = http.createServer(app);
+var io = socketio.listen(server);
+
+server.listen(port, function() { // startup our app at http://localhost:port
+  console.log("listening...");
+});
+
+io.sockets.on('connection', routes.vote);
+
 console.log('Magic happens on port ' + port); 			// shoutout to the user
 exports = module.exports = app; 						// expose app
 

@@ -11,6 +11,7 @@
     "passport" : "latest",
     "passport-local" : "latest",
     "connect-flash" : "latest",
-    "bcrypt-nodejs" : "latest"
+    "bcrypt-nodejs" : "latest",
+    "socket.io" : "latest"
   }
 }

@@ -144,6 +144,13 @@ module.exports = function(app, passport) {
           for(v in choice.votes) {
             var vote = choice.votes[v];
             totalVotes++;
+            
+            //Note: If you're wondering why the app looks for the header 
+            //'x-forwarded-for' before the regular IP address property, this is 
+            //to ensure that the correct client IP is used when the app is deployed 
+            //in a load-balanced environment. If you deploy the app to BlueMix or 
+            //Cloud Foundry, for example, this is critical for the app to 
+            //function correctly.
             if(vote.ip === (req.header('x-forwarded-for') || req.ip)) {
               userVoted = true;
               userChoice = { _id: choice._id, text: choice.text };
@@ -173,10 +180,56 @@ module.exports = function(app, passport) {
       }   
     });
   });
+  
+
 
 };
 
 // route middleware
+module.exports.vote = function(socket)
+{	
+  socket.on('send:vote', function(data) {
+    //Note: If you're wondering why the app looks for the header 
+    //'x-forwarded-for' before the regular IP address property, this is 
+    //to ensure that the correct client IP is used when the app is deployed 
+    //in a load-balanced environment. If you deploy the app to BlueMix or 
+    //Cloud Foundry, for example, this is critical for the app to 
+    //function correctly.
+		var ip = socket.handshake.headers['x-forwarded-for'] || socket.handshake.address.address;
+		
+		Poll.findById(data.poll_id, function(err, poll) {
+			var choice = poll.choices.id(data.choice);
+			choice.votes.push({ ip: ip });
+			
+			poll.save(function(err, doc) {
+				var theDoc = { 
+					question: doc.question, _id: doc._id, choices: doc.choices, 
+					userVoted: false, totalVotes: 0 
+				};
+
+				// Loop through poll choices to determine if user has voted
+				// on this poll, and if so, what they selected
+				for(var i = 0, ln = doc.choices.length; i < ln; i++) {
+					var choice = doc.choices[i]; 
+
+					for(var j = 0, jLn = choice.votes.length; j < jLn; j++) {
+						var vote = choice.votes[j];
+						theDoc.totalVotes++;
+						theDoc.ip = ip;
+
+						if(vote.ip === ip) {
+							theDoc.userVoted = true;
+							theDoc.userChoice = { _id: choice._id, text: choice.text };
+						}
+					}
+				}
+				
+				socket.emit('myvote', theDoc);
+				socket.broadcast.emit('vote', theDoc);
+			});			
+		});
+	});
+};
 
 // ensure a user is logged in
 function isLoggedIn(req, res, next)
