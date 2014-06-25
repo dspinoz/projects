@@ -12,14 +12,14 @@ SOURCES=$(wildcard *.src.rpm)
 all: $(RPMS) $(SRPMS) $(addprefix $(SRPMS), $(SOURCES))
 
 $(RPMS): 
-  mkdir -p $(RPMS)
+	mkdir -p $(RPMS)
   
 $(SRPMS): 
-  mkdir -p $(SRPMS)
+	mkdir -p $(SRPMS)
   
 $(SRPMS)/%.src.rpm: %.src.rpm
 	@echo Installing dependencies $<
-  sudo yum-builddep $<
+	sudo yum-builddep $<
 	$(eval $@_TMP := $(shell mktemp -d -p $(TMP)))
 	rebuild --define "_topdir $($@_TMP)" \
 		--define "_builddir $($@_TMP)/BUILD" \
@@ -29,7 +29,7 @@ $(SRPMS)/%.src.rpm: %.src.rpm
 		--rebuild -ba $<
 	$(RM) -r $($@_TMP)
 	cp $< $(TOP)/$(SRPMS)/
-  @echo Successfully built package $@
+	@echo Successfully built package $@
   
 
 clean:
