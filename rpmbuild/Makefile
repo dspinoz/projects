@@ -9,7 +9,7 @@ SOURCES=$(wildcard *.src.rpm)
 
 .PHONY: clean all
 
-all: $(RPMS) $(SRPMS) $(addprefix $(SRPMS), $(SOURCES))
+all: $(RPMS) $(SRPMS) $(addprefix $(SRPMS)/, $(SOURCES))
 
 $(RPMS): 
 	mkdir -p $(RPMS)
@@ -21,14 +21,14 @@ $(SRPMS)/%.src.rpm: %.src.rpm
 	@echo Installing dependencies $<
 	sudo yum-builddep $<
 	$(eval $@_TMP := $(shell mktemp -d -p $(TMP)))
-	rebuild --define "_topdir $($@_TMP)" \
-		--define "_builddir $($@_TMP)/BUILD" \
-		--define "_buildrootdir $($@_TMP)/BUILDROOT" \
-		--define "_rpmdir $(TOP)/$(RPMS)" \
-		--define "_srcrpmdir $(TOP)/$(SRPMS)" \
-		--rebuild -ba $<
+	rpmbuild --define "_topdir $($@_TMP)" \
+		 --define "_builddir $($@_TMP)/BUILD" \
+		 --define "_buildrootdir $($@_TMP)/BUILDROOT" \
+		 --define "_rpmdir $(TOP)/$(RPMS)" \
+		 --define "_srcrpmdir $(TOP)/$(SRPMS)" \
+		 --rebuild -ba $<
 	$(RM) -r $($@_TMP)
-	cp $< $(TOP)/$(SRPMS)/
+	mv $< $(TOP)/$(SRPMS)/
 	@echo Successfully built package $@
   
 
