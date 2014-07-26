@@ -1,6 +1,7 @@
-#!/bin/bash -x
+#!/bin/bash
+# easily create a chroot environment
 
-ROOT=/var/root1
+ROOT=
 ROOTUSER=user1
 ROOTUID=6001
 ROOTGROUP=rooted
@@ -9,6 +10,56 @@ ROOTPW=password
 YUMREPO=/rheldvd
 HASSUDO=1
 AUTOSSH=1
+
+usage()
+{
+  echo "$0 [-u `tput smul`username`tput rmul`] [-U `tput smul`uid`tput rmul`] [-g `tput smul`group`tput rmul`] [-G `tput smul`gid`tput rmul`] [-p `tput smul`password`tput rmul`] [-K] [-S] -r `tput smul`path`tput rmul`"
+  echo -e "  -r path\tlocation of the chroot"
+  echo -e "  -u username\tName of the user account accessing the chroot"
+  echo -e "  -U uid\tUID for `tput smul`username`tput rmul`"
+  echo -e "  -g group\tName of the primary group for `tput smul`username`tput rmul`"
+  echo -e "  -G gid\tGID for `tput smul`group`tput rmul`"
+  echo -e "  -p password\t`tput smul`username`tput rmul`'s login password"
+  echo -e "  -K\t\tSetup ssh keys for automatic access from account $USER"
+  echo -e "  -S\t\tGive `tput smul`username`tput rmul` sudo access within the chroot"
+  exit 1
+}
+
+while getopts "hr:u:g:U:G:p:KS" opt; do
+  case $opt in
+    h) usage;;
+    r) ROOT=$OPTARG;;
+    u) ROOTUSER=$OPTARG;;
+    U) ROOTUID=$OPTARG;;
+    g) ROOTGROUP=$OPTARG;;
+    G) ROOTGID=$OPTARG;;
+    p) ROOTPW=$OPTARG;;
+    K) AUTOSSH=0;;
+    S) HASSUDO=0;;
+    *) usage;;
+  esac
+done
+
+if [[ $OPTIND -eq 1 || -z "$ROOT" ]]
+then
+  echo "Must specify a chroot"
+  usage
+fi
+
+echo "New chroot at $ROOT"
+echo "User $ROOTUSER ($ROOTUID)"
+echo "Group $ROOTGROUP ($ROOTGID)"
+echo "Password \"$ROOTPW\""
+if [ $AUTOSSH -eq 1 ]
+then
+  echo "Auto login supported from $USER account"
+fi
+if [ $HASSUDO -eq 1 ]
+then
+  echo "$ROOTUSER will be a sudoer under the chroot"
+fi
+
+set -x
 
 sestatus | grep enabled
 if [ $? -eq 0 ]
