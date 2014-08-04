@@ -1,0 +1,12 @@
+{
+  "name": "cubedash",
+  "main": "server.js",
+  "version": "0.0.1",
+  "description": "Dashboard for cube",
+  "author": "Daniel Spinozzi",
+  "dependencies": {
+    "express": "3.x.x"
+  },
+  "devDependencies": {
+  }
+}
