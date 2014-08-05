@@ -1,1 +1,14 @@
-hello world
+<html>
+  <head>
+    <title>Dashboard for cube</title>
+    <script src="/d3.js" type="text/javascript"></script>
+  </head>
+  <body>
+    <div id="types"></div>
+    <script type="text/javascript">
+    d3.json("http://jackpot.remote:1081/1.0/types", function(types) {
+      d3.select("#types").text(types);
+    });
+    </script>
+  </body>
+</html>
