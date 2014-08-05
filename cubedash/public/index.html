@@ -6,9 +6,25 @@
   <body>
     <div id="types"></div>
     <script type="text/javascript">
-    d3.json("http://jackpot.remote:1081/1.0/types", function(types) {
-      d3.select("#types").text(types);
-    });
+      
+      var host = "jackpot.remote";
+      var limit = 10;
+      
+      d3.json("http://" +host+ ":1081/1.0/types", function(types) {
+        
+        types.forEach(function (t) {
+          d3.select("#types").append("div").attr("id", t).append("h1").text(t);
+          
+          d3.json("http://" +host+ ":1081/1.0/event/get?expression=" +t+ "(*)&limit=" +limit,
+                  function(events)
+          {
+            events.forEach(function (e, i) {
+             d3.select("#" +t).append("div").attr("class", "row" +i).text(JSON.stringify(e));
+            });
+          });
+        });
+        
+      });
     </script>
   </body>
 </html>
