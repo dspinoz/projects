@@ -1,7 +1,6 @@
 // modules =================================================
 var express = require('express');
 var app     = express();
-var http    = require('http');
 
 // configuration ===========================================
   
@@ -32,9 +31,7 @@ app.get('/crossfilter.js', function(req, res) {
 
 // start app ===============================================
 
-var server = http.createServer(app);
-
-server.listen(port, function() { // startup our app at http://localhost:port
+app.listen(port, function() { // startup our app at http://localhost:port
   console.log("listening...");
 });
 
