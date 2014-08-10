@@ -1,0 +1,12 @@
+{
+  "name": "nodetest",
+  "main": "main.js",
+  "version": "0.0.1",
+  "description": "Testing locally installed modules",
+  "author": "Daniel Spinozzi",
+  "dependencies": {
+    "fs-extra": "0.8.1"
+  },
+  "devDependencies": {
+  }
+}
