@@ -53,6 +53,10 @@ app.get('/d3.js', function(req, res) {
   res.sendfile('node_modules/d3/d3.js')
 });
 
+app.get('/queue.js', function(req, res) {
+  res.sendfile('node_modules/queue-async/queue.js')
+});
+
 app.get('/cubism.js', function(req, res) {
   res.sendfile('node_modules/cubism/cubism.v1.js')
 });

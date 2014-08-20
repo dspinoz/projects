@@ -4,6 +4,7 @@
     <meta charset='utf-8'>
     <title>Cubedash</title>
     <script src="/d3.js"></script>
+    <script src="/queue.js"></script>
     <script src='/jquery.js' type='text/javascript'></script>
     <script src='/bootstrap.js' type='text/javascript'></script>
     <link href='/bootstrap.css' rel='stylesheet' type='text/css'>
@@ -40,7 +41,7 @@
           <table class='table table-hover' id='event-types'>
             <thead>
               <tr class='header'>
-                <th>Type</th><th>Sum</th>
+                <th>Type</th><th>10-sec</th><th>1-min</th><th>5-min</th><th>1-hr</th><th>1-day</th>
               </tr>
             </thead>
           </table>
@@ -50,42 +51,85 @@
     
     <script type='text/javascript'>
       
-      d3.json("/types", function(types) {
-        console.log(types);
-        
-        var data = [];
-        
-        var step = "6e4"; //last 5 minutes
-        var table = d3.select('#event-types');
-        var body = table.append('tbody');
-        
-        types.forEach(function (t) {
-          var query = "/metric?expression=sum("+t+")&step="+step+"&limit=1";
-        
-          d3.json(query, function(hr) {
+      var data = d3.map();
+      var waiter = queue();
+      
+      var steps = [
+        {name: '10-sec', step: '1e4'},
+        {name: '1-min', step: '6e4'}, 
+        {name: '5-min', step: '3e5'},
+        {name: '1-hr', step: '36e5'},
+        {name: '1-day', step: '864e5'}
+      ];
+          
+      function stepFunc(step, callback) {
+        d3.json("/metric?expression=sum("+step.n+")&step="+step.v.step+"&limit=1", 
+                function (err, json) {
+                  // bind the data ourself
+                  data.get(step.n)[step.v.name] = json[0].value;
+                  callback(err, null);
+                });
+      }
+      
+      function typeFunc(path, callback) {
+        d3.json(path, function(err, json) {
+          // bind the data outself
+          json.forEach(function(t) {
+            if (!data.has(t)) {
+              data.set(t, {});
+            }
             
-            data.push({ name: t, last_hr: hr[0].value });
-            
-            var rows = body.selectAll('tr');
-            
-            var row = rows.data(data)
-                         .enter()
-                         .append('tr');
-            
-            row.append('td')
-            .text(function(d) {
-              return d.name;
-            });
-            
-            row.append('td')
-            .text(function(d) {
-              return d.last_hr;
+            steps.forEach(function (s) {
+              waiter.defer(stepFunc, {n: t, v: s});
             });
             
           });
+          callback(err,null);
         });
+      }
+      
+      // perform synchronous requests to build up all the data
+      waiter.defer(typeFunc, "/types");
+      
+      waiter.await(function (err) {
+        console.log('done');
+        console.log(data);
         
+        var table = d3.select('#event-types');
+        var body = table.append('tbody');
+        var rows = body.selectAll('tr');
+        
+        var row = rows.data(data.entries())
+                     .enter()
+                     .append('tr');
+        
+        row.append('td')
+        .text(function(d) {
+          return d.key;
+        });
+        row.append('td')
+        .text(function(d) {
+          return d.value['10-sec'];
+        });
+        row.append('td')
+        .text(function(d) {
+          return d.value['1-min'];
+        });
+        row.append('td')
+        .text(function(d) {
+          return d.value['5-min'];
+        });
+        row.append('td')
+        .text(function(d) {
+          return d.value['1-hr'];
+        });
+        row.append('td')
+        .text(function(d) {
+          return d.value['1-day'];
+        });
+          
       });
+      
     </script>
   </body>
 </html>
