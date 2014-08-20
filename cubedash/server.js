@@ -2,6 +2,7 @@
 
 // modules =================================================
 var express = require('express');
+var request = require('request');
 var app     = express();
 
 // configuration ===========================================
@@ -17,7 +18,36 @@ app.configure(function() {
   //app.use(express.logger('dev')); 					// log only non-public content
 });
 
-// routes ==================================================
+// routes to cube server ===========================================
+
+var cubeHost = '10.1.1.16',
+    cubePort = 1081;
+    
+app.get('/types', function(req,res) {
+  req.pipe(request('http://' +cubeHost +':'+ cubePort+ '/1.0' + req.originalUrl)).pipe(res);
+});
+app.get('/metric', function(req,res) {
+  req.pipe(request('http://' +cubeHost +':'+ cubePort+ '/1.0' + req.originalUrl)).pipe(res);
+});
+
+// static files  ==================================================
+
+// TBD under development use full source, otherwise use min
+
+app.get('/jquery.js', function(req,res) {
+  res.sendfile('node_modules/jquery/dist/jquery.js');
+});
+
+app.get('/bootstrap.js', function(req,res) {
+  res.sendfile('node_modules/bootstrap/dist/js/bootstrap.js');
+});
+
+app.get('/bootstrap.css', function(req,res) {
+  res.sendfile('node_modules/bootstrap/dist/css/bootstrap.css');
+});
+app.get('/bootstrap.css.map', function(req,res) {
+  res.sendfile('node_modules/bootstrap/dist/css/bootstrap.css.map');
+});
 
 app.get('/d3.js', function(req, res) {
   res.sendfile('node_modules/d3/d3.js')
