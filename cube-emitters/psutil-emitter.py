@@ -2,21 +2,31 @@
 
 import psutil
 import json
-import socket
-import time
+import httplib
 
-IP = "127.0.0.1"
-PORT = 1080
+CUBEHOST = "localhost"
+CUBEPORT = 1080
 
-d = { 'type': 'cpu_times', 'time': time.strftime("%Y-%m-%dT%H:%M:%S"), 'data': psutil.cpu_times().__dict__ }
+d = [{'type': 'psutil', 
+      'data': { 
+        'plugin' : 'cpu_times',
+        'value': psutil.cpu_times().__dict__ 
+      }
+    }]
 
-sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-if sock.sendto(json.dumps(d), (IP, PORT)) > 0:
-	print json.dumps(d)
-else:
-	print "ERROR"
+c = httplib.HTTPConnection(CUBEHOST, CUBEPORT)
+#c.set_debuglevel(2)
 
+print json.dumps(d, sort_keys = False, indent = 2)
 
+c.request("POST", "/1.0/event/put", json.dumps(d, sort_keys=False), {"Content-type": "application/json"})
+
+r = c.getresponse()
+print r.status, r.reason
+
+print r.read()
+
+c.close()
 
 
 
