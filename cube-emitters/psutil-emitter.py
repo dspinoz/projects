@@ -47,6 +47,13 @@ d = [{'type': 'psutil',
         'plugin': 'cpu_count',
 	'value': psutil.cpu_count()
       }
+    },
+    {
+      'type': 'psutil',
+      'data': {
+        'plugin': 'virtual_memory',
+	'value': psutil.virtual_memory().__dict__
+      }
     }]
 
 c = httplib.HTTPConnection(CUBEHOST, CUBEPORT)
