@@ -1,0 +1,31 @@
+{
+  "name": "cubedash",
+  "version": "0.0.1",
+  "homepage": "https://github.com/dspinoz/projects/cubedash",
+  "authors": [
+    "Daniel Spinozzi"
+  ],
+  "description": "Dashboard for cube",
+  "main": "server.js",
+  "license": "Free",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "keywords": [
+    "Dashboard",
+    "for",
+    "cube"
+  ],
+  "dependencies": {
+    "crossfilter": "~1.3.9",
+    "cubism": "~1.6.0",
+    "d3": "~3.4.11",
+    "queue-async": "~1.0.7",
+    "bootstrap": "~3.2.0"
+  }
+}

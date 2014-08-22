@@ -20,7 +20,7 @@ app.configure(function() {
 
 // routes to cube server ===========================================
 
-var cubeHost = '10.1.1.16',
+var cubeHost = 'localhost',
     cubePort = 1081;
     
 app.get('/types', function(req,res) {
@@ -35,34 +35,34 @@ app.get('/metric', function(req,res) {
 // TBD under development use full source, otherwise use min
 
 app.get('/jquery.js', function(req,res) {
-  res.sendfile('node_modules/jquery/dist/jquery.js');
+  res.sendfile('bower_components/jquery/dist/jquery.js');
 });
 
 app.get('/bootstrap.js', function(req,res) {
-  res.sendfile('node_modules/bootstrap/dist/js/bootstrap.js');
+  res.sendfile('bower_components/bootstrap/dist/js/bootstrap.js');
 });
 
 app.get('/bootstrap.css', function(req,res) {
-  res.sendfile('node_modules/bootstrap/dist/css/bootstrap.css');
+  res.sendfile('bower_components/bootstrap/dist/css/bootstrap.css');
 });
 app.get('/bootstrap.css.map', function(req,res) {
-  res.sendfile('node_modules/bootstrap/dist/css/bootstrap.css.map');
+  res.sendfile('bower_components/bootstrap/dist/css/bootstrap.css.map');
 });
 
 app.get('/d3.js', function(req, res) {
-  res.sendfile('node_modules/d3/d3.js')
+  res.sendfile('bower_components/d3/d3.js')
 });
 
 app.get('/queue.js', function(req, res) {
-  res.sendfile('node_modules/queue-async/queue.js')
+  res.sendfile('bower_components/queue-async/queue.js')
 });
 
 app.get('/cubism.js', function(req, res) {
-  res.sendfile('node_modules/cubism/cubism.v1.js')
+  res.sendfile('bower_components/cubism/cubism.v1.js')
 });
 
 app.get('/crossfilter.js', function(req, res) {
-  res.sendfile('node_modules/crossfilter/crossfilter.js')
+  res.sendfile('bower_components/crossfilter/crossfilter.js')
 });
 
 // start app ===============================================
