@@ -52,7 +52,6 @@
     <script type='text/javascript'>
       
       var data = [];
-      var waiter = queue();
       
       var steps = [
         {name: '10-sec', step: '1e4'},
@@ -68,22 +67,24 @@
         stepIndexes[s.name] = i;
       });
           
-      function stepFunc(step, callback) {
-        d3.json("/metric?expression=sum("+step.n+")&step="+step.v.step+"&limit=1", 
+      function stepFunc(info, callback) {
+        d3.json("/metric?expression=sum("+info.n+")&step="+info.v.step+"&limit=1", 
                 function (err, json) {
                   // bind the data ourself
-                  data.push({ type: step.n, step: step.v.name, value: json[0] });
+                  data.push({ type: info.n, step: info.v.name, value: json[0] });
                   callback(err, null);
                 });
       }
       
-      function typeFunc(path, callback) {
+      function typeFunc(info, callback) {
+        var path = info.path;
+        
         d3.json(path, function(err, json) {
           // bind the data outself
           json.forEach(function(t) {
             
             steps.forEach(function (s) {
-              waiter.defer(stepFunc, {n: t, v: s});
+              info.q.defer(stepFunc, {n: t, v: s});
             });
             
           });
@@ -104,17 +105,25 @@
               
         var table = d3.select('#event-types');
         var body = table.append('tbody');
-        var tr = body.selectAll('tr')
-                  .data(groups)
-                  .enter()
-                  .append('tr')
-                  .attr('id', function(d,i) {
-                    console.log('row ' + i);
-                    console.log(d);
-                    return i;
-                  });
+        var items = body.selectAll('tr')
+                      .data(groups);
+                      
+             
+        items.attr('class', 'update')
+          .text(function (d) {
+            console.log('update');
+            console.log(d);
+            return d;
+          });
                   
-        tr.selectAll('td')
+        var tr = items
+          .enter()
+          .append('tr')
+          .attr('id', function(d,i) {
+            return i;
+          });
+                  
+        var td = tr.selectAll('td')
           .data(function(d) {
             
             d.values.sort(function (a,b) {
@@ -123,8 +132,16 @@
             
             d.values.unshift({key: d.key});
             return d.values;
-          })
-          .enter()
+          });
+          
+          td.attr('class', 'update')
+          .text(function(d) {
+            console.log('update td');
+            console.log(d);
+            return d;
+          });
+          
+          td.enter()
           .append('td')
           .text(function(d,i) {
             if (d.values == undefined)
@@ -135,26 +152,27 @@
             return d.values[0].value.value;
           });
         
-        
+        console.log("render done");
       }
       
       // perform synchronous requests to build up all the data
-      waiter.defer(typeFunc, "/types");
       
-      waiter.await(function (err) {
-        renderData(err);
-      });
+      var waiter = queue();
+      waiter.defer(typeFunc, {path: "/types", q: waiter})
+        .await(function (err) {
+          renderData(err);
+        });
       
-      /*
+      
       setInterval(function () {
-        console.log("aaaa");
         
-        var q = queue()
-                  .defer(typeFunc, "/types")
-                  .await(renderData);
+        data = [];
+        waiter = queue();
+        waiter.defer(typeFunc, {path: "/types", q: waiter})
+          .await(renderData);
         
-      }, 100000);
-      */
+      }, 200000);
+      
     </script>
   </body>
 </html>
