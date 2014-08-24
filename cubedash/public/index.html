@@ -40,18 +40,26 @@
         <div class='span12'>
           <table class='table table-hover' id='event-types'>
             <thead>
-              <tr class='header'>
-                <th>Type</th><th>10-sec</th><th>1-min</th><th>5-min</th><th>1-hr</th><th>1-day</th>
+              <tr>
+                <th>Type</th>
               </tr>
             </thead>
+            <tbody>
+            </tbody>
+          </table>
+
+          <button type="button" class="btn btn-default btn-lg" onclick="updateData()">
+            <span class="glyphicon glyphicon-repeat"></span> Update
+          </button>
+          
+          <table class='table table-hover' id="test">
+          
           </table>
         </div>
       </div>
     </div>
     
     <script type='text/javascript'>
-      
-      var data = [];
       
       var steps = [
         {name: '10-sec', step: '1e4'},
@@ -66,112 +74,130 @@
       steps.forEach(function(s,i) {
         stepIndexes[s.name] = i;
       });
+      
+      
+      function updateButton() {
+        
+        d3.json("/test", function(json) {
           
-      function stepFunc(info, callback) {
-        d3.json("/metric?expression=sum("+info.n+")&step="+info.v.step+"&limit=1", 
-                function (err, json) {
-                  // bind the data ourself
-                  data.push({ type: info.n, step: info.v.name, value: json[0] });
-                  callback(err, null);
-                });
+          var p = d3.select("#test").selectAll('p')
+                    .data(json);
+                    
+          p.text(function(d) {
+            return d;
+          });
+                    
+          p.enter().append('p').text(function (d) {
+            return d;
+          });
+                    
+          p.exit().remove();
+          
+          console.log(json);
+        });
       }
       
-      function typeFunc(info, callback) {
-        var path = info.path;
+      var th = d3.select('#event-types thead tr')
+                .selectAll('th.step')
+                .data(steps);
+                
+      th.text(function (d) {
+        return d.name;
+      });
+      
+      th.enter()
+        .append('th')
+        .attr('class', 'step')
+        .text(function(d) {
+          return d.name;
+        });
         
-        d3.json(path, function(err, json) {
-          // bind the data outself
+      th.exit().remove();
+      
+      function updateData() {
+        
+        d3.json("/types", function(json) {
+          
+          var tr = d3.select('#event-types tbody')
+                    .selectAll('tr')
+                    .data(json);
+                    
+          tr.text(function (d) {
+            return d;
+          });
+            
+          tr.enter() 
+            .append('tr')
+            .attr('id', function (d) {
+              return d;
+            })
+            // gets deleted on second update!
+            .append('td')
+            .attr('class','type')
+            .text(function (d) {
+              return d;
+            });
+            
+          tr.exit().remove();
+          
+          function getSum(info, callback)
+          {
+            d3.json('/metric?expression=sum('+info.type+')&step='+info.step.step+'&limit=1', function(metric) {
+              
+              console.log(info.type + " " + info.step.name + " " + metric[0].value);
+              info.data[info.step.name] = metric;
+              callback(null,null);
+            });
+          }
+          
+          
           json.forEach(function(t) {
             
-            steps.forEach(function (s) {
-              info.q.defer(stepFunc, {n: t, v: s});
+            var q = queue();
+            var typed = {type: t, steps: {} };
+            
+            steps.forEach(function(s) {
+
+              q.defer(getSum, {type: t, step: s, data: typed.steps});
             });
             
-          });
-          callback(err,null);
-        });
-      }
-      
-      function renderData(err)
-      {
-        var groups = d3.nest()
-                      .key(function (d) {
-                        return d.type;
-                      })
-                      .key(function (d) {
-                        return d.step;
-                      })
-                      .entries(data);
+            q.await(function() {
               
-        var table = d3.select('#event-types');
-        var body = table.append('tbody');
-        var items = body.selectAll('tr')
-                      .data(groups);
-                      
-             
-        items.attr('class', 'update')
-          .text(function (d) {
-            console.log('update');
-            console.log(d);
-            return d;
-          });
-                  
-        var tr = items
-          .enter()
-          .append('tr')
-          .attr('id', function(d,i) {
-            return i;
-          });
-                  
-        var td = tr.selectAll('td')
-          .data(function(d) {
-            
-            d.values.sort(function (a,b) {
-              return stepIndexes[a.key] - stepIndexes[b.key];
+              typed.stepssorted = d3.entries(typed.steps);
+              
+              typed.stepssorted.sort(function(a,b) {
+                return stepIndexes[a.key] - stepIndexes[b.key];
+              });
+              
+              var td = d3.select('#event-types tbody tr#'+typed.type)
+                        .selectAll('td.step') //force start with character
+                        .data(typed.stepssorted);
+              
+              td.text(function(d) {
+                return d.value;
+              });
+              
+              td.enter()
+                .append('td')
+                .attr('class', 'step')
+                .attr('id', function(d) {
+                  return 'step'+d.key;
+                })
+                .text(function (d) {
+                  return d.value[0].value;
+                });
+                
+              td.exit().remove();
+              
+              
+              
+              
             });
             
-            d.values.unshift({key: d.key});
-            return d.values;
           });
           
-          td.attr('class', 'update')
-          .text(function(d) {
-            console.log('update td');
-            console.log(d);
-            return d;
-          });
-          
-          td.enter()
-          .append('td')
-          .text(function(d,i) {
-            if (d.values == undefined)
-            {
-              return d.key;
-            }
-            
-            return d.values[0].value.value;
-          });
-        
-        console.log("render done");
-      }
-      
-      // perform synchronous requests to build up all the data
-      
-      var waiter = queue();
-      waiter.defer(typeFunc, {path: "/types", q: waiter})
-        .await(function (err) {
-          renderData(err);
         });
-      
-      
-      setInterval(function () {
-        
-        data = [];
-        waiter = queue();
-        waiter.defer(typeFunc, {path: "/types", q: waiter})
-          .await(renderData);
-        
-      }, 200000);
+      }
       
     </script>
   </body>
