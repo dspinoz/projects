@@ -23,6 +23,10 @@ app.configure(function() {
 var cubeHost = 'localhost',
     cubePort = 1081;
     
+app.get('/test', function(req,res) {
+  res.sendfile('test.json');
+});
+    
 app.get('/types', function(req,res) {
   req.pipe(request('http://' +cubeHost +':'+ cubePort+ '/1.0' + req.originalUrl)).pipe(res);
 });
@@ -47,6 +51,15 @@ app.get('/bootstrap.css', function(req,res) {
 });
 app.get('/bootstrap.css.map', function(req,res) {
   res.sendfile('bower_components/bootstrap/dist/css/bootstrap.css.map');
+});
+app.get('/fonts/glyphicons-halflings-regular.svg', function(req,res) {
+  res.sendfile('bower_components/bootstrap/dist/fonts/glyphicons-halflings-regular.svg');
+});
+app.get('/fonts/glyphicons-halflings-regular.ttf', function(req,res) {
+  res.sendfile('bower_components/bootstrap/dist/fonts/glyphicons-halflings-regular.ttf');
+});
+app.get('/fonts/glyphicons-halflings-regular.woff', function(req,res) {
+  res.sendfile('bower_components/bootstrap/dist/fonts/glyphicons-halflings-regular.woff');
 });
 
 app.get('/d3.js', function(req, res) {
