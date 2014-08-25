@@ -40,9 +40,6 @@
         <div class='span12'>
           <table class='table table-hover' id='event-types'>
             <thead>
-              <tr>
-                <th>Type</th>
-              </tr>
             </thead>
             <tbody>
             </tbody>
@@ -53,14 +50,14 @@
           </button>
           
           <table class='table table-hover' id="test">
-          
+            <tbody></tbody>
           </table>
         </div>
       </div>
     </div>
     
     <script type='text/javascript'>
-      
+
       var steps = [
         {name: '10-sec', step: '1e4'},
         {name: '1-min', step: '6e4'}, 
@@ -75,129 +72,131 @@
         stepIndexes[s.name] = i;
       });
       
+      var table = d3.select('table#event-types');
       
-      function updateButton() {
-        
-        d3.json("/test", function(json) {
-          
-          var p = d3.select("#test").selectAll('p')
-                    .data(json);
-                    
-          p.text(function(d) {
-            return d;
-          });
-                    
-          p.enter().append('p').text(function (d) {
-            return d;
-          });
-                    
-          p.exit().remove();
-          
-          console.log(json);
-        });
-      }
-      
-      var th = d3.select('#event-types thead tr')
-                .selectAll('th.step')
-                .data(steps);
-                
-      th.text(function (d) {
-        return d.name;
-      });
-      
-      th.enter()
+      table.select('thead').append('tr')
+        .selectAll('th')
+        .data(function() {
+          var x = steps.slice();
+          x.unshift({name:'Type'});
+          return x;
+        })
+        .enter()
         .append('th')
-        .attr('class', 'step')
         .text(function(d) {
           return d.name;
         });
-        
-      th.exit().remove();
-      
-      function updateData() {
-        
-        d3.json("/types", function(json) {
+    
+      function getSum(info, callback)
+      {
+        d3.json('/metric?expression=sum('+info.type+')&step='+info.step.step+'&limit=1', function(metric) {
           
-          var tr = d3.select('#event-types tbody')
-                    .selectAll('tr')
-                    .data(json);
-                    
-          tr.text(function (d) {
-            return d;
-          });
-            
-          tr.enter() 
-            .append('tr')
-            .attr('id', function (d) {
-              return d;
-            })
-            // gets deleted on second update!
-            .append('td')
-            .attr('class','type')
-            .text(function (d) {
-              return d;
-            });
-            
-          tr.exit().remove();
-          
-          function getSum(info, callback)
-          {
-            d3.json('/metric?expression=sum('+info.type+')&step='+info.step.step+'&limit=1', function(metric) {
-              
-              console.log(info.type + " " + info.step.name + " " + metric[0].value);
-              info.data[info.step.name] = metric;
-              callback(null,null);
-            });
-          }
-          
-          
-          json.forEach(function(t) {
-            
-            var q = queue();
-            var typed = {type: t, steps: {} };
-            
-            steps.forEach(function(s) {
-
-              q.defer(getSum, {type: t, step: s, data: typed.steps});
-            });
-            
-            q.await(function() {
-              
-              typed.stepssorted = d3.entries(typed.steps);
-              
-              typed.stepssorted.sort(function(a,b) {
-                return stepIndexes[a.key] - stepIndexes[b.key];
-              });
-              
-              var td = d3.select('#event-types tbody tr#'+typed.type)
-                        .selectAll('td.step') //force start with character
-                        .data(typed.stepssorted);
-              
-              td.text(function(d) {
-                return d.value;
-              });
-              
-              td.enter()
-                .append('td')
-                .attr('class', 'step')
-                .attr('id', function(d) {
-                  return 'step'+d.key;
-                })
-                .text(function (d) {
-                  return d.value[0].value;
-                });
-                
-              td.exit().remove();
-              
-              
-              
-              
-            });
-            
-          });
-          
+          console.log(info.type + " " + info.step.name + " " + metric[0].value);
+          info.data[info.step.name] = metric[0];
+          callback(null,null);
         });
       }
+      
+      function updateData()
+      {
+        var q = queue();
+        var tdata = {};
+        
+        d3.json("/types", function(types) {
+          types.forEach(function(t) {
+            tdata[t] = { steps: {} };
+            steps.forEach(function(s) {
+              q.defer(getSum, {type: t, step: s, data: tdata[t].steps});
+            });
+          });
+        });
+        
+        q.await(function() {
+          console.log('all done');
+          var data = d3.entries(tdata);
+          data.forEach(function(t) {
+            t.value.stepsArr = d3.entries(t.value.steps);
+            t.value.stepsArr.sort(function(a,b) {
+              return stepIndexes[a.key] - stepIndexes[b.key];
+            });
+          });
+          
+          render(data);
+        });
+      }
+
+      function render(data) {
+      
+        var tr = table.select('tbody')
+          .selectAll('tr')
+          .data(data);
+        
+        tr
+          .style('border', '1px solid blue')
+          .transition()
+          .delay(1000)
+          .style('border', null);
+          
+        tr
+          .enter()
+          .append('tr')
+          .attr('id', function(d) {
+            return d.key;
+          });
+          
+        tr
+          .exit()
+          .transition()
+          .delay(500)
+          .style('color', 'pink')
+          .transition()
+          .delay(1000)
+          .remove();
+          
+          
+        var td = tr.selectAll('td')
+          .data(function (d) {
+            //to create all the cells
+            var x = d.value.stepsArr.slice();
+            x.unshift({key: d.key});
+            return x;
+          });
+        
+        td
+          .text(function (d) {
+            if (d.value)
+            {
+              return d.value.value;
+            }
+            return d.key;
+          })
+          .style('border', '1px solid green')
+          .transition()
+          .delay(1000)
+          .style('border', null);
+          
+        td
+          .enter()
+          .append('td')
+          .text(function (d) {
+            if (d.value)
+            {
+              return d.value.value;
+            }
+            return d.key;
+          });
+        
+        td
+          .exit()
+          .transition()
+          .delay(500)
+          .style('color', 'red')
+          .transition()
+          .delay(1000)
+          .remove();
+      }
+      
+      updateData();
       
     </script>
   </body>
