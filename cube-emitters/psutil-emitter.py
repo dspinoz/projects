@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import sys
 import os
 import psutil
 import json
@@ -29,15 +30,25 @@ for part in psutil.disk_partitions():
   mydisk_usage.append(psutil.disk_usage(part.mountpoint).__dict__)
 
 mydisk_io_counters = []
-for disk in psutil.disk_io_counters(perdisk=True):
-  if os.name != 'nt':
-    mydisk_io_counters.append(disk.__dict__)
+diskio = psutil.disk_io_counters(perdisk=True)
+for name,disk in diskio.iteritems():
+  mydisk_io_counters.append({'name': name, 'value': disk.__dict__ })
 
+
+mynet = []
 mynet_io_counters = []
-for nic in psutil.net_io_counters(pernic=True):
-  if os.name != 'nt':
-    mynet_io_counters.append(nic.__dict__)
+netio = psutil.net_io_counters(pernic=True)
+for name, nic in netio.iteritems():
+  mynet.append({'name': name})
+  mynet_io_counters.append(nic.__dict__)
 
+mynet_connections = []
+for net in psutil.net_connections(kind='all'):
+  mynet_connections.append(net.__dict__)
+
+myusers = []
+for user in psutil.users():
+  myusers.append(user.__dict__)
 
 d = [{
      'type': 'psutil',
@@ -113,8 +124,39 @@ d = [{
     {
       'type': 'psutil',
       'data': {
-        'plugin': 'net_io_counters',
-	'value': mynet_io_counters
+        'plugin': 'network',
+	'value': {
+	  'interfaces': mynet,
+	  'net_io_counters': mynet_io_counters
+	}
+      }
+    },
+    {
+      'type': 'psutil',
+      'data': {
+        'plugin': 'net_connections',
+	'value': mynet_connections
+      }
+    },
+    {
+      'type': 'psutil',
+      'data': {
+        'plugin': 'users',
+	'value': myusers
+      }
+    },
+    {
+      'type': 'psutil',
+      'data': {
+        'plugin': 'boot_time',
+	'value': psutil.boot_time()
+      }
+    },
+    {
+      'type': 'psutil',
+      'data': {
+        'plugin': 'pids',
+	'value': psutil.pids()
       }
     }]
 
