@@ -102,28 +102,37 @@
         });
       }
       
+      function getTypes(info, callback)
+      {
+        d3.json("/test", function(types) {
+          types.forEach(function(t) {
+            info.data[t] = { steps: {} };
+            steps.forEach(function(s) {
+              info.queue.defer(getSum, {type: t, step: s, data: info.data[t].steps});
+            });
+          });
+          callback(null,null);
+        });
+      }
+      
       function updateData()
       {
+        console.log("UPDATING");
         var q = queue();
         var tdata = {};
         
-        d3.json("/test", function(types) {
-          types.forEach(function(t) {
-            tdata[t] = { steps: {} };
-            steps.forEach(function(s) {
-              q.defer(getSum, {type: t, step: s, data: tdata[t].steps});
-            });
-          });
-        });
+        q.defer(getTypes, {data: tdata, queue: q});
         
         q.await(function() {
           console.log('all done');
+          
           var data = d3.entries(tdata);
           data.forEach(function(t) {
             t.value.stepsArr = d3.entries(t.value.steps);
             t.value.stepsArr.sort(function(a,b) {
               return stepIndexes[a.key] - stepIndexes[b.key];
             });
+            delete t.value.steps;
           });
           
           render(data);
@@ -174,7 +183,10 @@
           });
         
         td
-          .style('color', 'blue')
+          .style('color', function(d) {
+          console.log(d);
+            return 'blue';
+          })
           .text(function (d) {
             if (d.value)
             {
@@ -208,6 +220,59 @@
           .transition()
           .delay(2000)
           .remove();
+      }
+      
+      
+      function render2(data) {
+      
+        console.log('RENDER');
+        console.log(data);
+        
+      
+        var tr = table.select('tbody') 
+          .selectAll('tr')
+          .data(data, function(d,i) {
+            console.log('data');
+            console.log(d);
+            return d.key;
+          });
+          
+        tr.select('td')
+          .attr('class', 'info')
+          .text(function(d) {
+            console.log('td updated');
+            console.log(d);
+            return JSON.stringify(d);
+          })
+          .transition()
+          .delay(1000)
+          .attr('class', 'default');
+          
+        tr.enter()
+          .append('tr')
+          .attr('id', function(d) {
+            console.log('enter ' + d.key);
+            return d.key;
+          })
+          .append('td')
+          .attr('class', 'success')
+          .text(function (d) {
+            return JSON.stringify(d);
+          })
+          .transition()
+          .delay(1000)
+          .attr('class', 'default');
+          
+        tr.exit()
+          .select('td')
+          .attr('class', function(d) {
+            console.log('exit ' + d.key);
+            return 'error';
+          })
+          .transition()
+          .delay(1000)
+          .remove();
+          
       }
       
       updateData();
