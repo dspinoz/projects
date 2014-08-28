@@ -53,10 +53,7 @@
           <button type="button" class="btn btn-default btn-lg" onclick="updateData()">
             <span class="glyphicon glyphicon-repeat"></span> Update
           </button>
-          
-          <table class='table table-hover' id="test">
-            <tbody></tbody>
-          </table>
+
         </div>
       </div>
     </div>
@@ -95,8 +92,6 @@
       function getSum(info, callback)
       {
         d3.json('/metric?expression=sum('+info.type+')&step='+info.step.step+'&limit=1', function(metric) {
-          
-          console.log(info.type + " " + info.step.name + " " + metric[0].value);
           info.data[info.step.name] = metric[0];
           callback(null,null);
         });
@@ -104,7 +99,7 @@
       
       function getTypes(info, callback)
       {
-        d3.json("/test", function(types) {
+        d3.json("/types", function(types) {
           types.forEach(function(t) {
             info.data[t] = { steps: {} };
             steps.forEach(function(s) {
@@ -117,15 +112,12 @@
       
       function updateData()
       {
-        console.log("UPDATING");
         var q = queue();
         var tdata = {};
         
         q.defer(getTypes, {data: tdata, queue: q});
         
         q.await(function() {
-          console.log('all done');
-          
           var data = d3.entries(tdata);
           data.forEach(function(t) {
             t.value.stepsArr = d3.entries(t.value.steps);
@@ -141,36 +133,19 @@
 
       function render(data) {
       
-        console.log(data);
-      
         var tr = table.select('tbody')
           .selectAll('tr')
           .data(data);
-        
-        
-        tr
-          .style('border', '1px solid blue')
-          .transition()
-          .delay(1000)
-          .style('border', null);
-          
           
         tr
           .enter()
           .append('tr')
-          .style('border', '1px solid green')
           .attr('id', function(d) {
             return d.key;
-          })
-          .transition()
-          .delay(1000)
-          .style('border', null);
+          });
           
         tr
           .exit()
-          .style('border', '1px solid red')
-          .transition()
-          .delay(4000)
           .remove();
           
           
@@ -183,25 +158,31 @@
           });
         
         td
-          .style('color', function(d) {
-          console.log(d);
-            return 'blue';
-          })
-          .text(function (d) {
+          .html(function (d) {
             if (d.value)
             {
+              if (d3.select(this).text() != d.value.value)
+              {
+                return '<span class="label label-info">' + d.value.value + '</span>';
+              }
               return d.value.value;
             }
             return d.key;
           })
           .transition()
           .delay(1000)
-          .style('color', null)
+          .text(function (d) {
+            if (d.value)
+            {
+              return d.value.value;
+            }
+            return d.key;
+          });
           
         td
           .enter()
           .append('td')
-          .style('color', 'green')
+          .attr('class', 'success')
           .text(function (d) {
             if (d.value)
             {
@@ -211,71 +192,21 @@
           })
           .transition()
           .delay(1000)
-          .style('color', null);
+          .attr('class', 'default');
         
         td
           .exit()
           .selectAll('td')
-          .style('color', 'red')
-          .transition()
-          .delay(2000)
-          .remove();
-      }
-      
-      
-      function render2(data) {
-      
-        console.log('RENDER');
-        console.log(data);
-        
-      
-        var tr = table.select('tbody') 
-          .selectAll('tr')
-          .data(data, function(d,i) {
-            console.log('data');
-            console.log(d);
-            return d.key;
-          });
-          
-        tr.select('td')
-          .attr('class', 'info')
-          .text(function(d) {
-            console.log('td updated');
-            console.log(d);
-            return JSON.stringify(d);
-          })
-          .transition()
-          .delay(1000)
-          .attr('class', 'default');
-          
-        tr.enter()
-          .append('tr')
-          .attr('id', function(d) {
-            console.log('enter ' + d.key);
-            return d.key;
-          })
-          .append('td')
-          .attr('class', 'success')
-          .text(function (d) {
-            return JSON.stringify(d);
-          })
-          .transition()
-          .delay(1000)
-          .attr('class', 'default');
-          
-        tr.exit()
-          .select('td')
-          .attr('class', function(d) {
-            console.log('exit ' + d.key);
-            return 'error';
-          })
+          .attr('class', 'error')
           .transition()
           .delay(1000)
           .remove();
-          
       }
       
       updateData();
+      
+      setInterval(updateData, 5000);
+      
       
     </script>
   </body>
