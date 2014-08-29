@@ -60,8 +60,9 @@
           legendElementWidth = gridSize*2,
           buckets = 9,
           colors = ["#ffffd9","#edf8b1","#c7e9b4","#7fcdbb","#41b6c4","#1d91c0","#225ea8","#253494","#081d58"], // alternatively colorbrewer.YlGnBu[9]
+          days = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"],
           times = ["1a", "2a", "3a", "4a", "5a", "6a", "7a", "8a", "9a", "10a", "11a", "12a", "1p", "2p", "3p", "4p", "5p", "6p", "7p", "8p", "9p", "10p", "11p", "12p"];
-      
+
       var dayNumFormat = d3.time.format('%w');
       var dayFormat = d3.time.format('%a');
       var hrFormat = d3.time.format('%I%p');
@@ -76,7 +77,6 @@
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
 
-      //168
       d3.json('/metric?expression=sum(cube_request)&step=36e5&limit=168', function (data) {
         console.log('done');
         console.log(data);
@@ -84,10 +84,9 @@
         
         
         var days = d3.map(),
-            times = d3.map();
-        
-        // data comes from now back to limit
-        //data.reverse();
+            times = d3.map(),
+            daysLeft = 6,
+            hoursLeft = 23;
         
         data.forEach(function(d) {
           d.time = d3.time.format.iso.parse(d.time);
@@ -96,29 +95,40 @@
           
           if (!days.has(dayFormat(d.time)))
           {
-            days.set(dayFormat(d.time), days.size());
+            days.set(dayFormat(d.time), (daysLeft) - days.size());
           }
           
           if (!times.has(hrFormat(d.time)))
           {
-            times.set(hrFormat(d.time), times.size());
+            times.set(hrFormat(d.time), +hourFormat(d.time)); //in time order
+            //(hoursLeft) - times.size()); //from data
           }
         });
         
         console.log('before');
         console.log(data);
+        
         //how long from now until the end of the day?
-        var left = 23 - hourFormat(data[0].time);
+        var left = 24 - hourFormat(data[0].time);
         console.log('HAS LEFT ' + left);
         
         
         console.log('after');
         console.log(data);
         
+        for(var i =0; i < left; i++)
+        {
+          var rem = data.splice(0,1);
+          console.log('removed ' + rem[0].day + ' ' + rem[0].hour + ' ' + rem[0].value + ' - ' + rem[0].time);
+        }
+        
+        console.log('first ' + data[0].day + ' ' + data[0].hour + ' ' + data[0].value + ' - ' + data[0].time);
+     
+        
         
         
       var dayLabels = svg.selectAll(".dayLabel")
-        .data(days.keys())
+        .data(days.keys().reverse()) 
         .enter().append("text")
           .text(function (d) { return d; })
           .attr("x", 0)
@@ -135,10 +145,10 @@
           });
 
       var timeLabels = svg.selectAll(".timeLabel")
-        .data(times.keys())
+        .data(times.keys().reverse())
         .enter().append("text")
           .text(function(d) { return d; })
-          .attr("x", function(d, i) { return i * gridSize; })
+          .attr("x", function(d, i) { return times.get(d) * gridSize; })
           .attr("y", 0)
           .style("text-anchor", "middle")
           .attr("transform", "translate(" + gridSize / 2 + ", -6)")
@@ -168,10 +178,10 @@
             
           heatMap.transition().duration(1000)
             .style("fill", function(d,i) {
-              if (i==0)
+              /*if (i==0)
               {
                 return 'red';
-              }
+              }*/
               return colorScale(d.value); 
             });
             
