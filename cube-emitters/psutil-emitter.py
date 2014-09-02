@@ -22,6 +22,9 @@ events.append({
   }
 })
 
+print events
+sys.exit(0)
+
 ####################### CPU
 cpus = []
 
