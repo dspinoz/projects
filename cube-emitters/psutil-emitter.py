@@ -9,16 +9,46 @@ import httplib
 CUBEHOST = "localhost"
 CUBEPORT = 1080
 
-mycpu_times = [];
+events = [];
+
+####################### SYSTEM
+
+events.append({
+  'plugin': 'system',
+  'value': {
+    'name': os.name,
+    'platform': sys.platform,
+    'boot_time': psutil.boot_time()
+  }
+})
+
+####################### CPU
+cpus = []
+
 for cpu in psutil.cpu_times(percpu=True):
-  mycpu_times.append(cpu.__dict__)
+  cpus.append({'times':cpu._asdict()})
 
-mycpu_times_percent = []
+i=0
 for cpu in psutil.cpu_times_percent(interval=None, percpu=True):
-  mycpu_times_percent.append(cpu.__dict__)
+  cpus[i]['times_percent'] = cpu._asdict()
+  i += 1
+  
+i=0
+for perc in psutil.cpu_percent(interval=None, percpu=True):
+  cpus[i]['percent'] = perc
+  i += 1
+  
+i=0
+for c in cpus:
+  events.append({'plugin': 'cpu', 'index': i, 'value': c})
+  i += 1
+  
+events.append({'plugin': 'cpu_count', 'value': psutil.cpu_count() })
+  
+####################### DISK
 
-mydisk_partitions = []
-mydisk_usage = []
+i=0
+disks = []
 for part in psutil.disk_partitions():
   if os.name == 'nt':
     if 'cdrom' in part.opts or part.fstype == '':
@@ -26,144 +56,61 @@ for part in psutil.disk_partitions():
       # ENOENT, pop-up a Windows GUI error for a non-ready
       # partition or just hang.
       continue
-  mydisk_partitions.append(part.__dict__)
-  mydisk_usage.append(psutil.disk_usage(part.mountpoint).__dict__)
-
-mydisk_io_counters = []
+  disks.append(part._asdict());
+  disks[i]['usage'] = psutil.disk_usage(part.mountpoint)._asdict()
+  i += 1
+  
+i=0
 diskio = psutil.disk_io_counters(perdisk=True)
 for name,disk in diskio.iteritems():
-  mydisk_io_counters.append({'name': name, 'value': disk.__dict__ })
+  disks[i]['io_counters'] = disk._asdict()
+  i += 1
 
+i=0
+for d in disks:
+  events.append({'plugin': 'disk', 'index': i, 'value': d})
+  i += 1
+  
+  
+####################### USERS
+i=0
+for user in psutil.users():
+  events.append({'plugin': 'user', 'index': i, 'value': user._asdict() })
+  i += 1
+  
 
-mynet = []
-mynet_io_counters = []
+####################### MEMORY
+events.append({'plugin': 'swap_memory', 'value': psutil.swap_memory()._asdict() })
+events.append({'plugin': 'virtual_memory', 'value': psutil.virtual_memory()._asdict() })
+  
+  
+####################### NETWORK
+
+i=0
 netio = psutil.net_io_counters(pernic=True)
 for name, nic in netio.iteritems():
-  mynet.append({'name': name})
-  mynet_io_counters.append(nic.__dict__)
+  events.append({'plugin': 'network', 'index': i, 'interface': name, 'io_counters': nic._asdict()})
+  i += 1
+  
 
-mynet_connections = []
+i=0
 for net in psutil.net_connections(kind='all'):
-  mynet_connections.append(net.__dict__)
+  events.append({'plugin': 'network_connection', 'index': i, 'value': net._asdict() })
+  i += 1
+  
+ 
+####################### PRINT
+  
+print json.dumps(events, sort_keys = False, indent = 2)
 
-myusers = []
-for user in psutil.users():
-  myusers.append(user.__dict__)
+####################### SUBMIT EVENTS
 
-d = [{
-     'type': 'psutil',
-     'data': {
-       'plugin': 'os',
-       'value': {
-         'name': os.name
-       }
-     }
-    },
-    {'type': 'psutil', 
-      'data': { 
-        'plugin' : 'cpu_times',
-        'value': mycpu_times
-      }
-    },
-    {
-      'type': 'psutil',
-      'data': {
-        'plugin': 'cpu_times_percent',
-	'value': mycpu_times_percent
-      }
-    },
-    {
-      'type': 'psutil',
-      'data': {
-        'plugin': 'cpu_percent',
-	'value': psutil.cpu_percent(interval=None, percpu=True)
-      }
-    },
-    {
-      'type': 'psutil',
-      'data': {
-        'plugin': 'cpu_count',
-	'value': psutil.cpu_count()
-      }
-    },
-    {
-      'type': 'psutil',
-      'data': {
-        'plugin': 'virtual_memory',
-	'value': psutil.virtual_memory().__dict__
-      }
-    },
-    {
-      'type': 'psutil',
-      'data': {
-        'plugin': 'swap_memory',
-	'value': psutil.swap_memory().__dict__
-      }
-    },
-    {
-      'type': 'psutil',
-      'data': {
-        'plugin': 'disk_partitions',
-	'value': mydisk_partitions
-      }
-    },
-    {
-      'type': 'psutil',
-      'data': {
-        'plugin': 'disk_usage',
-	'value': mydisk_usage
-      }
-    },
-    {
-      'type': 'psutil',
-      'data': {
-        'plugin': 'disk_io_counters',
-	'value': mydisk_io_counters
-      }
-    },
-    {
-      'type': 'psutil',
-      'data': {
-        'plugin': 'network',
-	'value': {
-	  'interfaces': mynet,
-	  'net_io_counters': mynet_io_counters
-	}
-      }
-    },
-    {
-      'type': 'psutil',
-      'data': {
-        'plugin': 'net_connections',
-	'value': mynet_connections
-      }
-    },
-    {
-      'type': 'psutil',
-      'data': {
-        'plugin': 'users',
-	'value': myusers
-      }
-    },
-    {
-      'type': 'psutil',
-      'data': {
-        'plugin': 'boot_time',
-	'value': psutil.boot_time()
-      }
-    },
-    {
-      'type': 'psutil',
-      'data': {
-        'plugin': 'pids',
-	'value': psutil.pids()
-      }
-    }]
+d = []
+for e in events:
+  d.append({'type': 'psutil', 'data': e })
 
 c = httplib.HTTPConnection(CUBEHOST, CUBEPORT)
 #c.set_debuglevel(2)
-
-print json.dumps(d, sort_keys = False, indent = 2)
 
 c.request("POST", "/1.0/event/put", json.dumps(d, sort_keys=False), {"Content-type": "application/json"})
 
