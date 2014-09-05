@@ -201,9 +201,11 @@ d = []
 for e in events:
   d.append({'type': 'psutil', 'data': e })
   
-print json.dumps(d, sort_keys = False, indent = 2)
+#print json.dumps(d, sort_keys = False, indent = 2)
 
 ####################### SUBMIT EVENTS
+
+sys.stderr.write('INFO Sumbitting...\n')
 
 c = httplib.HTTPConnection(CUBEHOST, CUBEPORT)
 #c.set_debuglevel(2)
@@ -217,5 +219,6 @@ sys.stderr.write(r.read() + '\n')
 
 c.close()
 
+sys.stderr.write('INFO Done\n')
 
 
