@@ -14,6 +14,11 @@
         border-collapse: collapse;
       }
       
+      .pointer 
+      { 
+        cursor: pointer; 
+      }
+      
     </style> 
   </head>
   
@@ -143,6 +148,10 @@
           .append('tr')
           .attr('id', function(d) {
             return d.key;
+          })
+          .attr('class', 'pointer')
+          .on('click', function(d) {
+            window.location = '/heatmap.html?type=' + d.key;
           });
           
         tr

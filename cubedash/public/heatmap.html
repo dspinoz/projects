@@ -46,19 +46,26 @@
       <div class='row'>
         <div class='span12'>
           
-          <button type="button" class="btn btn-default btn-lg" onclick="render()">
-            <span class="glyphicon glyphicon-repeat"></span> Update
-          </button>
+          <div class="page-header">
+            <h1 id="heading"></h1>
+          </div>
           
           <div id='heatmap'>
           </div>
+          
+          <button type="button" class="btn btn-default btn-lg" onclick="render()">
+            <span class="glyphicon glyphicon-repeat"></span> Update
+          </button>
           
         </div>
       </div>
     </div>
     
     <script type='text/javascript'>
-      
+      function get(name){
+        if(name=(new RegExp('[?&]'+encodeURIComponent(name)+'=([^&]*)')).exec(location.search))
+          return decodeURIComponent(name[1]);
+      }
       function dayNum(t) {
         var fmt = d3.time.format('%w');
         return fmt(t);
@@ -68,6 +75,7 @@
         var fmt = d3.time.format('%H');
         return fmt(t);
       }
+      
       function hr12(t) {
         var fmt = d3.time.format('%I%p');
         return fmt(t);
@@ -90,7 +98,12 @@
          
       
       var startTime = new Date(); //testing update
-        
+      var eventType = get('type'); //'cube_request';
+      
+      if (!eventType)
+      {
+        eventType = 'cube_request';
+      } 
         
       var margin = { top: 50, right: 0, bottom: 100, left: 80 },
           width = 960 - margin.left - margin.right,
@@ -110,8 +123,10 @@
         
         
       function render() {
+        
+        d3.select('#heading').text(eventType);
 
-        d3.json('/metric?expression=sum(cube_request)&step=36e5&limit=168'+
+        d3.json('/metric?expression=sum('+eventType+')&step=36e5&limit=168'+
                 (startTime ? '&stop=' +d3.time.format.iso(startTime) : ''), function (data) {
           
           data.forEach(function(d) {
@@ -227,7 +242,7 @@
               });
             
             heatMap.select('title').text(function(d) {
-              return dayUniq(d.time) + ' ' + hr(d.time) + ' (' + d.value + ')'; 
+              return dayUniq(d.time) + ' ' + hr12(d.time) + ' (' + d.value + ')'; 
             });
             
             heatMap.exit().remove();
