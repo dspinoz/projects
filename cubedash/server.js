@@ -30,7 +30,12 @@ app.get('/test', function(req,res) {
 app.get('/types', function(req,res) {
   req.pipe(request('http://' +cubeHost +':'+ cubePort+ '/1.0' + req.originalUrl)).pipe(res);
 });
+
 app.get('/metric', function(req,res) {
+  req.pipe(request('http://' +cubeHost +':'+ cubePort+ '/1.0' + req.originalUrl)).pipe(res);
+});
+
+app.get('/event', function(req,res) {
   req.pipe(request('http://' +cubeHost +':'+ cubePort+ '/1.0' + req.originalUrl)).pipe(res);
 });
 
