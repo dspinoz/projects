@@ -159,13 +159,9 @@ for proc in psutil.process_iter():
       raise SkippedException('skipping ' + proc.name())
     p = {};
     for n,i in proc.as_dict().iteritems():
+      
       if i is None:
         continue
-    
-      # handle os-specific values
-      if os.name == 'posix':
-        if n in ('ionice'): #dict values
-          p[n] = i._asdict()
       
       # consistent across os-es
       if n in ('cpu_times', 'io_counters', 'ext_memory_info', 'uids', 'gids', 'memory_info',  'num_ctx_switches', 'memory_info_ex'): #dict values
