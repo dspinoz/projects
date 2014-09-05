@@ -38,6 +38,7 @@ elif os.name == 'nt':
 
 events.append(system);
 
+sys.stderr.write('INFO 1/7 System\n')
 
 ####################### CPU
 cpus = []
@@ -62,7 +63,9 @@ for c in cpus:
  
 if os.name == 'nt': 
   events.append({'plugin': 'cpu_count', 'value': psutil.cpu_count() })
-  
+ 
+sys.stderr.write('INFO 2/7 CPU\n')
+
 ####################### DISK
 
 i=0
@@ -87,6 +90,7 @@ for name,disk in diskio.iteritems():
   events.append({'plugin': 'disk_io', 'index': i, 'value': {'device': name, 'counters': disk._asdict()}})
   i += 1
   
+sys.stderr.write('INFO 3/7 Disks\n')
   
 ####################### USERS
 i=0
@@ -96,11 +100,14 @@ if os.name == 'nt':
     i += 1
   
 
+sys.stderr.write('INFO 4/7 Users\n')
+
 ####################### MEMORY
 events.append({'plugin': 'swap_memory', 'value': psutil.swap_memory()._asdict() })
 events.append({'plugin': 'virtual_memory', 'value': psutil.virtual_memory()._asdict() })
   
-  
+sys.stderr.write('INFO 5/7 Memory\n')
+
 ####################### NETWORK
 
 i=0
@@ -116,39 +123,68 @@ if os.name == 'nt':
     events.append({'plugin': 'network_connection', 'index': i, 'value': net._asdict() })
     i += 1
   
-  
+sys.stderr.write('INFO 6/7 Network\n')
+
 ####################### PROCESSES
+
+class SkippedException(Exception):
+  def __init__(self, value):
+    self.value = value
+  def __str__(self):
+    return repr(self.value)
 
 for proc in psutil.process_iter():
   try:
+    if os.name == 'nt' and proc.name() == 'ndrvs.exe':
+      # psutil just hangs
+      raise SkippedException('skipping ' + proc.name())
     p = {};
     for n,i in proc.as_dict().iteritems():
-      if n in ('cpu_times', 'io_counters', 'ext_memory_info', 'uids', 'gids', 'memory_info', 'ionice', 'num_ctx_switches'): #dict values
-        if i is not None:
+      if i is None:
+        continue
+    
+      # handle os-specific values
+      if os.name == 'posix':
+        if n in ('ionice'): #dict values
           p[n] = i._asdict()
-      elif n in ('threads', 'memory_maps', 'connections'): #array values
-        if i is not None:
-          if not hasattr(p, n):
-            p[n] = []
-          for t in i:
-            p[n].append(t._asdict())
+      
+      # consistent across os-es
+      if n in ('cpu_times', 'io_counters', 'ext_memory_info', 'uids', 'gids', 'memory_info',  'num_ctx_switches', 'memory_info_ex'): #dict values
+        p[n] = i._asdict()
+      elif n in ('threads', 'memory_maps', 'connections', 'open_files'): #array values
+        if not hasattr(p, n):
+          p[n] = []
+        for t in i:
+          p[n].append(t._asdict())
       else: #others
         p[n] = i
+        
   except psutil.NoSuchProcess:
+    sys.stderr.write('INFO Process gone: ' + str(proc) + '\n')
+  except psutil.AccessDenied:
+    #sys.stderr.write('INFO Access denied on process: ' + str(proc) + '\n')
     pass
+  except SkippedException:
+    sys.stderr.write('INFO Skipped process: ' + str(proc) + '\n')
+  except Exception as e:
+    sys.stderr.write('FATAL on processing: ' + str(proc) + '\n')
+    sys.stderr.write(str(e))
+    sys.stderr.write('\n')
+    sys.exit(1)
   else:
     events.append({'plugin': 'process', 'value': p })
-  
+
+sys.stderr.write('INFO 7/7 Processes\n')
  
 ####################### PRINT
   
-print json.dumps(events, sort_keys = False, indent = 2)
-
-####################### SUBMIT EVENTS
-
 d = []
 for e in events:
   d.append({'type': 'psutil', 'data': e })
+  
+print json.dumps(d, sort_keys = False, indent = 2)
+
+####################### SUBMIT EVENTS
 
 c = httplib.HTTPConnection(CUBEHOST, CUBEPORT)
 #c.set_debuglevel(2)
@@ -156,9 +192,9 @@ c = httplib.HTTPConnection(CUBEHOST, CUBEPORT)
 c.request("POST", "/1.0/event/put", json.dumps(d, sort_keys=False), {"Content-type": "application/json"})
 
 r = c.getresponse()
-print r.status, r.reason
 
-print r.read()
+sys.stderr.write(str(r.status) + ': ' + r.reason + '\n')
+sys.stderr.write(r.read() + '\n')
 
 c.close()
 
