@@ -2,6 +2,8 @@
 
 import sys
 import os
+import socket
+import platform
 import psutil
 import json
 import httplib
@@ -17,12 +19,17 @@ system = {
   'plugin': 'system',
   'value': {
     'name': os.name,
-    'platform': sys.platform
+    'hostname': socket.gethostname(),
+    'platform': platform.platform(),
+    'system': sys.platform,
+    'machine': platform.machine(),
+    'cpu': platform.processor(),
+    'system': platform.system(),
+    'version': platform.version()
   }
 }
 
 if os.name == 'posix':
-  
   f = open('/proc/stat', 'r')
   for line in f:
     tok = line.split(" ")
@@ -32,9 +39,21 @@ if os.name == 'posix':
       break
   f.close()
   
-elif os.name == 'nt':
+  linux = platform.linux_distribution()
+  system['value']['dist'] = {}
+  system['value']['dist']['name'] = linux[0]
+  system['value']['dist']['version'] = linux[1]
+  system['value']['dist']['id'] = linux[2]
   
+elif os.name == 'nt':
   system['value']['boot_time'] = psutil.boot_time()
+  
+  win = platform.win32_ver()
+  system['value']['dist'] = {}
+  system['value']['dist']['release'] = win[0]
+  system['value']['dist']['version'] = win[1]
+  system['value']['dist']['csd'] = win[2]
+  system['value']['dist']['ptype'] = win[3]
 
 events.append(system);
 
