@@ -46,12 +46,12 @@
       <div class='row'>
         <div class='span12'>
           
-          <div id='heatmap'>
-          </div>
-                
           <button type="button" class="btn btn-default btn-lg" onclick="render()">
             <span class="glyphicon glyphicon-repeat"></span> Update
           </button>
+          
+          <div id='heatmap'>
+          </div>
           
         </div>
       </div>
@@ -59,7 +59,40 @@
     
     <script type='text/javascript'>
       
-      var margin = { top: 50, right: 0, bottom: 100, left: 30 },
+      function dayNum(t) {
+        var fmt = d3.time.format('%w');
+        return fmt(t);
+      }
+      
+      function hr(t) {
+        var fmt = d3.time.format('%H');
+        return fmt(t);
+      }
+      function hr12(t) {
+        var fmt = d3.time.format('%I%p');
+        return fmt(t);
+      }
+      
+      function dayUniq(t) {
+        var fmt = d3.time.format('%a %d %b');
+        return fmt(t);
+      }
+      
+      function dayName(t) {
+        var fmt = d3.time.format('%a');
+        return fmt(t);
+      }
+      
+      function simpleTime(t) {
+        var fmt = d3.time.format('%a %d %b %H %p');
+        return fmt(t);
+      }
+         
+      
+      var startTime = new Date(); //testing update
+        
+        
+      var margin = { top: 50, right: 0, bottom: 100, left: 80 },
           width = 960 - margin.left - margin.right,
           height = 430 - margin.top - margin.bottom,
           gridSize = Math.floor(width / 24),
@@ -68,81 +101,68 @@
           colors = ["#ffffd9","#edf8b1","#c7e9b4","#7fcdbb","#41b6c4","#1d91c0","#225ea8","#253494","#081d58"], // alternatively colorbrewer.YlGnBu[9]
           times = d3.map(); //populated on first use
 
-
-      var dayNumFormat = d3.time.format('%w');
-      var dayFormat = d3.time.format('%a');
-      var hrFormat = d3.time.format('%I%p');
-      var hourFormat = d3.time.format('%H');
-      var titleFormat = d3.time.format('%A %d at %I%p');
-
-
+        
       var svg = d3.select("#heatmap").append("svg")
         .attr("width", width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
         .append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
         
-          
-      //var startTime = null;
-      var startTime = new Date(); //testing update
-      //startTime.setHours(startTime.getHours() - 72);
         
-
       function render() {
 
         d3.json('/metric?expression=sum(cube_request)&step=36e5&limit=168'+
                 (startTime ? '&stop=' +d3.time.format.iso(startTime) : ''), function (data) {
           
-          console.log(data[0]);
-          
-          var days = d3.map(), //changes as data changes
-              daysLeft = 6,
-              hoursLeft = 23;
-          
           data.forEach(function(d) {
             d.time = d3.time.format.iso.parse(d.time);
-            d.day = +dayNumFormat(d.time);
-            d.hour = +hourFormat(d.time);
             
-            if (!days.has(dayFormat(d.time)))
+            if (!times.has(hr12(d.time)))
             {
-              days.set(dayFormat(d.time), (daysLeft) - days.size());
-            }
-            
-            if (!times.has(hrFormat(d.time)))
-            {
-              times.set(hrFormat(d.time), +hourFormat(d.time)); //in time order
-              //(hoursLeft) - times.size()); //from data
+              //maintain indexes of times for lookup when plotting rect.hour
+              times.set(hr12(d.time), +hr(d.time)); //in time order
             }
           });
           
+          // categorise the data by days and hours
           
-          //how long from now until the end of the day?
-          var left = 24 - hourFormat(data[0].time);
+          var days = d3.nest()
+            .key(function(d) {
+              return dayUniq(d.time);
+            })
+            .key(function(d) {
+              return hr(d.time);
+            })
+            .entries(data);
           
-          // remove times that are in the future
-          for(var i =0; i < left; i++)
+          // trim to last 7 days only
+          while (days.length > 7)
           {
-            var rem = data.splice(0,1);
+            days.splice(0,1);
           }
           
+          // indexes help map the times to rect.hour
+        var dayIndexes = d3.map();
           
         var dayLabels = svg.selectAll("text.dayLabel")
-          .data(days.keys().reverse());
+          .data(days);
           
         dayLabels
-          .text(function(d) {
-            return d;
+          .text(function(d,i) {
+            dayIndexes.set(d.key, i);
+            return d.key;
           });
           
         dayLabels
           .exit()
             .remove();
           
-          
         dayLabels
           .enter().append("text")
-            .text(function (d) { return d; })
+            .text(function (d,i) { 
+              dayIndexes.set(d.key, i); 
+              return d.key; 
+            })
             .attr("x", 0)
             .attr("y", function (d, i) { return i * gridSize; })
             .style("text-anchor", "end")
@@ -155,68 +175,63 @@
               
               return d+ " dayLabel mono axis";
             });
-
-
+          
+            
       var timeLabels = svg.selectAll(".timeLabel")
-        .data(times.keys().reverse());
+        .data(times.entries());
         
       timeLabels
-        .text(function(d) { return d; });
+        .text(function(d) { return d.key; });
         
       timeLabels
         .enter().append("text")
-          .text(function(d) { return d; })
-          .attr("x", function(d, i) { return times.get(d) * gridSize; })
+          .text(function(d) { return d.key; })
+          .attr("x", function(d, i) { return times.get(d.key) * gridSize; })
           .attr("y", 0)
           .style("text-anchor", "middle")
           .attr("transform", "translate(" + gridSize / 2 + ", -6)")
           .attr("class", function(d, i) { return ((i >= 7 && i <= 16) ? "timeLabel mono axis axis-worktime" : "timeLabel mono axis"); });
 
 
-
-          
-        
           var colorScale = d3.scale.quantile()
             .domain([0, buckets - 1, d3.max(data, function (d) { return d.value; })])
             .range(colors);
           
+          var indexed = [];
+          days.forEach(function(day) {
+            day.values.forEach(function(hr) {
+              indexed.push(hr.values[0]);
+            });
+          });
           
           var heatMap = svg.selectAll("rect.hour")
-            .data(data);
+            .data(indexed);
             
           heatMap
             .enter().append("rect")
-              .attr("x", function(d,i) { return times.get(hrFormat(d.time)) * gridSize; })
-              .attr("y", function(d,i) { return days.get(dayFormat(d.time)) * gridSize; })
+              .attr("x", function(d) { return times.get(hr12(d.time)) * gridSize; })
+              .attr("y", function(d) { return dayIndexes.get(dayUniq(d.time)) * gridSize; })
               .attr("rx", 4)
               .attr("ry", 4)
               .attr("class", function(d) {
-                return dayFormat(d.time) + " hour bordered";
+                return "hour bordered";
               })
               .attr("width", gridSize)
               .attr("height", gridSize)
               .style("fill", colors[0])
-            .append("title");
+              .append("title");
               
             heatMap.transition().duration(1000)
-              .style("fill", function(d,i) {
-                if (i==0)
-                {
-                  return 'red';
-                }
+              .style("fill", function(d) {
                 return colorScale(d.value); 
               });
             
             heatMap.select('title').text(function(d) {
-              return titleFormat(d.time) + ' (' + d.value + ')'; 
+              return dayUniq(d.time) + ' ' + hr(d.time) + ' (' + d.value + ')'; 
             });
-              
             
             heatMap.exit().remove();
-  
-            
-            console.log(colorScale.quantiles());
-            
+          
             var legend = svg.selectAll(".legend")
               .data([0].concat(colorScale.quantiles()), function(d) { return d; });
               
@@ -246,18 +261,16 @@
               .attr("x", function(d, i) { return legendElementWidth * i; })
               .attr("y", height + gridSize);
             
-          
+            
         });
-        
         
         if (startTime)
         {
-          startTime.setHours(startTime.getHours() + 9);
+          startTime.setHours(startTime.getHours() + 1);
         }
       }
       
       render();
-      
       
     </script>
   </body>
