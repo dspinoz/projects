@@ -71,6 +71,10 @@ app.get('/d3.js', function(req, res) {
   res.sendfile('bower_components/d3/d3.js')
 });
 
+app.get('/d3-tip.js', function(req, res) {
+  res.sendfile('bower_components/d3-tip/index.js')
+});
+
 app.get('/cubism.js', function (req,res) {
   res.sendfile('bower_components/cubism/cubism.v1.js');
 });
