@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang='en'>
+  <head>
+    <meta charset='utf-8'>
+    <title>Cubedash</title>
+    <script src="/d3.js"></script>
+    <script src="/d3-tip.js"></script>
+    <script src="/queue.js"></script>
+    <script src='/jquery.js' type='text/javascript'></script>
+    <script src='/bootstrap.js' type='text/javascript'></script>
+    <link href='/bootstrap.css' rel='stylesheet' type='text/css'>
+    <style type="text/css">
+      
+    </style> 
+  </head>
+  
+  <body>
+    
+    <!-- Static navbar -->
+    <div class="navbar navbar-default navbar-static-top" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">Cubedash</a>
+        </div>
+        <div class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/index.html">Event Types</a></li>
+            <li><a href="/heatmap.html">Heat Map</a></li>
+            <li class=""><a href="/barchart.html">Bar Chart</a></li>
+            <li class="active"><a href="/arcs.html">Arcs</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    
+    
+    <div class='container' style='font: 12px sans-serif;'>
+      <div class='row'>
+        <div class='span12'>
+          
+          <div id="arc">
+          </div>
+
+          <button type="button" class="btn btn-default btn-lg" onclick="updateData()">
+            <span class="glyphicon glyphicon-repeat"></span> Update
+          </button>
+
+        </div>
+      </div>
+    </div>
+    
+    <script type='text/javascript'>
+
+    var margin = {top: 20, right: 20, bottom: 100, left: 40},
+        width = 300 - margin.left - margin.right,
+        height = 350 - margin.top - margin.bottom,
+        outer = 100,
+        arcGap = 2,
+        arcWidth = 10;
+
+    
+    
+    var scale = d3.scale.linear()
+      .domain([0, 100])
+      .range([-90 * (Math.PI/180), 90 * (Math.PI/180)]); //deg to rad
+
+    var data = [[84], [90], [13], [64]];
+
+    var svg = d3.select("#arc").append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+        .attr("transform", "translate(" + width/2 + "," + height/2 + ")");
+
+    var arc = d3.svg.arc() 
+      .innerRadius(function(d,i) {
+        return outer - ((i+1) * arcWidth);
+      }) 
+      .outerRadius(function(d,i) {
+        return outer - (i * arcWidth) - arcGap;
+      }) 
+      .startAngle(function(d){
+        return scale(0);
+      }) 
+      .endAngle(function(d){
+        return scale(d);
+      });
+
+      var meter = svg.append("g")
+        .attr("class", "meter");
+
+      meter.selectAll("path")
+        .data(data)
+        .enter()
+        .append("path")
+          .attr("d", arc)
+          .style("fill", 'steelblue');
+
+      var all = '';
+      data.forEach(function(d) {
+        all += d + ' ';
+      });
+          
+      var text = meter.append("text")
+          .attr("text-anchor", "middle")
+          .attr("dy", ".35em")
+          .text(all);
+        
+    </script>
+  </body>
+</html>
