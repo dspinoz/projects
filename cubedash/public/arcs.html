@@ -96,12 +96,14 @@
       
       function updateData() {
           
-        d3.json("/event?expression=psutil(index,value.percent).eq(plugin,%27cpu%27)&limit=1", function(json) {
+        d3.json("/event?expression=collectd(load)&limit=1", function(json) {
           
           var cpus = [];
           
           json.forEach(function(d) {
-            cpus.push(d.data.value.percent);
+            cpus.push(d.data.load.shortterm/1 * 100);
+            cpus.push(d.data.load.midterm/1 * 100);
+            cpus.push(d.data.load.longterm/1 * 100);
           });
           
           console.log(cpus);
