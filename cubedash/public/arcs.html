@@ -74,6 +74,10 @@ text {
           
           <div id="arc">
           </div>
+          
+          
+          <div id="txt">
+          </div>
 
           <button type="button" class="btn btn-default btn-lg" onclick="updateData()">
             <span class="glyphicon glyphicon-repeat"></span> Update
@@ -120,7 +124,11 @@ var background = meter.append("path")
     .datum({endAngle: scale(1)})
     .style("fill", "#eee")
     .attr("d", arc);
+    
+    
+var foreground = meter.append("g");
 
+/*
 // Add the foreground arc in orange, currently showing 0%.
 
 var longArc = svg.append("path")
@@ -154,17 +162,79 @@ var shortText = meter.append("text")
     .attr("dy", "-1.8em")
     .text('Load');
     
+    */
 
 // Every so often, start a transition to a new random angle. Use transition.call
 // (identical to selection.call) so that we can encapsulate the logic for
 // tweening the arc in a separate function below.
 
+var txt = d3.select("#txt");
+
 function updateData()
 {
   d3.json("/event?expression=collectd(load)&limit=1", function(json) {
       
-      console.log(json[0].data.load.shortterm);
+    var data = [];
+    
+    data.push({time: json[0].time, name: 'short', value: json[0].data.load.shortterm});
+    data.push({time: json[0].time, name: 'med', value: json[0].data.load.midterm});
+    data.push({time: json[0].time, name: 'long', value: json[0].data.load.longterm});
+    
+    console.log(data);
+    
+    var p = txt.selectAll('p')
+      .data(data);
       
+    p.text(function(d) {
+      return 'U ' + JSON.stringify(d);
+    });
+    
+    p.enter()
+      .append('p')
+      .attr('id', function(d) {
+        return d.name;
+      })
+      .text(function(d) {
+        return JSON.stringify(d);
+      });
+      
+    p.exit()
+      .text(function(d) {
+        return 'E ' + JSON.stringify(d);
+      })
+      .transition()
+      .delay(2000)
+      .remove();
+        
+    
+    
+    var path = foreground.selectAll("path")
+      .data(data);
+      
+      /*
+    path
+      .each(function(d) {
+        d3.select(this)
+          .transition()
+          .duration(750)
+            .call(arcTween, scale(d.value));
+      });
+        */
+      
+    path.enter()
+      .append('path')
+      .attr('class', function(d) {
+        return d.name;
+      })
+      .datum(function(d) {
+        return {endAngle: scale(d.value / 1)};
+      })
+      .attr("d", arc);
+      
+    path.exit().remove();
+    
+      
+      /*
     shortArc.transition()
         .duration(750)
         .call(arcTween, scale(json[0].data.load.shortterm));
@@ -188,7 +258,7 @@ function updateData()
     longText.transition()
       .duration(750)
       .text(json[0].data.load.longterm);
-    
+    */
     
   });
 }
