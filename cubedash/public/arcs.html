@@ -76,6 +76,13 @@ text {
           </div>
           
           
+<form>
+  <label><input type="radio" name="dataset" value="apples" checked> Apples</label>
+  <label><input type="radio" name="dataset" value="oranges"> Oranges</label>
+</form>
+          <div id="pie">
+          </div>
+          
           <div id="txt">
           </div>
 
@@ -91,9 +98,14 @@ text {
       
       //http://bl.ocks.org/mbostock/5100636
       
-      
-var width = 480,
-    height = 250;
+  //http://bl.ocks.org/mbostock/1346410
+  var width = 960,
+    height = 500,
+    radius = Math.min(width, height) / 2;
+    
+
+var color = d3.scale.category20();
+
 
 // control the start/end points for the arc
 // TBD what to do when > 1 ?
@@ -101,87 +113,40 @@ var scale = d3.scale.linear()
   .domain([0, 1]) //max load value
   .range([-90 * (Math.PI/180), 90 * (Math.PI/180)]); //deg to rad
 
-// An arc function with all values bound except the endAngle. So, to compute an
-// SVG path string for a given angle, we pass an object with an endAngle
-// property to the `arc` function, and it will return the corresponding string.
+var pie = d3.layout.pie()
+    .value(function(d) { console.log(d); return d.value; })
+    .startAngle(scale(0))
+    .endAngle(scale(1))
+    .sort(null);
+    
 var arc = d3.svg.arc()
-    .innerRadius(90)
-    .outerRadius(120)
-    .startAngle(scale(0.0));
-
-// Create the SVG container, and apply a transform such that the origin is the
-// center of the canvas. This way, we don't need to position arcs individually.
-var svg = d3.select("#arc").append("svg")
+    .innerRadius(radius - 100)
+    .outerRadius(radius - 20);
+    
+    
+var svg = d3.select("body").append("svg")
     .attr("width", width)
     .attr("height", height)
   .append("g")
-    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")")
-
-var meter = svg.append("g");
-
-// Add the background arc, from 0 to 100% (τ).
-var background = meter.append("path")
-    .datum({endAngle: scale(1)})
-    .style("fill", "#eee")
-    .attr("d", arc);
+    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
     
-    
-var foreground = meter.append("g");
-
-/*
-// Add the foreground arc in orange, currently showing 0%.
-
-var longArc = svg.append("path")
-    .attr('class', 'long')
-    .datum({endAngle: scale(0)})
-    .attr("d", arc);
-    
-var midArc = svg.append("path")
-    .attr('class', 'med')
-    .datum({endAngle: scale(0)})
-    .attr("d", arc);
-    
-var shortArc = svg.append("path")
-    .attr('class', 'short')
-    .datum({endAngle: scale(0)})
-    .attr("d", arc);
-    
-    
-var longText = meter.append("text")
-    .attr("text-anchor", "middle")
-    //.attr("dy", "1.80em")
-    .text('Load');
-    
-var midText = meter.append("text")
-    .attr("text-anchor", "middle")
-    .attr("dy", "-.90em")
-    .text('Load');
-    
-var shortText = meter.append("text")
-    .attr("text-anchor", "middle")
-    .attr("dy", "-1.8em")
-    .text('Load');
-    
-    */
-
-// Every so often, start a transition to a new random angle. Use transition.call
-// (identical to selection.call) so that we can encapsulate the logic for
-// tweening the arc in a separate function below.
-
 var txt = d3.select("#txt");
+    
+    
 
 function updateData()
 {
   d3.json("/event?expression=collectd(load)&limit=1", function(json) {
-      
+
     var data = [];
-    
+
     data.push({time: json[0].time, name: 'short', value: json[0].data.load.shortterm});
     data.push({time: json[0].time, name: 'med', value: json[0].data.load.midterm});
     data.push({time: json[0].time, name: 'long', value: json[0].data.load.longterm});
-    
+
     console.log(data);
     
+    // text display
     var p = txt.selectAll('p')
       .data(data);
       
@@ -206,114 +171,46 @@ function updateData()
       .delay(2000)
       .remove();
         
-    
-    
-    var path = foreground.selectAll("path")
-      .data(data);
-      
-      /*
-    path
-      .each(function(d) {
-        d3.select(this)
-          .transition()
-          .duration(750)
-            .call(arcTween, scale(d.value));
-      });
-        */
-      
-    path.enter()
-      .append('path')
-      .attr('class', function(d) {
-        return d.name;
-      })
-      .datum(function(d) {
-        return {endAngle: scale(d.value / 1)};
-      })
-      .attr("d", arc);
-      
+        
+    var path = svg.datum(data).selectAll("path")
+        .data(pie);
+        
+    path.enter().append("path")
+        .attr("fill", function(d, i) { return color(i); })
+        .attr("d", arc)
+        .each(function(d) { this._current = d; }); // store the initial angles
+        
     path.exit().remove();
     
+    path = path.data(pie); // compute the new angles
+    path.transition().duration(750).attrTween("d", arcTween); // redraw the arcs
+    
+
       
-      /*
-    shortArc.transition()
-        .duration(750)
-        .call(arcTween, scale(json[0].data.load.shortterm));
-        
-    midArc.transition()
-        .duration(750)
-        .call(arcTween, scale(json[0].data.load.midterm));
-        
-    longArc.transition()
-        .duration(750)
-        .call(arcTween, scale(json[0].data.load.longterm));
-        
-    shortText.transition()
-      .duration(750)
-      .text(json[0].data.load.shortterm);
       
-    midText.transition()
-      .duration(750)
-      .text(json[0].data.load.midterm);
-      
-    longText.transition()
-      .duration(750)
-      .text(json[0].data.load.longterm);
-    */
     
   });
 }
+  
+
 updateData();
 
+setInterval(updateData, 10000);
 
-// Creates a tween on the specified transition's "d" attribute, transitioning
-// any selected arcs from their current angle to the specified new angle.
-function arcTween(transition, newAngle) {
 
-  // The function passed to attrTween is invoked for each selected element when
-  // the transition starts, and for each element returns the interpolator to use
-  // over the course of transition. This function is thus responsible for
-  // determining the starting angle of the transition (which is pulled from the
-  // element's bound datum, d.endAngle), and the ending angle (simply the
-  // newAngle argument to the enclosing function).
-  transition.attrTween("d", function(d) {
 
-    // To interpolate between the two angles, we use the default d3.interpolate.
-    // (Internally, this maps to d3.interpolateNumber, since both of the
-    // arguments to d3.interpolate are numbers.) The returned function takes a
-    // single argument t and returns a number between the starting angle and the
-    // ending angle. When t = 0, it returns d.endAngle; when t = 1, it returns
-    // newAngle; and for 0 < t < 1 it returns an angle in-between.
-    var interpolate = d3.interpolate(d.endAngle, newAngle);
-
-    // The return value of the attrTween is also a function: the function that
-    // we want to run for each tick of the transition. Because we used
-    // attrTween("d"), the return value of this last function will be set to the
-    // "d" attribute at every tick. (It's also possible to use transition.tween
-    // to run arbitrary code for every tick, say if you want to set multiple
-    // attributes from a single function.) The argument t ranges from 0, at the
-    // start of the transition, to 1, at the end.
-    return function(t) {
-
-      // Calculate the current arc angle based on the transition time, t. Since
-      // the t for the transition and the t for the interpolate both range from
-      // 0 to 1, we can pass t directly to the interpolator.
-      //
-      // Note that the interpolated angle is written into the element's bound
-      // data object! This is important: it means that if the transition were
-      // interrupted, the data bound to the element would still be consistent
-      // with its appearance. Whenever we start a new arc transition, the
-      // correct starting angle can be inferred from the data.
-      d.endAngle = interpolate(t);
-
-      // Lastly, compute the arc path given the updated data! In effect, this
-      // transition uses data-space interpolation: the data is interpolated
-      // (that is, the end angle) rather than the path string itself.
-      // Interpolating the angles in polar coordinates, rather than the raw path
-      // string, produces valid intermediate arcs during the transition.
-      return arc(d);
-    };
-  });
+// Store the displayed angles in _current.
+// Then, interpolate from _current to the new angles.
+// During the transition, _current is updated in-place by d3.interpolate.
+function arcTween(a) {
+  var i = d3.interpolate(this._current, a);
+  this._current = i(0);
+  return function(t) {
+    return arc(i(t));
+  };
 }
+  
+
     </script>
   </body>
 </html>
