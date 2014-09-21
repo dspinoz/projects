@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang='en'>
+  <head>
+    <meta charset='utf-8'>
+    <title>Cubedash</title>
+    <script src="/d3.js"></script>
+    <script src="/d3-tip.js"></script>
+    <script src="/queue.js"></script>
+    <script src='/jquery.js' type='text/javascript'></script>
+    <script src='/bootstrap.js' type='text/javascript'></script>
+    <link href='/bootstrap.css' rel='stylesheet' type='text/css'>
+    <style type="text/css">
+
+
+
+text {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 24px;
+  font-weight: bold;
+}
+    </style> 
+  </head>
+  
+  <body>
+    
+    <!-- Static navbar -->
+    <div class="navbar navbar-default navbar-static-top" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">Cubedash</a>
+        </div>
+        <div class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/index.html">Event Types</a></li>
+            <li><a href="/heatmap.html">Heat Map</a></li>
+            <li><a href="/barchart.html">Bar Chart</a></li>
+            <li class="active"><a href="/arcs2.html">Arcs</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    
+    
+    <div class='container' style='font: 12px sans-serif;'>
+      <div class='row'>
+        <div class='span12'>
+          
+          <div id="txt">
+          </div>
+
+
+          <div id="arc2">
+          </div>
+          <div id="arc">
+          </div>
+          
+          <button type="button" class="btn btn-default btn-lg" onclick="updateData()">
+            <span class="glyphicon glyphicon-repeat"></span> Update
+          </button>
+          
+          
+
+        </div>
+      </div>
+    </div>
+    
+    <script type='text/javascript'>
+      
+      //http://bl.ocks.org/mbostock/5100636
+      
+  //http://bl.ocks.org/mbostock/1346410
+var width = 960,
+  height = 500,
+  radius = Math.min(width, height) / 2,
+  cores = 1;
+    
+
+var color = d3.scale.category20();
+
+
+// control the start/end points for the arc
+// TBD what to do when > 1 ?
+var scale = d3.scale.linear()
+  .domain([0, cores]) //max load value
+  .range([- Math.PI/2, Math.PI/2]); //radians
+    
+var arc = d3.svg.arc()
+    .outerRadius(radius - 20);
+    
+var svg = d3.select("#arc").append("svg")
+    .attr("width", width)
+    .attr("height", height)
+  .append("g")
+    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+    
+svg.append("path")
+  .attr("id", "max")
+  .datum({startAngle: scale(0), endAngle: scale(cores), innerRadius:radius-100})
+  .style("fill", "eee")
+  .attr("d", arc);
+    
+svg.append("path")
+  .attr("id", "long")
+  .datum({startAngle: scale(0), endAngle: scale(0), innerRadius: radius-80})
+  .style("fill", "ddd")
+  .attr("d", arc)
+  .each(function(d) { console.log(d); this._current = d; });
+  
+svg.append("path")
+  .attr("id", "mid")
+  .datum({startAngle: scale(0), endAngle: scale(0), innerRadius: radius-60})
+  .style("fill", "ccc")
+  .attr("d", arc)
+  .each(function(d) { console.log(d); this._current = d; });
+  
+svg.append("path")
+  .attr("id", "short")
+  .datum({startAngle: scale(0), endAngle: scale(0), innerRadius: radius-40})
+  .style("fill", "bbb")
+  .attr("d", arc)
+  .each(function(d) { console.log(d); this._current = d; });
+    
+   
+var host = svg.append("text")
+    .attr("text-anchor", "middle")
+    .attr("dy", "-.5em")
+    .text('');
+var curr = svg.append("text")
+    .attr("text-anchor", "middle")
+    .attr("dy", "-2em")
+    .text('');
+  
+
+    
+    
+    
+var txt = d3.select("#txt");
+    
+    
+    
+    
+    
+    
+
+function updateData()
+{
+  d3.json("/event?expression=collectd(load,host)&limit=1", function(json) {
+
+    var data = [];
+
+    data.push({time: json[0].time, name: 'short', value: json[0].data.load.shortterm});
+    data.push({time: json[0].time, name: 'med', value: json[0].data.load.midterm});
+    data.push({time: json[0].time, name: 'long', value: json[0].data.load.longterm});
+
+    console.log(data);
+    
+    // text display
+    var p = txt.selectAll('p')
+      .data(data);
+      
+    p.text(function(d) {
+      return 'U ' + JSON.stringify(d);
+    });
+    
+    p.enter()
+      .append('p')
+      .attr('id', function(d) {
+        return d.name;
+      })
+      .text(function(d) {
+        return JSON.stringify(d);
+      });
+      
+    p.exit()
+      .text(function(d) {
+        return 'E ' + JSON.stringify(d);
+      })
+      .transition()
+      .delay(2000)
+      .remove();
+        
+        
+    console.log("short" , json[0].data.load.shortterm/cores, scale(json[0].data.load.shortterm/cores), Math.min(json[0].data.load.shortterm/cores,1.0));
+    
+    curr.text(json[0].data.load.shortterm);
+    host.text(json[0].data.host);
+    
+    var sp = svg.select("path#short")
+      .datum({startAngle: scale(0), 
+              // don't overdraw arc when over 100%
+              endAngle: scale(Math.min(json[0].data.load.shortterm/cores, 1.0)), 
+              innerRadius: radius-40,
+              load: json[0].data.load.shortterm,
+              perc: json[0].data.load.shortterm/cores});
+    
+    sp.transition()
+      .duration(750)
+      .attrTween("d", arcTween);
+      
+    sp.transition()
+      .delay(750)
+      .style('fill', function(d) {
+        if (d.perc > 1.0)
+        {
+          return 'red';
+        }
+        return 'bbb';
+      });
+        
+        
+        
+        
+        
+    var mp = svg.select("path#mid")
+      .datum({startAngle: scale(0), 
+              // don't overdraw arc when over 100%
+              endAngle: scale(Math.min(json[0].data.load.midterm/cores, 1.0)), 
+              innerRadius: radius-60,
+              load: json[0].data.load.midterm,
+              perc: json[0].data.load.midterm/cores});
+    
+    mp.transition()
+      .duration(750)
+      .attrTween("d", arcTween);
+      
+    mp.transition()
+      .delay(750)
+      .style('fill', function(d) {
+        if (d.perc > 1.0)
+        {
+          return 'red';
+        }
+        return 'ccc';
+      });
+        
+        
+        
+       
+    var lp = svg.select("path#long")
+      .datum({startAngle: scale(0), 
+              // don't overdraw arc when over 100%
+              endAngle: scale(Math.min(json[0].data.load.longterm/cores, 1.0)), 
+              innerRadius: radius-80,
+              load: json[0].data.load.longterm,
+              perc: json[0].data.load.longterm/cores});
+    
+    lp.transition()
+      .duration(750)
+      .attrTween("d", arcTween);
+      
+    lp.transition()
+      .delay(750)
+      .style('fill', function(d) {
+        if (d.perc > 1.0)
+        {
+          return 'red';
+        }
+        return 'ddd';
+      });
+        
+        
+        
+        /*
+        
+    var path = svg.datum(data).selectAll("path")
+        .data(pie);
+        
+    path.enter().append("path")
+        .attr("fill", function(d, i) { return color(i); })
+        .attr("d", arc)
+        .each(function(d) { this._current = d; }); // store the initial angles
+        
+    path.exit().remove();
+    
+    path = path.data(pie); // compute the new angles
+    path.transition().duration(750).attrTween("d", arcTween); // redraw the arcs
+    
+*/
+
+    
+  });
+}
+  
+
+updateData();
+
+setInterval(updateData, 10000);
+
+
+
+// Store the displayed angles in _current.
+// Then, interpolate from _current to the new angles.
+// During the transition, _current is updated in-place by d3.interpolate.
+function arcTween(a) {
+  var i = d3.interpolate(this._current, a);
+  this._current = i(0);
+  return function(t) {
+    return arc(i(t));
+  };
+}
+  
+
+    </script>
+  </body>
+</html>
