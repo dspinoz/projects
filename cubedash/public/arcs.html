@@ -11,27 +11,6 @@
     <link href='/bootstrap.css' rel='stylesheet' type='text/css'>
     <style type="text/css">
 
-path.long {
-  fill-rule: evenodd;
-  fill: red;
-  fill-opacity: .75;
-  stroke: #666;
-  stroke-width: 1.5px;
-}
-path.med {
-  fill-rule: evenodd;
-  fill: orange;
-  fill-opacity: .5;
-  stroke: #666;
-  stroke-width: 1.5px;
-}
-path.short {
-  fill-rule: evenodd;
-  fill: yellow;
-  fill-opacity: .25;
-  stroke: #666;
-  stroke-width: 1.5px;
-}
 
 
 text {
@@ -72,23 +51,21 @@ text {
       <div class='row'>
         <div class='span12'>
           
-          <div id="arc">
-          </div>
-          
-          
-<form>
-  <label><input type="radio" name="dataset" value="apples" checked> Apples</label>
-  <label><input type="radio" name="dataset" value="oranges"> Oranges</label>
-</form>
-          <div id="pie">
-          </div>
-          
           <div id="txt">
           </div>
 
+          <div id="doughnut">
+          </div>
+
+          <div id="rainbow">
+          </div>
+          
+          
           <button type="button" class="btn btn-default btn-lg" onclick="updateData()">
             <span class="glyphicon glyphicon-repeat"></span> Update
           </button>
+          
+          
 
         </div>
       </div>
@@ -99,9 +76,10 @@ text {
       //http://bl.ocks.org/mbostock/5100636
       
   //http://bl.ocks.org/mbostock/1346410
-  var width = 960,
-    height = 500,
-    radius = Math.min(width, height) / 2;
+var width = 960,
+  height = 500,
+  radius = Math.min(width, height) / 2,
+  cores = 1;
     
 
 var color = d3.scale.category20();
@@ -110,33 +88,89 @@ var color = d3.scale.category20();
 // control the start/end points for the arc
 // TBD what to do when > 1 ?
 var scale = d3.scale.linear()
-  .domain([0, 1]) //max load value
-  .range([-90 * (Math.PI/180), 90 * (Math.PI/180)]); //deg to rad
-
+  .domain([0, cores]) //max load value
+  .range([- Math.PI/2, Math.PI/2]); //radians
+    
+var arc = d3.svg.arc()
+    .outerRadius(radius - 20);
+    
+var arcPie = d3.svg.arc()
+    .innerRadius(radius - 100)
+    .outerRadius(radius - 20);
+    
 var pie = d3.layout.pie()
-    .value(function(d) { console.log(d); return d.value; })
+    .value(function(d) { return d.value; })
     .startAngle(scale(0))
     .endAngle(scale(1))
     .sort(null);
     
-var arc = d3.svg.arc()
-    .innerRadius(radius - 100)
-    .outerRadius(radius - 20);
-    
-    
-var svg = d3.select("body").append("svg")
+var svg = d3.select("#rainbow").append("svg")
     .attr("width", width)
     .attr("height", height)
   .append("g")
     .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
     
+    
+var doughnut = d3.select("#doughnut").append("svg")
+    .attr("width", width)
+    .attr("height", height)
+  .append("g")
+    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+    
+    
+var bg = svg.append("path")
+  .attr("id", "max")
+  .datum({startAngle: scale(0), endAngle: scale(cores), innerRadius:radius-100})
+  .style("fill", "eee")
+  .attr("d", arc);
+    
+svg.append("path")
+  .attr("id", "long")
+  .datum({startAngle: scale(0), endAngle: scale(0), innerRadius: radius-80})
+  .style("fill", "ddd")
+  .attr("d", arc)
+  .each(function(d) { console.log(d); this._current = d; });
+  
+svg.append("path")
+  .attr("id", "mid")
+  .datum({startAngle: scale(0), endAngle: scale(0), innerRadius: radius-60})
+  .style("fill", "ccc")
+  .attr("d", arc)
+  .each(function(d) { console.log(d); this._current = d; });
+  
+svg.append("path")
+  .attr("id", "short")
+  .datum({startAngle: scale(0), endAngle: scale(0), innerRadius: radius-40})
+  .style("fill", "bbb")
+  .attr("d", arc)
+  .each(function(d) { console.log(d); this._current = d; });
+    
+   
+var host = svg.append("text")
+    .attr("text-anchor", "middle")
+    .attr("dy", "-.5em")
+    .text('');
+var curr = svg.append("text")
+    .attr("text-anchor", "middle")
+    .attr("dy", "-2em")
+    .text('');
+  
+
+    
+    
+    
 var txt = d3.select("#txt");
+    
+    
+    
+    
     
     
 
 function updateData()
 {
-  d3.json("/event?expression=collectd(load)&limit=1", function(json) {
+  d3.json("/event?expression=collectd(load,host)&limit=1", function(json) {
+  //d3.json("/usage.json", function(json) {
 
     var data = [];
 
@@ -172,6 +206,104 @@ function updateData()
       .remove();
         
         
+    console.log("short" , json[0].data.load.shortterm/cores, scale(json[0].data.load.shortterm/cores), Math.min(json[0].data.load.shortterm/cores,1.0));
+    
+    curr.text(json[0].data.load.shortterm);
+    host.text(json[0].data.host);
+    
+    var sp = svg.select("path#short")
+      .datum({startAngle: scale(0), 
+              // don't overdraw arc when over 100%
+              endAngle: scale(Math.min(json[0].data.load.shortterm/cores, 1.0)), 
+              innerRadius: radius-40,
+              load: json[0].data.load.shortterm,
+              perc: json[0].data.load.shortterm/cores});
+    
+    sp.transition()
+      .duration(750)
+      .attrTween("d", arcTween);
+      
+    sp.transition()
+      .delay(750)
+      .style('fill', function(d) {
+        if (d.perc > 1.0)
+        {
+          return '#b00';
+        }
+        return '#bbb';
+      });
+        
+        
+        
+        
+        
+    var mp = svg.select("path#mid")
+      .datum({startAngle: scale(0), 
+              // don't overdraw arc when over 100%
+              endAngle: scale(Math.min(json[0].data.load.midterm/cores, 1.0)), 
+              innerRadius: radius-60,
+              load: json[0].data.load.midterm,
+              perc: json[0].data.load.midterm/cores});
+    
+    mp.transition()
+      .duration(750)
+      .attrTween("d", arcTween);
+      
+    mp.transition()
+      .delay(750)
+      .style('fill', function(d) {
+        if (d.perc > 1.0)
+        {
+          return '#c00';
+        }
+        return '#ccc';
+      });
+        
+        
+        
+       
+    var lp = svg.select("path#long")
+      .datum({startAngle: scale(0), 
+              // don't overdraw arc when over 100%
+              endAngle: scale(Math.min(json[0].data.load.longterm/cores, 1.0)), 
+              innerRadius: radius-80,
+              load: json[0].data.load.longterm,
+              perc: json[0].data.load.longterm/cores});
+    
+    lp.transition()
+      .duration(750)
+      .attrTween("d", arcTween);
+      
+    lp.transition()
+      .delay(750)
+      .style('fill', function(d) {
+        if (d.perc > 1.0)
+        {
+          return '#d00';
+        }
+        return '#ddd';
+      });
+        
+        
+      if (data[0].value > cores &&
+          data[1].value > cores && 
+          data[2].value > cores)
+      {
+        bg.transition()
+          .delay(750)
+          .style('fill', '#e00');
+      }
+      else
+      {
+        bg.transition()
+          .delay(750)
+          .style('fill', '#eee');
+      }
+        
+        
+        
+        /*
+        
     var path = svg.datum(data).selectAll("path")
         .data(pie);
         
@@ -185,9 +317,25 @@ function updateData()
     path = path.data(pie); // compute the new angles
     path.transition().duration(750).attrTween("d", arcTween); // redraw the arcs
     
+*/
 
-      
-      
+
+
+    var path = doughnut.datum(data).selectAll("path")
+        .data(pie);
+        
+    path.enter().append("path")
+        .attr("fill", function(d, i) { return color(i); })
+        .attr("d", arcPie)
+        .each(function(d) { this._current = d; }); // store the initial angles
+        
+    path.exit().remove();
+    
+    path = path.data(pie); // compute the new angles
+    path.transition().duration(750).attrTween("d", arcPieTween); // redraw the arcs
+    
+
+
     
   });
 }
@@ -209,7 +357,17 @@ function arcTween(a) {
     return arc(i(t));
   };
 }
-  
+ 
+// Store the displayed angles in _current.
+// Then, interpolate from _current to the new angles.
+// During the transition, _current is updated in-place by d3.interpolate.
+function arcPieTween(a) {
+  var i = d3.interpolate(this._current, a);
+  this._current = i(0);
+  return function(t) {
+    return arcPie(i(t));
+  };
+} 
 
     </script>
   </body>
