@@ -169,14 +169,14 @@ var txt = d3.select("#txt");
 
 function updateData()
 {
-  d3.json("/event?expression=collectd(load,host)&limit=1", function(json) {
+  d3.json("/event?expression=loadavg(host,low,mid,high)&limit=1", function(json) {
   //d3.json("/usage.json", function(json) {
 
     var data = [];
 
-    data.push({time: json[0].time, name: 'short', value: json[0].data.load.shortterm});
-    data.push({time: json[0].time, name: 'med', value: json[0].data.load.midterm});
-    data.push({time: json[0].time, name: 'long', value: json[0].data.load.longterm});
+    data.push({time: json[0].time, name: 'short', value: json[0].data.low});
+    data.push({time: json[0].time, name: 'med', value: json[0].data.mid});
+    data.push({time: json[0].time, name: 'long', value: json[0].data.high});
 
     console.log(data);
     
@@ -206,18 +206,18 @@ function updateData()
       .remove();
         
         
-    console.log("short" , json[0].data.load.shortterm/cores, scale(json[0].data.load.shortterm/cores), Math.min(json[0].data.load.shortterm/cores,1.0));
+    console.log("short" , json[0].data.low/cores, scale(json[0].data.low/cores), Math.min(json[0].data.low/cores,1.0));
     
-    curr.text(json[0].data.load.shortterm);
+    curr.text(json[0].data.low);
     host.text(json[0].data.host);
     
     var sp = svg.select("path#short")
       .datum({startAngle: scale(0), 
               // don't overdraw arc when over 100%
-              endAngle: scale(Math.min(json[0].data.load.shortterm/cores, 1.0)), 
+              endAngle: scale(Math.min(json[0].data.low/cores, 1.0)), 
               innerRadius: radius-40,
-              load: json[0].data.load.shortterm,
-              perc: json[0].data.load.shortterm/cores});
+              load: json[0].data.low,
+              perc: json[0].data.low/cores});
     
     sp.transition()
       .duration(750)
@@ -240,10 +240,10 @@ function updateData()
     var mp = svg.select("path#mid")
       .datum({startAngle: scale(0), 
               // don't overdraw arc when over 100%
-              endAngle: scale(Math.min(json[0].data.load.midterm/cores, 1.0)), 
+              endAngle: scale(Math.min(json[0].data.mid/cores, 1.0)), 
               innerRadius: radius-60,
-              load: json[0].data.load.midterm,
-              perc: json[0].data.load.midterm/cores});
+              load: json[0].data.mid,
+              perc: json[0].data.mid/cores});
     
     mp.transition()
       .duration(750)
@@ -265,10 +265,10 @@ function updateData()
     var lp = svg.select("path#long")
       .datum({startAngle: scale(0), 
               // don't overdraw arc when over 100%
-              endAngle: scale(Math.min(json[0].data.load.longterm/cores, 1.0)), 
+              endAngle: scale(Math.min(json[0].data.high/cores, 1.0)), 
               innerRadius: radius-80,
-              load: json[0].data.load.longterm,
-              perc: json[0].data.load.longterm/cores});
+              load: json[0].data.high,
+              perc: json[0].data.high/cores});
     
     lp.transition()
       .duration(750)
