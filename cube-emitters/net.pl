@@ -101,6 +101,37 @@ foreach my $l (@lines)
   }
 }
 
+@lines = cube_emitter::get_lines('/proc/net/netstat');
+for(my $i = 0; $i < scalar(@lines); $i += 2)
+{
+  my @col = split(/:|\s+/, $lines[$i]);
+  @col = grep(/\S/, @col);
+  
+  my @val = split(/:|\s+/, $lines[$i + 1]);
+  @val = grep(/\S/, @val);
+  
+  print @col;
+  
+  my $type = shift(@col);
+  my $type2 = shift(@val);
+  if ($type ne $type2)
+  {
+    print STDERR "Invalid type $type ne $type2\n";
+  }
+  
+  if (scalar(@col) != scalar(@val))
+  {
+    print STDERR "Invalid columns ".scalar(@col)." ne ".scalar(@val)."\n";
+    next;
+  }
+  
+  for(my $j = 0; $j < scalar(@col); $j++)
+  {
+    $net{stat}{$type}{$col[$j]} = $val[$j] *1;
+  }  
+}
+
+
 my @events;
 push @events, {type=>'loadavg', data=>\%net};
 
