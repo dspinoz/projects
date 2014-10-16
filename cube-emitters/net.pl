@@ -71,7 +71,32 @@ if (scalar(@lines) >= 2)
       my @c = split(/,/, $column_defs[$i]);
       
       #print "i $interface @c $info[$i]\n";
-      $net{$interface}{$c[0]}{$c[1]} = $info[$i] *1; #number
+      $net{interfaces}{$interface}{$c[0]}{$c[1]} = $info[$i] *1; #number
+    }
+  }
+}
+
+@lines = cube_emitter::get_lines('/proc/net/sockstat');
+
+foreach my $l (@lines)
+{
+  my @tok = split(/:/, $l);
+  @tok = grep(/\S/, @tok);
+  
+  my $title = shift(@tok);
+  @tok = split(/\s+/, $tok[0]);
+  @tok = grep(/\S/, @tok);
+  
+  for(my $i = 0; $i < scalar(@tok); $i+=2)
+  {
+    #print "l $title $tok[$i] $tok[$i + 1]\n";
+    if ($title eq "sockets")
+    {
+      $net{sockets}{$tok[$i]} = $tok[$i + 1] *1;
+    }
+    else
+    {
+      $net{sockets}{$title}{$tok[$i]} = $tok[$i + 1] *1;
     }
   }
 }
