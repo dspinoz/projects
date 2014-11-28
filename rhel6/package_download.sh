@@ -3,7 +3,8 @@
 usage() {
   echo "`basename $0` -r repo [options] -p package"
   echo
-  echo "Must provide a repository and package name" 
+  echo "Download packages and maintain repositories"
+  echo "Must provide a repository and at least one package name" 
   echo
   echo "Options:"
   echo -e "  -r repo\tRepository to get packages from"
@@ -19,6 +20,13 @@ if [ -z "`which yumdownloader`" ]
 then
   echo "Requires yumdownloader"
   echo "yum install yum-utils"
+  exit 1
+fi
+
+if [ -z "`which createrepo`" ]
+then
+  echo "Requires createrepo"
+  echo "yum install createrepo"
   exit 1
 fi
 
@@ -94,13 +102,18 @@ done
 yumdownloader --disablerepo=\* $OPTS 
 yumdlexit=$?
 
+if [ -n "$DESTDIR" ]
+then
+  createrepo $DESTDIR
+fi
+
 if [ $SOURCE -eq 0 ]
 then
   exit $yumdlexit
 fi
 
 # TODO CONTINUE TO DOWNLOAD SOURCE PACKAGES
-
+# Using yum-builddep get dependencies for building src.rpms
 
 exit $yumdlexit
 
