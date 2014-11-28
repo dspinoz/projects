@@ -1,6 +1,6 @@
 [epel6]
 name=epel6
-baseurl=http://dl.fedoraproject.org/pub/epel/6/x86_64
+baseurl=http://dl.fedoraproject.org/pub/epel/6/$basearch
 enabled=0
 gpgcheck=0
 

@@ -1,6 +1,6 @@
 [epel7]
 name=epel7
-baseurl=http://dl.fedoraproject.org/pub/epel/7/x86_64
+baseurl=http://dl.fedoraproject.org/pub/epel/7/$basearch
 enabled=0
 gpgcheck=0
 
