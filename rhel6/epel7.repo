@@ -1,0 +1,13 @@
+[epel7]
+name=epel7
+baseurl=http://dl.fedoraproject.org/pub/epel/7/x86_64
+enabled=0
+gpgcheck=0
+
+[epel7-source]
+name=epel7 - Source
+baseurl=http://dl.fedoraproject.org/pub/epel/7/SRPMS
+enabled=0
+gpgcheck=0
+
+
