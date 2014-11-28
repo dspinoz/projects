@@ -7,9 +7,9 @@ ROOTUID=6001
 ROOTGROUP=rooted
 ROOTGID=6000
 ROOTPW=password
-YUMREPO=/rheldvd
-HASSUDO=1
-AUTOSSH=1
+YUMREPO=file:///media/rheldvd
+HASSUDO=0
+AUTOSSH=0
 
 usage()
 {
@@ -20,12 +20,13 @@ usage()
   echo -e "  -g group\tName of the primary group for `tput smul`username`tput rmul`"
   echo -e "  -G gid\tGID for `tput smul`group`tput rmul`"
   echo -e "  -p password\t`tput smul`username`tput rmul`'s login password"
+  echo -e "  -y yumrepo\tPath to yum repository to use when building the chroot"
   echo -e "  -K\t\tSetup ssh keys for automatic access from account $USER"
   echo -e "  -S\t\tGive `tput smul`username`tput rmul` sudo access within the chroot"
   exit 1
 }
 
-while getopts "hr:u:g:U:G:p:KS" opt; do
+while getopts "hr:u:g:U:G:p:y:KS" opt; do
   case $opt in
     h) usage;;
     r) ROOT=$OPTARG;;
@@ -34,6 +35,7 @@ while getopts "hr:u:g:U:G:p:KS" opt; do
     g) ROOTGROUP=$OPTARG;;
     G) ROOTGID=$OPTARG;;
     p) ROOTPW=$OPTARG;;
+    y) YUMREPO=$OPTARG;;
     K) AUTOSSH=0;;
     S) HASSUDO=0;;
     *) usage;;
@@ -125,7 +127,7 @@ then
   cat > $ROOT/etc/yum.repos.d/a.repo <<EOF
 [repo]
 name=REPO
-baseurl=file://$YUMREPO
+baseurl=$YUMREPO
 enabled=1
 gpgcheck=0
 EOF
