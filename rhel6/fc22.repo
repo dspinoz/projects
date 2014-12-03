@@ -1,0 +1,13 @@
+[fc22]
+name=fc22
+baseurl=http://dl.fedoraproject.org/pub/fedora/linux/development/rawhide/$basearch/os
+enabled=1
+gpgcheck=0
+
+[fc22-source]
+name=fc22 - Source
+baseurl=http://dl.fedoraproject.org/pub/fedora/linux/development/rawhide/source/SRPMS
+enabled=1
+gpgcheck=0
+
+
