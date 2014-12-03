@@ -1,13 +1,13 @@
 [centos7]
 name=centos7
 baseurl=http://mirror.centos.org/centos/7/os/$basearch
-enabled=0
+enabled=1
 gpgcheck=0
 
 [centos7-extras]
 name=centos7-extras
 baseurl=http://mirror.centos.org/centos/7/extras/$basearch
-enabled=0
+enabled=1
 gpgcheck=0
 
 

@@ -1,13 +1,13 @@
 [epel6]
 name=epel6
 baseurl=http://dl.fedoraproject.org/pub/epel/6/$basearch
-enabled=0
+enabled=1
 gpgcheck=0
 
 [epel6-source]
 name=epel6 - Source
 baseurl=http://dl.fedoraproject.org/pub/epel/6/SRPMS
-enabled=0
+enabled=1
 gpgcheck=0
 
 

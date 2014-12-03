@@ -1,13 +1,13 @@
 [centos6]
 name=centos6
 baseurl=http://mirror.centos.org/centos/6/os/$basearch
-enabled=0
+enabled=1
 gpgcheck=0
 
 [centos6-extras]
 name=centos6-extras
 baseurl=http://mirror.centos.org/centos/6/extras/$basearch
-enabled=0
+enabled=1
 gpgcheck=0
 
 
