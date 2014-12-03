@@ -14,7 +14,9 @@ for f in *.repo
 do
   r=`echo $f | awk -F. '{print $1}'`
 
-  yum --config $f --enablerepo=\* list ${PACKS[@]} 2> /dev/null
+  echo "Querying repository $r"
+
+  yum --config $f list ${PACKS[@]} 2> /dev/null
   if [ $? -ne 0 ]
   then
     echo Repository $r failed
