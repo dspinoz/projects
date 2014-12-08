@@ -1,5 +1,28 @@
 #!/bin/sh
 
+cfgs='*.repo'
+source=0
+
+while getopts ":hsc:" opt
+do
+  case $opt in
+    h) echo "`basename $0` [options] [yumdownloader-options]";
+       echo "options:";
+       echo "-h\tShow usage"
+       echo "-s\tDownload source"
+       echo "-d\tDownload dependencies"
+       echo "-c cfg\tUse provided config"
+       exit 0
+      ;;
+    s) source=1;;
+    c) cfgs=$OPTARG;;
+    ?) break;;
+  esac
+done
+
+# Pass remaining args to yumdownloader
+shift $(($OPTIND - 1))
+
 DIR=downloads
 LOG=downloads.log
 
@@ -17,17 +40,37 @@ done
 
 found=1
 
-for cfg in *.repo
+for cfg in $cfgs
 do
-  for r in `cat $cfg | egrep '^\[.*\]$' | sed 's/^\[\(.*\)\]$/\1/g' | sort | uniq`
+
+  for r in `cat $cfg | egrep '^\[.*\]$' | sed 's/^\[\(.*\)\]$/\1/g' | grep -v source | sort | uniq`
   do
-    echo "Checking repo $r" >> $LOG
-    yumdownloader --destdir=$DIR --disablerepo=* --config=$cfg --enablerepo=$r $* 2>&1 | tee -a $LOG > /dev/null
-    if [ ${PIPESTATUS[0]} -eq 0 ]
+    args=""    
+
+    if [ $source -eq 1 ]
     then
-      echo "Packages found on repo $r" | tee -a $LOG
+      args="$args --source"
+    fi
+
+    args="$args --disablerepo=* --config=$cfg --enablerepo=$r $*"
+
+    echo "Checking repo $r" >> $LOG
+    tmp=`mktemp`
+
+    yumdownloader --urls $args 2>&1 | tee -a $tmp > /dev/null
+    yumret=${PIPESTATUS[0]}
+
+    cat $tmp >> $LOG
+
+    if [ $yumret -eq 0 ]
+    then
+      echo "Packages found on repo $r ... downloading" | tee -a $LOG
+      grep rpm $tmp
+      yumdownloader --destdir=$DIR-${r} $args 2>&1 | tee -a $LOG > /dev/null
       found=0
     fi
+
+    rm $tmp
   done
 done
 
