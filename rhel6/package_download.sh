@@ -62,7 +62,7 @@ fi
 
 # BUILD ARGS FOR DOWNLOADING PACKAGES
 
-OPTS=""
+OPTS="--disablerepo=*"
 
 for c in ${CONFIGS[@]}
 do
@@ -99,10 +99,12 @@ do
   OPTS="$OPTS $p"
 done
 
-yumdownloader --disablerepo=\* $OPTS 
+yumdownloader $OPTS 2>&1 | tee log
 yumdlexit=$?
 
-if [ -n "$DESTDIR" ]
+echo YUMDL $yumdlexit
+
+if [[ $yumdlexit -eq 0 && -n "$DESTDIR" ]]
 then
   createrepo $DESTDIR
 fi
