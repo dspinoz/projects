@@ -7,7 +7,7 @@ ROOTUID=6001
 ROOTGROUP=rooted
 ROOTGID=6000
 ROOTPW=password
-YUMREPO=file:///media/rheldvd
+YUMREPO=/media/rheldvd
 HASSUDO=0
 AUTOSSH=0
 
@@ -36,8 +36,8 @@ while getopts "hr:u:g:U:G:p:y:KS" opt; do
     G) ROOTGID=$OPTARG;;
     p) ROOTPW=$OPTARG;;
     y) YUMREPO=$OPTARG;;
-    K) AUTOSSH=0;;
-    S) HASSUDO=0;;
+    K) AUTOSSH=1;;
+    S) HASSUDO=1;;
     *) usage;;
   esac
 done
@@ -70,10 +70,25 @@ then
   echo "To disable, edit /etc/sysconfig/selinux and set to disabled"
   exit 1
 fi
-
 mkdir -p $ROOT
 
-yum --installroot=$ROOT groupinstall core
+yumargs=""
+yumrepofile=`mktemp`
+
+# Create repo file
+if [ -d $YUMREPO ]
+then
+  cat > $yumrepofile <<EOF
+[repo]
+name=REPO
+baseurl=file://$YUMREPO
+enabled=1
+gpgcheck=0
+EOF
+  yumargs="--config=$yumrepofile"
+fi
+
+yum $yumargs --installroot=$ROOT groupinstall core
 
 getent group $ROOTGID
 if [ $? -ne 0 ]
@@ -125,17 +140,42 @@ if [ -d $YUMREPO ]
 then
   mkdir -p $ROOT/$YUMREPO
   mount --bind $YUMREPO $ROOT/$YUMREPO
-  cat > $ROOT/etc/yum.repos.d/a.repo <<EOF
-[repo]
-name=REPO
-baseurl=$YUMREPO
-enabled=1
-gpgcheck=0
-EOF
+  cat $yumrepofile > $ROOT/etc/yum.repos.d/media.repo
 fi
 
+rm $yumrepofile
 
+dir=$ROOT
+err=0
 
+while [ -d $dir ]
+do
+  if [[ ! -O $dir && -G $dir ]]
+  then
+    echo "Directory $dir not owned by $USER"
+    err=1
+    break
+  fi
 
+  stat -c %A $dir | egrep -q 'd.......w.'
+  if [ $? -eq 0 ]
+  then
+    echo "Directory $dir is writable by others! Permissions `stat -c %A $dir`"
+    err=1
+    break
+  fi
 
+  if [ $dir == "/" ]
+  then
+    break
+  fi
+
+  dir=`dirname $dir`
+
+done
+
+if [ $err -eq 1 ]
+then
+  echo "Bad permissions to chroot $ROOT. Will not be able to ssh"
+fi
 
