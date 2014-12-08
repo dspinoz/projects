@@ -117,6 +117,7 @@ EOF
   chmod 0440 $ROOT/etc/sudoers.d/$ROOTUSER
 fi
 
+# TODO add to fstab - persist after reboot
 mount --bind /proc $ROOT/proc
 mount --bind /dev $ROOT/dev
 
