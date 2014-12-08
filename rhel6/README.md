@@ -13,10 +13,14 @@ list_packages glibc
 
 * fetch_packages
 
-  Helper for downloading packages from individual repos
+  Helper for downloading packages from various repos
   
 	```bash
 fetch_packages glibc
+#download source
+fetch_packages -s glibc 
+#download from centos7
+fetch_packages -c centos7.repo -s glibc 
 ```
 
 * .repo files
