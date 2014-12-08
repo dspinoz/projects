@@ -95,7 +95,13 @@ if [ $? -ne 0 ]
 then
   groupadd --gid $ROOTGID $ROOTGROUP
   echo -e "Match Group $ROOTGROUP\n  ChrootDirectory $ROOT" >> /etc/ssh/sshd_config
-  service sshd restart
+
+  if [ -z "`which systemctl`" ]
+  then
+    service sshd restart
+  else
+    systemctl restart sshd
+  fi
 fi
 
 getent passwd $ROOTUID
