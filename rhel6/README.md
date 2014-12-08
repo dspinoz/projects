@@ -4,11 +4,11 @@ A series of utilities for performing admin on RHEL
 
   Easily create a chroot environment
 
-* package_download.sh
+* fetch_packages
 
   Helper for downloading packages from individual repos
 
-* package_list.sh
+* list_packages 
 
   Helper for listing packages from various repos
 
@@ -16,6 +16,7 @@ A series of utilities for performing admin on RHEL
 
   Various yum repo configuration files
 
-  Example: 
-    	package_list.sh glibc
+Example: 
+	list_packages glibc
+        fetch_packages glibc
 
