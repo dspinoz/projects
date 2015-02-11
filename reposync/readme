@@ -1,0 +1,58 @@
+-- REPOSITORIES --
+
+System must be connected to RHN in order to download redhat packages.
+
+-- USAGE --
+
+Grab latest packages:
+
+  $ ./update.sh
+
+  - creates <timestamp>-<reponame>-before.list containing packages existing in the repository
+  - creates <timestamp>-<reponame>-after.list containing packages after the update was performed
+  
+  In order to see which packages are new, perform:
+
+    $ diff before.list after.list | grep \>
+
+Create a directory containing only new packages:
+
+  $ ./package.sh <timestamp>
+
+  - Generates a directory for each repo that was updated at <timestamp>
+  - Copies new packages from repo into <timestamp> directory structure
+  - Allows a subset of packages to be copied to another host
+
+Create burnable tarball of new packages:
+
+  $ ./package-tar.sh <timestamp>
+  
+  - Creates 500m tarballs in <timestamp> directory for ease of burning to CD/DVD media
+  - Tarballs numbered from 0001, 0002, ... n
+  - To extract tarballs, use the following command:
+    $ cat timestamp*.tar.* | tar xvf -
+  - Once tarballs have been generated, packages within <timestamp> directory can be removed
+  
+Create repo on another host:
+
+  - extract all tarballs into current directory (steps above)
+  - will create a directory structure <repository>/<packages>
+  
+  $ createrepo <repository>
+  
+  - Creates metadata about packages for use as a repository
+  - Create /etc/yum.repos/rhel6-rhn.repo that links to correct directory
+  - Perform "yum makecache", then "yum install"
+    
+Download packages:
+
+  - downloads packages and dependencies
+  - creates approximate directory structure for loading into repos
+  - recommended to run in temporary directory as to not corrupt repos
+  - specify package name in the form <name>-<version>.el6 
+  
+  $ mktemp -p . -d
+  $ download.sh <package>
+  $ download.sh --source <package>
+
+
