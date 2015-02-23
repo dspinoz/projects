@@ -42,6 +42,9 @@ sub run_command($;$) {
 
   while (!$gStop) {
     my $line = <CMD_F>;
+    if (!defined($line)) {
+      last;
+    }
 
     if (defined($outsubref)) {
       $outsubref->($line);
@@ -97,7 +100,6 @@ if ($args{help}) {
 
 if ($args{list}) {
   run_command('yum repolist all');
-  run_command('./bad a b c d e f');
   exit(0);
 }
 
@@ -109,10 +111,9 @@ foreach my $r (@repos) {
   print "repo $r\n";
 }
 
-
-sub callback($) {
-  my $line = shift;
-  print "CB $line\n";
-}
-
-run_command('./bad a b c d e f', \&callback);
+# run command and get output in callback
+#sub callback($) {
+#  my $line = shift;
+#  print "CB $line\n";
+#}
+#run_command('./bad a b c d e f', \&callback);
