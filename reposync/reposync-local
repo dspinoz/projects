@@ -7,6 +7,16 @@ use warnings;
 
 use Getopt::Long;
 
+my $gStop = 0;
+
+sub INT_handler {
+  $gStop = 1;
+  print "Stopping...\n";
+}
+
+$SIG{'INT'} = 'INT_handler';
+
+
 Getopt::Long::Configure('bundling');
 
 sub show_usage(;$) {
@@ -30,12 +40,14 @@ sub run_command($;$) {
 
   open(CMD_F, "$cmd|");
 
-  while (<CMD_F>) {
+  while (!$gStop) {
+    my $line = <CMD_F>;
+
     if (defined($outsubref)) {
-      $outsubref->($_);
+      $outsubref->($line);
     }
     else {
-      print $_;
+      print $line;
     }
   }
 
