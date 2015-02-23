@@ -12,7 +12,8 @@ Getopt::Long::Configure('bundling');
 sub show_usage(;$) {
   my $exit_code = shift;
 
-  print "reposync-local [-h]\n";
+  print "reposync-local [-h] [--list|-l]\n";
+  print "  -l\tList available repos\n";
   print "  -h\tShow help\n";
 
   if (defined($exit_code)) {
@@ -20,9 +21,61 @@ sub show_usage(;$) {
   }
 }
 
-my %args;
+sub run_command($;$) {
+  my $cmd = shift;
+  my $outsubref = shift;
+  my $donesubref = shift;
 
-if (!GetOptions('help|h' => \$args{help})) {
+  print "Running $cmd".(defined($outsubref) || defined($donesubref) ? " (with callback)" : "")."\n";
+
+  open(CMD_F, "$cmd|");
+
+  while (<CMD_F>) {
+    if (defined($outsubref)) {
+      $outsubref->($_);
+    }
+    else {
+      print $_;
+    }
+  }
+
+  if (!close(CMD_F)) {
+    my @tok = split(/ /, $cmd);
+    if ($! == 0) {
+      # Command exited with error code
+      my $ret = $? >> 8;
+
+      print "Command $tok[0] exited with $ret\n";
+
+      if (defined($donesubref)) {
+        $donesubref->($ret);
+      }
+
+      return $ret;
+    }
+    else {
+      print "Error reading output from command $tok[0]\n";
+    }
+
+    if (defined($donesubref)) {
+      $donesubref->(0);
+    }
+    return 0;
+  }
+
+  if (defined($donesubref)) {
+    $donesubref->(0);
+  }
+
+  return 1;
+}
+
+my %args;
+my @repos;
+
+if (!GetOptions('help|h' => \$args{help},
+                'list|l' => \$args{list},
+                'repo=s' => \@repos)) {
   show_usage(1);
 }
 
@@ -30,5 +83,24 @@ if ($args{help}) {
   show_usage(0);
 }
 
+if ($args{list}) {
+  run_command('yum repolist all');
+  run_command('./bad a b c d e f');
+  exit(0);
+}
+
+
 print "reposync-local\n";
 
+foreach my $r (@repos) {
+
+  print "repo $r\n";
+}
+
+
+sub callback($) {
+  my $line = shift;
+  print "CB $line\n";
+}
+
+run_command('./bad a b c d e f', \&callback);
