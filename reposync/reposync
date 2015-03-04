@@ -60,13 +60,6 @@ def sortPkgObj(pkg1 ,pkg2):
     else:
         return -1
 
-def predownload_hook(p):
-  print "PRE",p
-
-def postdownload_hook(p):
-  print "POST",p
-
-
 class RepoSync(yum.YumBase):
     def __init__(self, opts):
         yum.YumBase.__init__(self)
@@ -76,7 +69,6 @@ class RepoSync(yum.YumBase):
     def download_total_callback(self,pkgs,sz,start_time):
         if self.opts.showtotals:
             print "TOTAL: ", pkgs, ", ", sz, " bytes", start_time
-
 
 def localpkgs(directory):
     names = os.listdir(directory)
