@@ -59,12 +59,24 @@ def sortPkgObj(pkg1 ,pkg2):
         return 0
     else:
         return -1
-        
+
+def predownload_hook(p):
+  print "PRE",p
+
+def postdownload_hook(p):
+  print "POST",p
+
+
 class RepoSync(yum.YumBase):
     def __init__(self, opts):
         yum.YumBase.__init__(self)
         self.logger = logging.getLogger('yum.verbose.reposync')
         self.opts = opts
+
+    def download_total_callback(self,pkgs,sz,start_time):
+        if self.opts.showtotals:
+            print "TOTAL: ", pkgs, ", ", sz, " bytes", start_time
+
 
 def localpkgs(directory):
     names = os.listdir(directory)
@@ -126,8 +138,15 @@ def parseArgs():
     parser.add_option("","--download-metadata", dest="downloadmd", 
         default=False, action="store_true", 
         help="download all the non-default metadata")
+
+    parser.add_option("-T", "--showtotals", default=False, action="store_true",
+        help="show totals once done")
+
     (opts, args) = parser.parse_args()
     return (opts, args)
+
+
+
 
 
 def main():
@@ -308,7 +327,7 @@ def main():
             pkg.repo.cache = 0
 
         # use downloader from YumBase
-        probs = my.downloadPkgs(download_list)
+        probs = my.downloadPkgs(download_list,None,my.download_total_callback)
         if probs:
             exit_code = 1
             for key in probs:
