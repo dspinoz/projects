@@ -1,7 +1,7 @@
-from yum.plugins import PluginYumExit, TYPE_CORE, TYPE_INTERACTIVE
+from yum.plugins import PluginYumExit, TYPE_CORE
 
 requires_api_version = '2.3'
-plugin_type = (TYPE_CORE, TYPE_INTERACTIVE)
+plugin_type = (TYPE_CORE)
 
 def init_hook(conduit):
 	#conduit.info(2, 'hello world')
