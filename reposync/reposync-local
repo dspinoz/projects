@@ -25,6 +25,8 @@ sub show_usage(;$) {
   print "reposync-local [-h] [--list|-l]\n";
   print "  -l\tList available repos\n";
   print "  -h\tShow help\n";
+  print "  repo=R\tSync specifies repositories, R\n";
+  print "  option=O\tSpecify additional options for reposync\n";
 
   if (defined($exit_code)) {
     exit($exit_code);
@@ -38,7 +40,7 @@ sub run_command($;$) {
 
   print "Running $cmd".(defined($outsubref) || defined($donesubref) ? " (with callback)" : "")."\n";
 
-  open(CMD_F, "$cmd|");
+  open(CMD_F, "$cmd 2>&1 | tee /dev/stdout |");
 
   while (!$gStop) {
     my $line = <CMD_F>;
@@ -87,10 +89,21 @@ sub run_command($;$) {
 
 my %args;
 my @repos;
+my @opts;
+
+my $reposync = `which reposync`;
+chomp $reposync;
+
+if ($reposync eq "") {
+  print "No reposync available\n";
+  exit(1);
+}
+
 
 if (!GetOptions('help|h' => \$args{help},
                 'list|l' => \$args{list},
-                'repo=s' => \@repos)) {
+                'repo=s' => \@repos,
+                'option=s' => \@opts)) {
   show_usage(1);
 }
 
@@ -103,12 +116,34 @@ if ($args{list}) {
   exit(0);
 }
 
+sub reposync_callback($) {
+  my $line = shift;
+
+print "zzz $line\n";
+
+
+  if ($line !~ m/%/) {
+    print "reposync: $line";
+    
+  }
+
+  if ($line =~ m/Downloading|Error/) {
+    print "PPPPP $line\n";
+  }
+
+
+}
+
+
 
 print "reposync-local\n";
 
 foreach my $r (@repos) {
+  print "Syncing Repo $r\n";
+  
+  run_command("$reposync --repoid=$r @opts", \&reposync_callback);
 
-  print "repo $r\n";
+
 }
 
 # run command and get output in callback
