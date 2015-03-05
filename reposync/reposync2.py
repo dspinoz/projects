@@ -17,7 +17,8 @@ def predownload_hook(conduit):
 
 def postdownload_hook(conduit):
 	#conduit.info(2, 'downloaded.')
-	print "DS POSTDOWN"
+	for pack in conduit.getDownloadPackages():
+		print "DS DOWNLOADED", pack.localPkg()
 
 def posttrans_hook(conduit):
 	print "DS TRANS DONE"
