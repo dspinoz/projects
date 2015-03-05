@@ -1,10 +1,12 @@
 from yum.constants import *
 from yum.plugins import PluginYumExit, TYPE_CORE
+from time import strftime
 import os.path
 
 requires_api_version = '2.6'
 plugin_type = (TYPE_CORE)
 pre_packages = []
+timeformat=''
 
 def package_is_valid(pack):
 	if os.path.isfile(pack.localPkg()) == True and os.path.getsize(pack.localPkg()) == int(pack.returnSimple('packagesize')):
@@ -14,6 +16,8 @@ def package_is_valid(pack):
 def init_hook(conduit):
 	#conduit.info(2, 'hello world')
 	print "DS INIT FOO", conduit.confBool('main','foo',False) == True
+	timeformat = conduit.confString('main', 'timeformat', '%Y%m%d%H%M%S')
+	print "TIME", strftime(timeformat)
 
 def config_hook(conduit):
 	if hasattr(conduit.getOptParser, 'add_option'):
