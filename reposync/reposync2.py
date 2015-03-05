@@ -18,20 +18,30 @@ def init_hook(conduit):
 	#conduit.info(2, 'hello world')
 	print "DS INIT FOO", conduit.confBool('main','foo',False) == True, conduit.confBool('main', 'keeplog', False) == False, sys.argv[0]
 
-	#timeformat = conduit.confString('main', 'timeformat', '%c')
-	#if conduit.confBool('main', 'keeplog', False):
-	#	outname = "%s-%s.log" %(
-	#		conduit.confString('main', 'fileprefix', 'reposync'), 
-	#		strftime(timeformat))
-	#	logfile = open(outname, 'w')
-	#	print "Writing progress to", outname
+	if hasattr(conduit.getOptParser(), 'parse_args'):
+		(opts, args) = conduit.getOptParser().parse_args()
+		if opts.merge:
+			raise PluginYumExit('merging incremental reposync')
 
 def config_hook(conduit):
-	if hasattr(conduit.getOptParser, 'add_option'):
-		# Command Options cannot be added to reposync
-		conduit.getOptParser().add_option('','--foo', dest='foo',
-			action='store_true', default=False,
-			help='Fooooooooo')
+	print "DS CONFIG"
+	# Command Options cannot be added to reposync
+	if hasattr(conduit.getOptParser(), 'add_option'):
+		print "DS ADDED MERGE OPTION"
+		# TODO option to perform sync from yum interface
+		#      this way, will use available yum options instead
+		conduit.getOptParser().add_option('','--reposync2-merge', 
+			dest='merge', action='store_true', default=False,
+			help='Merge incremental reposync changes locally')
+
+def args_hook(conduit):
+	print "DS ARGS", conduit.getArgs()
+
+def postconfig_hook(conduit):
+	print "DS POST CONFIG"
+
+def prereposetup(conduit):
+	print "DS MERGE", conduit.getConf().merge == True
 
 def postreposetup_hook(conduit):
 	#conduit.info(2', 'got repos')
@@ -53,10 +63,6 @@ def posttrans_hook(conduit):
 	print "DS TRANS DONE"
 
 def close_hook(conduit):
-
-	if sys.argv[0] != '/bin/reposync':
-		print "DONE - DISABLED"
-		return
 
 	new_packages = []
 	print "DS CLOSE", len(new_packages), " FETCHED"
@@ -85,6 +91,8 @@ def close_hook(conduit):
 				fname, pack._remote_url() ))
 
 		logfile.close()
+
+		# TODO split large tar file into smaller chunks
 
 		tar = tarfile.open(outname, 'w:gz')
 		tar.add(logfilename)

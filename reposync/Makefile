@@ -13,6 +13,8 @@ test3: install
 	rm -rf repo*/pytho* repo2/lib*
 	reposync --plugins --repo=repo\*
 
+test4: install
+	yum --reposync2-merge 
 
 install: reposync2.conf reposync2.py check
 	cp reposync2.conf /etc/yum/pluginconf.d/reposync2.conf
