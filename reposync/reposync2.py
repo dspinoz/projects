@@ -3,6 +3,7 @@ from yum.plugins import PluginYumExit, TYPE_CORE
 import tarfile
 from time import strftime
 import os.path
+import sys
 
 requires_api_version = '2.6'
 plugin_type = (TYPE_CORE)
@@ -15,7 +16,8 @@ def package_is_valid(pack):
 
 def init_hook(conduit):
 	#conduit.info(2, 'hello world')
-	print "DS INIT FOO", conduit.confBool('main','foo',False) == True, conduit.confBool('main', 'keeplog', False) == False
+	print "DS INIT FOO", conduit.confBool('main','foo',False) == True, conduit.confBool('main', 'keeplog', False) == False, sys.argv[0]
+
 	#timeformat = conduit.confString('main', 'timeformat', '%c')
 	#if conduit.confBool('main', 'keeplog', False):
 	#	outname = "%s-%s.log" %(
@@ -51,6 +53,11 @@ def posttrans_hook(conduit):
 	print "DS TRANS DONE"
 
 def close_hook(conduit):
+
+	if sys.argv[0] != '/bin/reposync':
+		print "DONE - DISABLED"
+		return
+
 	new_packages = []
 	print "DS CLOSE", len(new_packages), " FETCHED"
 	# verify packages have been downloaded in full
