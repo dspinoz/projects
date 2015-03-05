@@ -16,6 +16,16 @@ test3: install
 test4: install
 	yum --reposync2-merge 
 
+test5:	install
+	rm -rf tmp
+	mkdir tmp
+	cd tmp && yum --reposync2-merge --incremental-dir=../ --dest-dir=.
+	cat tmp/.reposync2.meta
+	find tmp
+
+
+
+
 install: reposync2.conf reposync2.py check
 	cp reposync2.conf /etc/yum/pluginconf.d/reposync2.conf
 	cp reposync2.py /usr/share/yum-plugins/reposync2.py

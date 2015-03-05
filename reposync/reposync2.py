@@ -1,9 +1,13 @@
 from yum.constants import *
 from yum.plugins import PluginYumExit, TYPE_CORE
 import tarfile
-from time import strftime
+import time;
 import os.path
 import sys
+import glob
+import re
+
+# TODO catch exceptions
 
 requires_api_version = '2.6'
 plugin_type = (TYPE_CORE)
@@ -14,6 +18,60 @@ def package_is_valid(pack):
 		return True
 	return False
 
+def merge_incrementals(opts, conduit):
+	print "MERGING", opts.incrdir, opts.destdir
+
+	cwd = os.getcwd()
+	opts.incrdir = os.path.realpath(opts.incrdir)
+	opts.destdir = os.path.realpath(opts.destdir)
+	print "AT", cwd, "FROM", opts.incrdir, "TO", opts.destdir
+
+	# Easiest for untarring
+	os.chdir(opts.destdir)
+
+	lastupdate=0
+	if os.path.isfile('.reposync2.meta'):
+		meta = open('.reposync2.meta')
+		lastupdate = meta.readline()
+		print "LAST UPDATE AT", time.strftime(conduit.confString('main', 'timeformat', '%c'), time.localtime(float(lastupdate)))
+		meta.close()
+
+	incrementals = glob.glob("%s/%s*.tar.gz" %( opts.incrdir, 
+		conduit.confString('main', 'fileprefix', 'reposync')) )
+	incrementals.sort(reverse=True)
+
+	toexport = []
+
+	for inc in incrementals:
+		print "FILE", inc
+		match = re.search( "%s-(.*).tar.gz" %(
+				conduit.confString('main', 'fileprefix', 'reposync')), 
+			os.path.basename(inc) )
+		
+		if match:
+			sec = time.mktime(time.strptime(match.group(1), conduit.confString('main', 'timeformat', '%c')))
+			if sec > lastupdate:
+				toexport.append((sec, inc))
+	
+	# Export older packages first
+	toexport.sort()
+
+	print "EXPORTING", toexport
+
+	for tm,inc in toexport:
+		print "ZZ", inc
+		tar = tarfile.open(inc)
+		tar.extractall()
+		tar.close()
+
+	# TODO perform createrepo
+
+	print "SUCCESS"
+
+	meta = open('.reposync2.meta', 'w')
+	meta.write("%d\n" %( time.time() ))
+	meta.close()
+
 def init_hook(conduit):
 	#conduit.info(2, 'hello world')
 	print "DS INIT FOO", conduit.confBool('main','foo',False) == True, conduit.confBool('main', 'keeplog', False) == False, sys.argv[0]
@@ -21,7 +79,8 @@ def init_hook(conduit):
 	if hasattr(conduit.getOptParser(), 'parse_args'):
 		(opts, args) = conduit.getOptParser().parse_args()
 		if opts.merge:
-			raise PluginYumExit('merging incremental reposync')
+			merge_incrementals(opts, conduit)
+			raise PluginYumExit('Exiting because merging only')
 
 def config_hook(conduit):
 	print "DS CONFIG"
@@ -33,6 +92,12 @@ def config_hook(conduit):
 		conduit.getOptParser().add_option('','--reposync2-merge', 
 			dest='merge', action='store_true', default=False,
 			help='Merge incremental reposync changes locally')
+		conduit.getOptParser().add_option('','--incremental-dir', 
+			dest='incrdir', action='store', default='.',
+			help='Directory for performing merge')
+		conduit.getOptParser().add_option('','--dest-dir', 
+			dest='destdir', action='store', default='./repos-merged/',
+			help='Directory where rpms are kept')
 
 def args_hook(conduit):
 	print "DS ARGS", conduit.getArgs()
@@ -75,11 +140,11 @@ def close_hook(conduit):
 		repolist = {}
 		outname = "%s-%s.tar.gz" %(
 			conduit.confString('main', 'fileprefix', 'reposync'), 
-			strftime(conduit.confString('main', 'timeformat', '%c')))
+			time.strftime(conduit.confString('main', 'timeformat', '%c')))
 
 		logfilename = "%s-%s.csv" %(
 			conduit.confString('main', 'fileprefix', 'reposync'), 
-			strftime(conduit.confString('main', 'timeformat', '%c')))
+			time.strftime(conduit.confString('main', 'timeformat', '%c')))
 		logfile = open(logfilename, 'w')
 
 		logfile.write("rpmfile,remote_url\n")
