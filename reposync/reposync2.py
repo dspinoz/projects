@@ -1,5 +1,6 @@
 from yum.constants import *
 from yum.plugins import PluginYumExit, TYPE_CORE
+import tarfile
 from time import strftime
 import os.path
 
@@ -53,5 +54,14 @@ def close_hook(conduit):
 			new_packages.append(pack)
 			print "DS DOWNLOADED", pack.localPkg()
 	print "DS POSTDOWN DONE", len(new_packages)
+	if len(new_packages) > 0 or len(new_packages) == 0:
+		outname = "%s%s%s" %('tar-', strftime(conduit.confString('main', 'timeformat', '%Y%m%d%H%M%S')), '.tar.gz')
+		tar = tarfile.open(outname, 'w:gz')
+		tar.add('reposync2.py', 'zzz.py')
+		tar.add('reposync2.conf', 'aaa')
+		tar.close()
+
+
+
 
 
