@@ -13,6 +13,35 @@ requires_api_version = '2.6'
 plugin_type = (TYPE_CORE)
 pre_packages = []
 
+class TarSplit:
+
+	name = None
+	fd = None
+	max = None
+
+	def __init__(self, name, max=None):
+		print 'INIT'
+		self.name = name
+		self.max = max
+
+	def read(self, bufsize):
+		print 'READ', bufsize
+		if self.fd is None:
+			self.fd = open(self.name, 'rb')
+
+		got = self.fd.read(bufsize)
+		print 'GOT', len(got),'/',bufsize
+		return got
+
+	def write(self, str):
+		print 'WRITE', type(str), len(str)
+		if self.fd is None:
+			self.fd = open(self.name, 'wb')
+		self.fd.write(str)
+
+	def __destroy__(self):
+		print 'DESTROY'
+
 def package_is_valid(pack):
 	if os.path.isfile(pack.localPkg()) == True and os.path.getsize(pack.localPkg()) == int(pack.returnSimple('packagesize')) and pack.verifyLocalPkg() == True:
 		return True
@@ -68,7 +97,8 @@ def merge_incrementals(opts, conduit):
 
 	for tm,inc in toexport:
 		print "DS EXTRACT", os.path.basename(inc), tm
-		tar = tarfile.open(inc)
+		tar = tarfile.open(fileobj=TarSplit(inc), mode='r|gz')
+		# its a tarfile stream - can only call extractall!
 		tar.extractall()
 		tar.close()
 		lastupdate = tm
@@ -170,7 +200,7 @@ def close_hook(conduit):
 
 		# TODO split large tar file into smaller chunks
 
-		tar = tarfile.open(outname, 'w:gz')
+		tar = tarfile.open(fileobj=TarSplit(outname), mode='w|gz')
 		tar.add(logfilename)
 		for pack in new_packages:
 			if pack.repo.id in repolist.keys():
@@ -191,8 +221,5 @@ def close_hook(conduit):
 		print "Incremental package list built:", outname
 		print "  Contains", len(new_packages), "packages from", len(repolist.keys()), "repos"
 	print "DS DONE", len(new_packages)
-
-
-
 
 
