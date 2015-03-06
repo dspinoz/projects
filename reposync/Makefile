@@ -23,8 +23,10 @@ test5:	install
 	cat tmp/.reposync2.meta
 	find tmp
 
-
-
+test6: install
+	rm -rf repo/lib*
+	reposync --plugins --repoid=repo
+	yum --reposync2-merge 
 
 install: reposync2.conf reposync2.py check
 	cp reposync2.conf /etc/yum/pluginconf.d/reposync2.conf

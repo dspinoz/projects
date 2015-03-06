@@ -19,7 +19,6 @@ def package_is_valid(pack):
 	return False
 
 def merge_incrementals(opts, conduit):
-	print "MERGING", opts.incrdir, opts.destdir
 
 	cwd = os.getcwd()
 	opts.incrdir = os.path.realpath(opts.incrdir)
@@ -33,7 +32,12 @@ def merge_incrementals(opts, conduit):
 	if os.path.isfile('.reposync2.meta'):
 		meta = open('.reposync2.meta')
 		lastupdate = meta.readline()
-		print "LAST UPDATE AT", time.strftime(conduit.confString('main', 'timeformat', '%c'), time.localtime(float(lastupdate)))
+		if lastupdate:
+			lastupdate = lastupdate.rstrip()
+			lastupdate = float(lastupdate)
+			print "LAST UPDATE AT", time.strftime(conduit.confString('main', 'timeformat', '%c'), time.localtime(lastupdate)), lastupdate
+		else:
+			lastupdate = 0
 		meta.close()
 
 	incrementals = glob.glob("%s/%s*.tar.gz" %( opts.incrdir, 
@@ -43,33 +47,34 @@ def merge_incrementals(opts, conduit):
 	toexport = []
 
 	for inc in incrementals:
-		print "FILE", inc
 		match = re.search( "%s-(.*).tar.gz" %(
 				conduit.confString('main', 'fileprefix', 'reposync')), 
 			os.path.basename(inc) )
 		
 		if match:
 			sec = time.mktime(time.strptime(match.group(1), conduit.confString('main', 'timeformat', '%c')))
-			if sec > lastupdate:
+			if int(sec) > int(lastupdate):
+				print "[X]", os.path.basename(inc), sec
 				toexport.append((sec, inc))
+			else:
+				print "[ ]", os.path.basename(inc), sec
+			
 	
 	# Export older packages first
 	toexport.sort()
 
-	print "EXPORTING", toexport
-
 	for tm,inc in toexport:
-		print "ZZ", inc
 		tar = tarfile.open(inc)
 		tar.extractall()
 		tar.close()
+		lastupdate = tm
 
 	# TODO perform createrepo
 
 	print "SUCCESS"
 
 	meta = open('.reposync2.meta', 'w')
-	meta.write("%d\n" %( time.time() ))
+	meta.write("%02f\n" %( lastupdate ))
 	meta.close()
 
 def init_hook(conduit):
