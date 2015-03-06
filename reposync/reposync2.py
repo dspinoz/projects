@@ -6,6 +6,7 @@ import os.path
 import sys
 import glob
 import re
+from operator import itemgetter
 
 # TODO catch exceptions
 
@@ -30,14 +31,20 @@ class TarSplit:
 		if self.fd is None:
 			self.fd = open(self.name, 'rb')
 			print "Reading incremental", os.path.basename(self.name)
-			self.input = glob.glob("%s.*" %( self.name ))
-			self.input.sort(reverse=True)
+			files = glob.glob("%s.*" %( self.name ))
+
+			# Sort files in number order, not ascii order
+			for f in files:
+				match = re.search(".*.tar.gz.([0-9]+)", f)
+				if match:
+					self.input.append((int(match.group(1)), f))
+			self.input.sort(key=lambda x: x[0], reverse=True)
 
 		got = self.fd.read(bufsize)
 
 		if len(got) == 0:
 			try:
-				n = self.input.pop()
+				(i, n) = self.input.pop()
 				print "Reading incremental", os.path.basename(n)
 				self.fd.close()
 				self.fd = open(n, 'rb')
