@@ -98,6 +98,8 @@ def config_hook(conduit):
 		print "DS ADDED MERGE OPTION"
 		# TODO option to perform sync from yum interface
 		#      this way, will use available yum options instead
+		# TODO allow command line options to override config file
+		# TODO specify options for all available in config
 		conduit.getOptParser().add_option('','--reposync2-merge', 
 			dest='merge', action='store_true', default=False,
 			help='Merge incremental reposync changes locally')
