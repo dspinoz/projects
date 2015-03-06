@@ -23,26 +23,22 @@ class TarSplit:
 	input = []
 
 	def __init__(self, name, max=None):
-		print 'INIT'
 		self.name = name
 		self.max = max
-		print "TAR",name,max
 
 	def read(self, bufsize):
-#		print 'READ', bufsize
 		if self.fd is None:
 			self.fd = open(self.name, 'rb')
+			print "Reading incremental", os.path.basename(self.name)
 			self.input = glob.glob("%s.*" %( self.name ))
 			self.input.sort(reverse=True)
-			print "INPUT",self.input
 
 		got = self.fd.read(bufsize)
-#		print 'GOT', len(got),'/',bufsize
 
 		if len(got) == 0:
 			try:
 				n = self.input.pop()
-				print "MOVE TO NEXT",n
+				print "Reading incremental", os.path.basename(n)
 				self.fd.close()
 				self.fd = open(n, 'rb')
 				got = self.fd.read(bufsize)
@@ -53,21 +49,20 @@ class TarSplit:
 
 	def write(self, str):
 		# TODO handle disk filling up
-#		print 'WRITE', type(str), len(str)
 		if self.fd is None:
 			self.fd = open(self.name, 'wb')
+			print "Writing incremental", os.path.basename(self.name)
 
 		if self.max > 0 and self.written + len(str) > self.max:
 			self.fd.close()
-			self.fd = open("%s.%02d" %( self.name, self.count ), 'wb')
+			n = "%s.%02d" %( self.name, self.count )
+			self.fd = open(n, 'wb')
 			self.count += 1
 			self.written = 0
 
 		self.written += len(str)
 		self.fd.write(str)
 
-	def __destroy__(self):
-		print 'DESTROY'
 
 def package_is_valid(pack):
 	if os.path.isfile(pack.localPkg()) == True and os.path.getsize(pack.localPkg()) == int(pack.returnSimple('packagesize')) and pack.verifyLocalPkg() == True:
@@ -79,7 +74,7 @@ def merge_incrementals(opts, conduit):
 	cwd = os.getcwd()
 	opts.incrdir = os.path.realpath(opts.incrdir)
 	opts.destdir = os.path.realpath(opts.destdir)
-	print "DS MERGE AT", cwd, "FROM", opts.incrdir, "TO", opts.destdir
+	print "Merging incrementals FROM", opts.incrdir, "TO", opts.destdir
 
 	# Easiest for untarring
 	os.chdir(opts.destdir)
@@ -91,7 +86,7 @@ def merge_incrementals(opts, conduit):
 		if lastupdate:
 			lastupdate = lastupdate.rstrip()
 			lastupdate = float(lastupdate)
-			print "LAST UPDATE AT", time.strftime(conduit.confString('main', 'timeformat', '%c'), time.localtime(lastupdate)), lastupdate
+			print "Repo currently at", time.strftime(conduit.confString('main', 'timeformat', '%c'), time.localtime(lastupdate))
 		else:
 			lastupdate = 0
 		meta.close()
@@ -112,10 +107,8 @@ def merge_incrementals(opts, conduit):
 		if match:
 			sec = time.mktime(time.strptime(match.group(1), conduit.confString('main', 'timeformat', '%c')))
 			if int(sec) > int(lastupdate):
-				print "[X]", os.path.basename(inc), sec
 				toexport.append((sec, inc))
 			else:
-				print "[ ]", os.path.basename(inc), sec
 				break
 			
 	
@@ -123,24 +116,24 @@ def merge_incrementals(opts, conduit):
 	toexport.sort()
 
 	for tm,inc in toexport:
-		print "DS EXTRACT", os.path.basename(inc), tm
 		tar = tarfile.open(fileobj=TarSplit(inc), mode='r|gz')
 		# its a tarfile stream - can only call extractall!
 		tar.extractall()
 		tar.close()
 		lastupdate = tm
 
-	# TODO perform createrepo
+	if len(toexport) == 0:
+		print "Repo is up to date"
+	else:
+		print "Repo updated to", time.strftime(conduit.confString('main', 'timeformat', '%c'), time.localtime(lastupdate))
 
-	print "DS MERGE SUCCESS"
+	# TODO perform createrepo
 
 	meta = open('.reposync2.meta', 'w')
 	meta.write("%02f\n" %( lastupdate ))
 	meta.close()
 
 def init_hook(conduit):
-	#conduit.info(2, 'hello world')
-	print "DS INIT FOO", conduit.confBool('main','foo',False) == True, conduit.confBool('main', 'keeplog', False) == False, sys.argv[0]
 
 	if hasattr(conduit.getOptParser(), 'parse_args'):
 		(opts, args) = conduit.getOptParser().parse_args()
@@ -149,10 +142,9 @@ def init_hook(conduit):
 			raise PluginYumExit('Exiting because merging only')
 
 def config_hook(conduit):
-	print "DS CONFIG"
+
 	# Command Options cannot be added to reposync
 	if hasattr(conduit.getOptParser(), 'add_option'):
-		print "DS ADDED MERGE OPTION"
 		# TODO option to perform sync from yum interface
 		#      this way, will use available yum options instead
 		# TODO allow command line options to override config file
@@ -167,52 +159,36 @@ def config_hook(conduit):
 			dest='destdir', action='store', default='./repos-merged/',
 			help='Directory where rpms are kept')
 
-def args_hook(conduit):
-	print "DS ARGS", conduit.getArgs()
-
-def postconfig_hook(conduit):
-	print "DS POST CONFIG"
-
-def prereposetup(conduit):
-	print "DS MERGE", conduit.getConf().merge == True
-
-def postreposetup_hook(conduit):
-	#conduit.info(2', 'got repos')
-	print "DS REPO SETUP", conduit.getRepos().listEnabled()
-
 def predownload_hook(conduit):
-	#conduit.info(2, 'downloading...')
-	print "DS PREDOWN", len(pre_packages)
+	# new packages available in the repo, filter what we need to get
 	for pack in conduit.getDownloadPackages():
 		if package_is_valid(pack) != True:
 			pre_packages.append(pack)
-	print "DS PREDOWN", len(pre_packages), "TO FETCH"
-
-def postdownload_hook(conduit):
-	#conduit.info(2, 'downloaded.')
-	print "DS POSTDOWN", len(conduit.getDownloadPackages())
-
-def posttrans_hook(conduit):
-	print "DS TRANS DONE"
 
 def close_hook(conduit):
 
 	new_packages = []
-	print "DS CLOSE", len(new_packages), " FETCHED"
+	
 	# verify packages have been downloaded in full
 	for pack in pre_packages:
 		if package_is_valid(pack) == True:
 			new_packages.append(pack)
-			print "DS DOWNLOADED", pack, pack.repo.id
-	if len(new_packages) > 0:
-		repolist = {}
+	
+	if len(new_packages) == 0:
+		print 'No packages downloaded'
+	else:
+
+		timestr = time.strftime(conduit.confString('main', 'timeformat', '%c'))
+
 		outname = "%s-%s.tar.gz" %(
 			conduit.confString('main', 'fileprefix', 'reposync'), 
-			time.strftime(conduit.confString('main', 'timeformat', '%c')))
+			timestr )
 
 		logfilename = "%s-%s.csv" %(
 			conduit.confString('main', 'fileprefix', 'reposync'), 
-			time.strftime(conduit.confString('main', 'timeformat', '%c')))
+			timestr )
+
+		# maintain audit log
 		logfile = open(logfilename, 'w')
 
 		logfile.write("rpmfile,remote_url\n")
@@ -225,12 +201,16 @@ def close_hook(conduit):
 
 		logfile.close()
 
-		# TODO split large tar file into smaller chunks
+		# Create incremental
+		
+		splitter = TarSplit( outname,
+				conduit.confInt('main', 'maxfilesize', None) )
 
-		tar = tarfile.open(fileobj=TarSplit( outname,
-				conduit.confInt('main', 'maxfilesize', None) ), 
-			mode='w|gz')
+		tar = tarfile.open(fileobj=splitter, mode='w|gz')
 		tar.add(logfilename)
+
+		repolist = {}
+		
 		for pack in new_packages:
 			if pack.repo.id in repolist.keys():
 				repolist[pack.repo.id] += 1
@@ -241,14 +221,16 @@ def close_hook(conduit):
 				pack.repo.id, 
 				os.path.basename(pack.localPkg()) )
 			tar.add(pack.localPkg(), fname)
+		
 		tar.close()
 
-		
+		if splitter.count > 0:
+			print "  Split into", splitter.count, "files"
+
 		if conduit.confBool('main', 'keeplog', False) == False:
 			os.remove(logfilename)
 
-		print "Incremental package list built:", outname
+		print "Successfully built incremental", timestr
 		print "  Contains", len(new_packages), "packages from", len(repolist.keys()), "repos"
-	print "DS DONE", len(new_packages)
 
 
