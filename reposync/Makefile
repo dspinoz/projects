@@ -7,7 +7,7 @@ test: install
 	reposync --plugins --repoid=repo 
 
 test2: install
-	reposync --plugins --repo=epel7 
+	reposync --plugins --source --repo=epel7 
 
 test3: install
 	rm -rf repo*/pytho* repo2/lib*
@@ -24,6 +24,15 @@ test5:	install
 	find tmp
 
 test6: install
+	rm -rf repo/lib*
+	reposync --plugins --repoid=repo
+	yum --reposync2-merge 
+
+test7: install
+	rm -rf repo/lib*
+	reposync --plugins --repoid=repo
+	rm -rf repo/lib*
+	reposync --plugins --repoid=repo
 	rm -rf repo/lib*
 	reposync --plugins --repoid=repo
 	yum --reposync2-merge 

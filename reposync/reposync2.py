@@ -23,7 +23,7 @@ def merge_incrementals(opts, conduit):
 	cwd = os.getcwd()
 	opts.incrdir = os.path.realpath(opts.incrdir)
 	opts.destdir = os.path.realpath(opts.destdir)
-	print "AT", cwd, "FROM", opts.incrdir, "TO", opts.destdir
+	print "DS MERGE AT", cwd, "FROM", opts.incrdir, "TO", opts.destdir
 
 	# Easiest for untarring
 	os.chdir(opts.destdir)
@@ -42,9 +42,11 @@ def merge_incrementals(opts, conduit):
 
 	incrementals = glob.glob("%s/%s*.tar.gz" %( opts.incrdir, 
 		conduit.confString('main', 'fileprefix', 'reposync')) )
-	incrementals.sort(reverse=True)
 
 	toexport = []
+
+	# have latest first - dont keep searching unnecessarily
+	incrementals.sort(reverse=True)
 
 	for inc in incrementals:
 		match = re.search( "%s-(.*).tar.gz" %(
@@ -58,12 +60,14 @@ def merge_incrementals(opts, conduit):
 				toexport.append((sec, inc))
 			else:
 				print "[ ]", os.path.basename(inc), sec
+				break
 			
 	
 	# Export older packages first
 	toexport.sort()
 
 	for tm,inc in toexport:
+		print "DS EXTRACT", os.path.basename(inc), tm
 		tar = tarfile.open(inc)
 		tar.extractall()
 		tar.close()
@@ -71,7 +75,7 @@ def merge_incrementals(opts, conduit):
 
 	# TODO perform createrepo
 
-	print "SUCCESS"
+	print "DS MERGE SUCCESS"
 
 	meta = open('.reposync2.meta', 'w')
 	meta.write("%02f\n" %( lastupdate ))
