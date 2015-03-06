@@ -18,25 +18,52 @@ class TarSplit:
 	name = None
 	fd = None
 	max = None
+	written = 0
+	count = 1
+	input = []
 
 	def __init__(self, name, max=None):
 		print 'INIT'
 		self.name = name
 		self.max = max
+		print "TAR",name,max
 
 	def read(self, bufsize):
-		print 'READ', bufsize
+#		print 'READ', bufsize
 		if self.fd is None:
 			self.fd = open(self.name, 'rb')
+			self.input = glob.glob("%s.*" %( self.name ))
+			self.input.sort(reverse=True)
+			print "INPUT",self.input
 
 		got = self.fd.read(bufsize)
-		print 'GOT', len(got),'/',bufsize
+#		print 'GOT', len(got),'/',bufsize
+
+		if len(got) == 0:
+			try:
+				n = self.input.pop()
+				print "MOVE TO NEXT",n
+				self.fd.close()
+				self.fd = open(n, 'rb')
+				got = self.fd.read(bufsize)
+			except IndexError:
+				pass
+		
 		return got
 
 	def write(self, str):
-		print 'WRITE', type(str), len(str)
+		# TODO handle disk filling up
+#		print 'WRITE', type(str), len(str)
 		if self.fd is None:
 			self.fd = open(self.name, 'wb')
+
+		if self.max > 0 and self.written + len(str) > self.max:
+			self.fd.close()
+			self.fd = open("%s.%02d" %( self.name, self.count ), 'wb')
+			self.count += 1
+			self.written = 0
+
+		self.written += len(str)
 		self.fd.write(str)
 
 	def __destroy__(self):
@@ -200,7 +227,9 @@ def close_hook(conduit):
 
 		# TODO split large tar file into smaller chunks
 
-		tar = tarfile.open(fileobj=TarSplit(outname), mode='w|gz')
+		tar = tarfile.open(fileobj=TarSplit( outname,
+				conduit.confInt('main', 'maxfilesize', None) ), 
+			mode='w|gz')
 		tar.add(logfilename)
 		for pack in new_packages:
 			if pack.repo.id in repolist.keys():
