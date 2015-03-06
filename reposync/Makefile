@@ -11,6 +11,7 @@ test2: install
 
 test3: install
 	rm -rf repo*/pytho* repo2/lib*
+	mkdir -p repos-merged
 	reposync --plugins --repo=repo\*
 
 test4: install
