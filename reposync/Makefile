@@ -1,4 +1,4 @@
-all: check install test
+all: check 
 
 check: reposync2.py
 	python -m py_compile reposync2.py
@@ -38,6 +38,10 @@ test7: install
 	reposync --plugins --repoid=repo
 	yum --reposync2-merge 
 
+source: 
+	rm -rf tmp; mkdir -p tmp/reposync2-0.1; cp reposync2.conf reposync2.py README.md reposync2.spec Makefile tmp/reposync2-0.1/; cd tmp; zip -r ../reposync2-0.1.zip reposync2-0.1/
+
 install: reposync2.conf reposync2.py check
-	cp reposync2.conf /etc/yum/pluginconf.d/reposync2.conf
-	cp reposync2.py /usr/share/yum-plugins/reposync2.py
+	mkdir -p $(DESTDIR)/etc/yum/pluginconf.d $(DESTDIR)/usr/share/yum-plugins
+	cp reposync2.conf $(DESTDIR)/etc/yum/pluginconf.d/reposync2.conf
+	cp reposync2.py $(DESTDIR)/usr/share/yum-plugins/reposync2.py
