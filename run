@@ -1,0 +1,6 @@
+#!/bin/sh -x
+
+docker build .
+docker ps
+docker run -it --expose=3142 a777677cb7fd
+
