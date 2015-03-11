@@ -35,7 +35,7 @@ scp reposync-*.tar.gz* user@anotherhost:~/
 
 3. Unpack incrementals
 
-```bash
+   ```bash
 ssh user@anotherhost
 yum --reposync2-merge --incremental-dir=<where copied to> --dest-dir=<all repos>
 ```
