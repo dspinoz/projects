@@ -1,24 +1,22 @@
-Name:           
-Version:        
+Name:           reposync2
+Version:        0.1
 Release:        1%{?dist}
-Summary:        
+Summary:        Build incrementals from reposync
 
-License:        
-URL:            
-Source0:        
+License:        Free
+URL:            https://github.com/dspinoz/projects/reposync
+Source0:        reposync2-%{version}.zip
 
-BuildRequires:  
-Requires:       
+BuildRequires:  make
+Requires:       python
 
 %description
-
+Yum plugin for building incremental downloads from reposync.
 
 %prep
 %setup -q
 
-
 %build
-%configure
 make %{?_smp_mflags}
 
 
@@ -28,8 +26,10 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %files
-%doc
-
+%config /etc/yum/pluginconf.d/reposync2.conf
+/usr/share/yum-plugins/reposync2.py
+/usr/share/yum-plugins/reposync2.pyc
+/usr/share/yum-plugins/reposync2.pyo
 
 
 %changelog
