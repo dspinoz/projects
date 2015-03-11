@@ -185,6 +185,10 @@ def close_hook(conduit):
 		print 'No packages downloaded'
 	else:
 
+		if sys.argv[0] != '/bin/reposync':
+			print "Not building download incremental, not in reposync"
+			return
+
 		timestr = time.strftime(conduit.confString('main', 'timeformat', '%c'))
 
 		outname = "%s-%s.tar.gz" %(
