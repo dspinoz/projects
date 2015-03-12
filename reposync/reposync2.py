@@ -204,8 +204,7 @@ def close_hook(conduit):
 
 		logfile.write("rpmfile,remote_url\n")
 		for pack in new_packages:
-			fname = "%s/%s" %(pack.repo.id,
-					os.path.basename(pack.localPkg()))
+			fname = "%s/%s" %( pack.repo.id, pack.remote_path )
 
 			logfile.write("%s,%s\n" %(
 				fname, pack._remote_url() ))
@@ -228,9 +227,11 @@ def close_hook(conduit):
 			else:
 				repolist[pack.repo.id] = 1
 
-			fname = "%s/%s" %(
-				pack.repo.id, 
-				os.path.basename(pack.localPkg()) )
+			# maintain files inside the incremental like reposync does
+			# this way, the directory structure will look the same
+			# and reposync can be performed on the remote host
+
+			fname = "%s/%s" %( pack.repo.id, pack.remote_path )
 			tar.add(pack.localPkg(), fname)
 		
 		tar.close()

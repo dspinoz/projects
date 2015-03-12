@@ -1,5 +1,5 @@
 Name:           reposync2
-Version:        0.1
+Version:        0.2
 Release:        1%{?dist}
 Summary:        Build incrementals from reposync
 
@@ -7,8 +7,8 @@ License:        Free
 URL:            https://github.com/dspinoz/projects/reposync
 Source0:        reposync2-%{version}.zip
 
-BuildRequires:  make
-Requires:       python
+BuildRequires:  make zip python
+Requires:       python yum-utils createrepo
 
 %description
 Yum plugin for building incremental downloads from reposync.

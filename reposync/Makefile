@@ -39,7 +39,7 @@ test7: install
 	yum --reposync2-merge 
 
 source: 
-	rm -rf tmp; mkdir -p tmp/reposync2-0.1; cp reposync2.conf reposync2.py README.md reposync2.spec Makefile tmp/reposync2-0.1/; cd tmp; zip -r ../reposync2-0.1.zip reposync2-0.1/
+	rm -rf tmp; mkdir -p tmp/reposync2-0.2; cp reposync2.conf reposync2.py README.md reposync2.spec Makefile tmp/reposync2-0.2/; cd tmp; zip -r ../reposync2-0.2.zip reposync2-0.2/
 
 install: reposync2.conf reposync2.py check
 	mkdir -p $(DESTDIR)/etc/yum/pluginconf.d $(DESTDIR)/usr/share/yum-plugins
