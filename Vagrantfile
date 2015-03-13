@@ -22,7 +22,7 @@ Vagrant.configure(2) do |config|
   # Create a forwarded port mapping which allows access to a specific port
   # within the machine from a port on the host machine. In the example below,
   # accessing "localhost:8080" will access port 80 on the guest machine.
-  # config.vm.network "forwarded_port", guest: 80, host: 8080
+  config.vm.network "forwarded_port", guest: 3142, host: 3142
 
   # Create a private network, which allows host-only access to the machine
   # using a specific IP.
@@ -65,11 +65,14 @@ Vagrant.configure(2) do |config|
   # Puppet, Chef, Ansible, Salt, and Docker are also available. Please see the
   # documentation for more information about their specific syntax and use.
   config.vm.provision "shell", inline: <<-SHELL
+    # TODO allow required ports through the firewall
+    systemctl stop firewalld.service
     yum makecache
     yum upgrade
-    yum install docker
+    yum install docker screen
     cd /vagrant
     sudo docker -d &
+    sudo chown vagrant /var/run/docker.sock 
     docker build .
     
   #   sudo apt-get update
