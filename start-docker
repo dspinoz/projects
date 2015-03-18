@@ -1,0 +1,13 @@
+#!/bin/bash
+
+sudo docker -d &
+pid=$!
+
+while [ ! -S /var/run/docker.sock ]
+do
+  sleep 0.1
+done
+
+sudo chown vagrant /var/run/docker.sock
+
+wait $pid
