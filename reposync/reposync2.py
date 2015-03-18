@@ -59,7 +59,6 @@ class TarSplit:
 		# TODO handle disk filling up
 		if self.fd is None:
 			self.fd = open(self.name, 'wb')
-			print "Writing incremental", os.path.basename(self.name)
 
 		if self.max > 0 and self.written + len(str) > self.max:
 			self.fd.close()
@@ -184,164 +183,150 @@ def predownload_hook(conduit):
 	for pack in conduit.getDownloadPackages():
 		if package_is_valid(pack) != True:
 			pre_packages.append(pack)
-
+			
 def postdownload_hook(conduit):
 
 	# path for when inside yum
 	# --downloadonly skips here - see close_hook
 	# build incremental early - packages in local cache may be removed!
-
-	check = False
-	reposyncdir = os.getcwd()
-
-	if hasattr(conduit.getOptParser(), 'parse_args'):
-		(opts, args) = conduit.getOptParser().parse_args()
-		check = opts.reposync2enable
-		reposyncdir = opts.reposyncdir
-
-	if check == False:
-		return
-
-
-	# TODO only build incremental if something downloaded and not in the cache
-	# TODO command arg to check the reposync cache for files
-	# TODO arg for reposync directory
-	# TODO build csv
-
-	count = 0
-	repolist = {}
-
-	timestr = time.strftime(conduit.confString('main', 'timeformat', '%c'))
-
-	outname = "%s-%s.tar.gz" %(
-			conduit.confString('main', 'fileprefix', 'reposync'), 
-			timestr )
-
-	splitter = TarSplit( outname,
-		conduit.confInt('main', 'maxfilesize', None) )
-
-	tar = tarfile.open(fileobj=splitter, mode='w|gz')
-
-	for pack in conduit.getDownloadPackages():
-		localpath = os.path.join(reposyncdir, "%s/%s" %( pack.repo.id, pack.remote_path ))
-		localdir = os.path.dirname(localpath)
-
-		# A custom verify
-		#   1. verify it is available locally (downloaded to local yum cache)
-		#   2. check if its already in the cache (in reposync format)
-		#   3. verify has been downloaded in full
-
-		if pack.verifyLocalPkg() == True and os.path.isfile("%s/%s" %( localdir, os.path.basename(pack.localPkg()) )) == True:
-			# already in cache
-			continue
-
-		if pack.verifyLocalPkg() == True and os.path.getsize(pack.localPkg()) == int(pack.returnSimple('packagesize')):
-
-			# Put it into the cache - create the structure like reposync
-			if pack.repo.id in repolist.keys():
-				repolist[pack.repo.id] += 1
-			else:
-				repolist[pack.repo.id] = 1
-
-			if not os.path.exists(localdir):
-				os.makedirs(localdir)
-
-			shutil.copy(pack.localpath, localdir)
-			tar.add(pack.localpath, "%s/%s" %( pack.repo.id, pack.remote_path ))
-			count += 1
-
-
-	tar.close()
-	if count == 0:
-		os.unlink(outname)
-	else:
-		print "Successfully built incremental", timestr
-		print "  Contains", count, "packages from", len(repolist.keys()), "repos"
+	build_incremental(conduit, conduit.getDownloadPackages())
 
 def close_hook(conduit):
 
 	# Path for reposync
 	# Path for yum with --downloadonly
 	# TODO consolidate seperate paths into single function def
+	build_incremental(conduit, pre_packages)
 
-	new_packages = []
-	
-	# verify packages have been downloaded in full
-	for pack in pre_packages:
-		if package_is_valid(pack) == True:
-			new_packages.append(pack)
-	
-	if len(new_packages) == 0:
-		print 'No packages downloaded'
-	else:
-		# only for reposync, unless otherwise specified
-		enabled = sys.argv[0] == '/bin/reposync' 
+def build_incremental(conduit, packages):
+  
+	if len(packages) == 0:
+		print 'MAHHHH'
+		return
+		
+	inreposync = sys.argv[0] == '/bin/reposync'
+	reposyncdir = False
 
-		if hasattr(conduit.getOptParser(), 'parse_args'):
-			(opts, args) = conduit.getOptParser().parse_args()
-			enabled = opts.reposync2enable
-
-		if enabled == False:
-			print "Not building download incremental, disabled"
+	if hasattr(conduit.getOptParser(), 'parse_args'):
+		(opts, args) = conduit.getOptParser().parse_args()
+		if opts.reposync2enable == False:
+			print "DDDDDDDDDDDDD"
 			return
+		reposyncdir = opts.reposyncdir
+		inreposync = False
 
-		timestr = time.strftime(conduit.confString('main', 'timeformat', '%c'))
+	# prescan the packages - only build if something downloaded and not in the cache
+	forbuild = []
+	
+	for pack in packages:
+	
+		print "."
+	
+		if inreposync:
+			# in reposync 
+			# verify packages have been downloaded in full
+			if package_is_valid(pack) == True:
+				forbuild.append(pack)
+					
+		else:
+			# in yum
+			localpath = os.path.join(reposyncdir, "%s/%s" %( pack.repo.id, pack.remote_path ))
+			localdir = os.path.dirname(localpath)
 
-		outname = "%s-%s.tar.gz" %(
-			conduit.confString('main', 'fileprefix', 'reposync'), 
-			timestr )
+			# A custom verify
+			#   1. verify it is available locally (downloaded to local yum cache)
+			#   2. check if its already in the cache (in reposync format)
+			#   3. verify has been downloaded in full
 
-		logfilename = "%s-%s.csv" %(
-			conduit.confString('main', 'fileprefix', 'reposync'), 
-			timestr )
+			if os.path.isfile(pack.localPkg()) == True and pack.verifyLocalPkg() == True and os.path.isfile("%s/%s" %( localdir, os.path.basename(pack.localPkg()) )) == True:
+				# already in cache
+				continue
 
-		# maintain audit log
-		logfile = open(logfilename, 'w')
+			if os.path.isfile(pack.localPkg()) == True and pack.verifyLocalPkg() == True and os.path.getsize(pack.localPkg()) == int(pack.returnSimple('packagesize')):
+				# Put it into the cache - create the structure like reposync
+				forbuild.append(pack)
+	
+	
+	# only for reposync, unless otherwise specified
 
-		logfile.write("rpmfile,remote_url\n")
-		for pack in new_packages:
-			fname = "%s/%s" %( pack.repo.id, pack.remote_path )
+	if hasattr(conduit.getOptParser(), 'parse_args'):
+		# in yum
+		(opts, args) = conduit.getOptParser().parse_args()
+		if opts.reposync2enable == False:
+			if len(forbuild) > 0:
+				print "Not building download incremental, disabled"
+				print "  ", len(forbuild), "packages were available for caching"
+			return
+	
+	if len(forbuild) == 0:
+		print 'No packages downloaded'
+		return
+	
+	# contribute to the repo and build incremental
+	repolist = {}
 
-			logfile.write("%s,%s\n" %(
-				fname, pack._remote_url() ))
+	timestr = time.strftime(conduit.confString('main', 'timeformat', '%c'))
+	
+	# maintain audit log
+	logfilename = "%s-%s.csv" %(
+		conduit.confString('main', 'fileprefix', 'reposync'), 
+		timestr )
 
-		logfile.close()
+	logfile = open(logfilename, 'w')
 
-		# Create incremental
+	logfile.write("rpmfile,remote_url\n")
+	for pack in forbuild:
+
+		logfile.write("%s,%s\n" %(
+			"%s/%s" %( pack.repo.id, pack.remote_path ), pack._remote_url() ))
+
+	logfile.close()
+	
+	
+	# Create incremental
+
+	outname = "%s-%s.tar.gz" %(
+		conduit.confString('main', 'fileprefix', 'reposync'), 
+		timestr )
 		
-		splitter = TarSplit( outname,
-				conduit.confInt('main', 'maxfilesize', None) )
+	print "Writing incremental", os.path.basename(outname)
+	
+	splitter = TarSplit( outname,
+			conduit.confInt('main', 'maxfilesize', None) )
 
-		tar = tarfile.open(fileobj=splitter, mode='w|gz')
-		tar.add(logfilename)
-
-		repolist = {}
+	tar = tarfile.open(fileobj=splitter, mode='w|gz')
+	tar.add(logfilename)
+	
+	for pack in forbuild:
 		
-		for pack in new_packages:
-			if pack.repo.id in repolist.keys():
-				repolist[pack.repo.id] += 1
-			else:
-				repolist[pack.repo.id] = 1
+		# track repositories for user stats
+		if pack.repo.id in repolist.keys():
+			repolist[pack.repo.id] += 1
+		else:
+			repolist[pack.repo.id] = 1
+			
+		if inreposync == False:
+			# yum contributes to reposync cache
+			dir = os.path.dirname(pack.reposync2_output_path)
+			if not os.path.exists(dir):
+				os.makedirs(dir)
+			shutil.copy(pack.localPkg(), dir)
 
-			# maintain files inside the incremental like reposync does
-			# this way, the directory structure will look the same
-			# and reposync can be performed on the remote host
+		# maintain files inside the incremental like reposync does
+		# this way, the directory structure will look the same
+		# and reposync can be performed on the remote host
 
-			fname = "%s/%s" %( pack.repo.id, pack.remote_path )
-			tar.add(pack.localPkg(), fname)
-		
-		tar.close()
+		tar.add(pack.localPkg(), "%s/%s" %( pack.repo.id, pack.remote_path ))
+	
+	tar.close()
+	
+	if splitter.count > 0:
+		print "  Split into", splitter.count, "files"
 
-		if splitter.count > 0:
-			print "  Split into", splitter.count, "files"
+	if conduit.confBool('main', 'keeplog', False) == False:
+		os.remove(logfilename)
 
-		if conduit.confBool('main', 'keeplog', False) == False:
-			os.remove(logfilename)
-
-		print "Successfully built incremental", timestr
-		print "  Contains", len(new_packages), "packages from", len(repolist.keys()), "repos"
-
-
-
-
-    
+	print "Successfully built incremental", timestr
+	print "  Contains", len(forbuild), "packages from", len(repolist.keys()), "repos"
+	
+	
