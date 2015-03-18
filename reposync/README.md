@@ -26,14 +26,27 @@ reposync --plugins --source --newest-only
    
    Refer to reposync(1) for more information
 
+2. Perform yum commands
 
-2. Transfer incremental files
+   ```bash
+yum --reposync2-enable upgrade
+yum --reposync2-enable --downloadonly install gcc-c++
+...
+```
+
+   Upgrade the system to the latest packages available, but cache the downloaded packages (like reposync) and build "incremental" files.
+
+   Run commands inside the directory where reposync is performed, or ensure that --download_path is consistent between reposync and yum.
+
+   See ```yum --help``` for more information
+
+3. Transfer incremental files
 
    ```bash
 scp reposync-*.tar.gz* user@anotherhost:~/
 ```
 
-3. Unpack incrementals
+4. Unpack incrementals
 
    ```bash
 ssh user@anotherhost
@@ -52,9 +65,10 @@ yum --reposync2-merge --incremental-dir=<where copied to> --dest-dir=<all repos>
 * allow command line options to override config file
 * specify options for all available in config
 * show progress when creating incremental (large run of reposync will download LOTS of packages)
-* allow incrementals to be built via yum (don't just limit the use to reposync)  
 
 ## Changelog
+
+* Version 0.3 - allow yum to build incrementals too! yum requires the --reposync2-enable option
 
 * Version 0.2 - when extracting incrementals, make the directory structure look like it does when it comes from reposync
 

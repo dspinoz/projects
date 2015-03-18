@@ -6,6 +6,7 @@ import os.path
 import sys
 import glob
 import re
+import shutil
 from operator import itemgetter
 
 # TODO catch exceptions
@@ -148,6 +149,12 @@ def init_hook(conduit):
 			merge_incrementals(opts, conduit)
 			raise PluginYumExit('Exiting because merging only')
 
+	if hasattr(conduit.getOptParser(), 'parse_args'):
+		(opts, args) = conduit.getOptParser().parse_args()
+		if opts.reposync2enable == False:
+			print "reposync2 disabled, no incremental will be produced"
+
+
 def config_hook(conduit):
 
 	# Command Options cannot be added to reposync
@@ -159,12 +166,18 @@ def config_hook(conduit):
 		conduit.getOptParser().add_option('','--reposync2-merge', 
 			dest='merge', action='store_true', default=False,
 			help='Merge incremental reposync changes locally')
+		conduit.getOptParser().add_option('','--reposync2-enable', 
+			dest='reposync2enable', action='store_true', default=False,
+			help='Continue to build package cache from yum')
 		conduit.getOptParser().add_option('','--incremental-dir', 
 			dest='incrdir', action='store', default='.',
 			help='Directory for performing merge')
 		conduit.getOptParser().add_option('','--dest-dir', 
-			dest='destdir', action='store', default='./repos-merged/',
+			dest='destdir', action='store', default='./',
 			help='Directory where rpms are kept')
+		conduit.getOptParser().add_option('','--download_path', 
+			dest='reposyncdir', action='store', default='./',
+			help='Directory where reposync writes')
 
 def predownload_hook(conduit):
 	# new packages available in the repo, filter what we need to get
@@ -172,7 +185,84 @@ def predownload_hook(conduit):
 		if package_is_valid(pack) != True:
 			pre_packages.append(pack)
 
+def postdownload_hook(conduit):
+
+	# path for when inside yum
+	# --downloadonly skips here - see close_hook
+	# build incremental early - packages in local cache may be removed!
+
+	check = False
+	reposyncdir = os.getcwd()
+
+	if hasattr(conduit.getOptParser(), 'parse_args'):
+		(opts, args) = conduit.getOptParser().parse_args()
+		check = opts.reposync2enable
+		reposyncdir = opts.reposyncdir
+
+	if check == False:
+		return
+
+
+	# TODO only build incremental if something downloaded and not in the cache
+	# TODO command arg to check the reposync cache for files
+	# TODO arg for reposync directory
+	# TODO build csv
+
+	count = 0
+	repolist = {}
+
+	timestr = time.strftime(conduit.confString('main', 'timeformat', '%c'))
+
+	outname = "%s-%s.tar.gz" %(
+			conduit.confString('main', 'fileprefix', 'reposync'), 
+			timestr )
+
+	splitter = TarSplit( outname,
+		conduit.confInt('main', 'maxfilesize', None) )
+
+	tar = tarfile.open(fileobj=splitter, mode='w|gz')
+
+	for pack in conduit.getDownloadPackages():
+		localpath = os.path.join(reposyncdir, "%s/%s" %( pack.repo.id, pack.remote_path ))
+		localdir = os.path.dirname(localpath)
+
+		# A custom verify
+		#   1. verify it is available locally (downloaded to local yum cache)
+		#   2. check if its already in the cache (in reposync format)
+		#   3. verify has been downloaded in full
+
+		if pack.verifyLocalPkg() == True and os.path.isfile("%s/%s" %( localdir, os.path.basename(pack.localPkg()) )) == True:
+			# already in cache
+			continue
+
+		if pack.verifyLocalPkg() == True and os.path.getsize(pack.localPkg()) == int(pack.returnSimple('packagesize')):
+
+			# Put it into the cache - create the structure like reposync
+			if pack.repo.id in repolist.keys():
+				repolist[pack.repo.id] += 1
+			else:
+				repolist[pack.repo.id] = 1
+
+			if not os.path.exists(localdir):
+				os.makedirs(localdir)
+
+			shutil.copy(pack.localpath, localdir)
+			tar.add(pack.localpath, "%s/%s" %( pack.repo.id, pack.remote_path ))
+			count += 1
+
+
+	tar.close()
+	if count == 0:
+		os.unlink(outname)
+	else:
+		print "Successfully built incremental", timestr
+		print "  Contains", count, "packages from", len(repolist.keys()), "repos"
+
 def close_hook(conduit):
+
+	# Path for reposync
+	# Path for yum with --downloadonly
+	# TODO consolidate seperate paths into single function def
 
 	new_packages = []
 	
@@ -184,9 +274,15 @@ def close_hook(conduit):
 	if len(new_packages) == 0:
 		print 'No packages downloaded'
 	else:
+		# only for reposync, unless otherwise specified
+		enabled = sys.argv[0] == '/bin/reposync' 
 
-		if sys.argv[0] != '/bin/reposync':
-			print "Not building download incremental, not in reposync"
+		if hasattr(conduit.getOptParser(), 'parse_args'):
+			(opts, args) = conduit.getOptParser().parse_args()
+			enabled = opts.reposync2enable
+
+		if enabled == False:
+			print "Not building download incremental, disabled"
 			return
 
 		timestr = time.strftime(conduit.confString('main', 'timeformat', '%c'))
@@ -246,3 +342,6 @@ def close_hook(conduit):
 		print "  Contains", len(new_packages), "packages from", len(repolist.keys()), "repos"
 
 
+
+
+    

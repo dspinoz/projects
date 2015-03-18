@@ -38,8 +38,13 @@ test7: install
 	reposync --plugins --repoid=repo
 	yum --reposync2-merge 
 
+test8: install
+	rm -f rhel-7-server-rpms/Packages/trousers-0.3.11.2-3.el7.x86_64.rpm
+	yum remove -y trousers
+	yum install -y --reposync2-enable trousers
+
 source: 
-	rm -rf tmp; mkdir -p tmp/reposync2-0.2; cp reposync2.conf reposync2.py README.md reposync2.spec Makefile tmp/reposync2-0.2/; cd tmp; zip -r ../reposync2-0.2.zip reposync2-0.2/
+	rm -rf tmp; mkdir -p tmp/reposync2-0.3; cp reposync2.conf reposync2.py README.md reposync2.spec Makefile tmp/reposync2-0.3/; cd tmp; zip -r ../reposync2-0.3.zip reposync2-0.3/
 
 install: reposync2.conf reposync2.py check
 	mkdir -p $(DESTDIR)/etc/yum/pluginconf.d $(DESTDIR)/usr/share/yum-plugins
