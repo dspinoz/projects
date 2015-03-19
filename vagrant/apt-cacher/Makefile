@@ -23,6 +23,6 @@ logs:
 	docker logs -f test-apt-cacher
 
 backup:
-	docker run -it --volumes-from test-apt-cacher --volume `pwd`/cache:/backups apt-cacher-ng:latest sh -c 'apt-get install rsync && rsync -arvb /var/cache/apt-cacher-ng /backups'
+	docker run -it --link=test-apt-cacher:apt-cache --volumes-from test-apt-cacher --volume `pwd`/cache:/backups apt-cacher-ng:latest sh -c 'echo "Acquire::http { Proxy \"http://apt-cache:3142\"; };" >> /etc/apt/apt.conf.d/01proxy && apt-get install rsync && rsync -arvb /var/cache/apt-cacher-ng /backups'
 
 
