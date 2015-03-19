@@ -1,28 +1,51 @@
+tag = apt-cacher-ng
+name = test-apt-cacher
+volume = /var/cache/apt-cacher-ng/
+links = 
+linkcache = --link=test-apt-cacher:apt-cache
+setupcache = echo "Acquire::http { Proxy \"http://apt-cache:3142\"; };" >> /etc/apt/apt.conf.d/01proxy
 
-all: 
+.PHONY: all clean build export stop logs
 
-build: Dockerfile
-	docker build -t apt-cacher-ng .
+all: start
 
-ps:
-	docker ps
+build: $(name).build
 
-create: build
-	docker create --name test-apt-cacher apt-cacher-ng
+$(name).build: Dockerfile
+	docker build --tag=$(tag) .
+	docker create --name=$(name) $(links) $(tag)
+	touch $(name).build
 
-clean:
-	docker rm test-apt-cacher
+export: $(name).tgz
 
-run: 
-	docker start test-apt-cacher
+$(name).tgz: $(name).build
+	docker export $(name) | gzip - > $(name).tgz
+	touch $(name).tgz
+
+bash: build
+	docker run -it --volumes-from $(name) $(links) $(tag) bash
+
+start: $(name).started
+
+$(name).started: build
+	@#docker start --attach=true --interactive=true $(name)
+	docker start $(name)
+	touch $(name).started
 
 stop:
-	docker stop test-apt-cacher
+	rm -f $(name).started
+	docker stop $(name) 
 
 logs:
-	docker logs -f test-apt-cacher
+	docker logs -f $(name)
 
-backup:
-	docker run -it --link=test-apt-cacher:apt-cache --volumes-from test-apt-cacher --volume `pwd`/cache:/backups apt-cacher-ng:latest sh -c 'echo "Acquire::http { Proxy \"http://apt-cache:3142\"; };" >> /etc/apt/apt.conf.d/01proxy && apt-get install rsync && rsync -arvb /var/cache/apt-cacher-ng /backups'
+backup: export
+	docker run -it --volumes-from $(name) $(links) $(linkcache) --volume `pwd`/backup:/backups $(tag) sh -c '$(setupcache) && apt-get install rsync && mkdir -p /backups/$(volume) && rsync -arvb --delete --backup-dir=/backups/.deleted $(volume) /backups/$(volume)'
 
+# TODO restore from backup
+#restore: build
+#	docker run -it --volumes-from $(name) $(links) $(linkcache) --volume `pwd`/cache:/backups $(tag) sh -c '$(setupcache) && apt-get install rsync && rsync -arvb /backups/* $(volume)/..'
 
+clean: stop
+	rm -f $(name).build $(name).started
+	docker rm $(name)
