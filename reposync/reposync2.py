@@ -201,7 +201,6 @@ def close_hook(conduit):
 def build_incremental(conduit, packages):
   
 	if len(packages) == 0:
-		print 'MAHHHH'
 		return
 		
 	inreposync = sys.argv[0] == '/bin/reposync'
@@ -210,7 +209,7 @@ def build_incremental(conduit, packages):
 	if hasattr(conduit.getOptParser(), 'parse_args'):
 		(opts, args) = conduit.getOptParser().parse_args()
 		if opts.reposync2enable == False:
-			print "DDDDDDDDDDDDD"
+			print "reposync2 not enabled"
 			return
 		reposyncdir = opts.reposyncdir
 		inreposync = False
@@ -219,8 +218,6 @@ def build_incremental(conduit, packages):
 	forbuild = []
 	
 	for pack in packages:
-	
-		print "."
 	
 		if inreposync:
 			# in reposync 
@@ -244,6 +241,8 @@ def build_incremental(conduit, packages):
 
 			if os.path.isfile(pack.localPkg()) == True and pack.verifyLocalPkg() == True and os.path.getsize(pack.localPkg()) == int(pack.returnSimple('packagesize')):
 				# Put it into the cache - create the structure like reposync
+				pack.reposync2_output_path = localpath
+				print "reposync2 - caching", "%s/%s" %( pack.repo.id, pack.remote_path )
 				forbuild.append(pack)
 	
 	
@@ -259,7 +258,7 @@ def build_incremental(conduit, packages):
 			return
 	
 	if len(forbuild) == 0:
-		print 'No packages downloaded'
+		print 'No new packages downloaded'
 		return
 	
 	# contribute to the repo and build incremental
@@ -310,7 +309,7 @@ def build_incremental(conduit, packages):
 			dir = os.path.dirname(pack.reposync2_output_path)
 			if not os.path.exists(dir):
 				os.makedirs(dir)
-			shutil.copy(pack.localPkg(), dir)
+			shutil.copy(pack.localPkg(), pack.reposync2_output_path)
 
 		# maintain files inside the incremental like reposync does
 		# this way, the directory structure will look the same
