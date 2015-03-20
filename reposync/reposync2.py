@@ -185,6 +185,8 @@ def predownload_hook(conduit):
 			pre_packages.append(pack)
 			
 def postdownload_hook(conduit):
+	if sys.argv[0] == '/bin/reposync':
+		return
 
 	# path for when inside yum
 	# --downloadonly skips here - see close_hook
