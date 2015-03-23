@@ -1,7 +1,7 @@
 tag = test
 name = test
 volume = /var/cache
-links = --link=test-apt-cacher:apt-cache
+links = --link=webcache:webcache
 
 .PHONY: all clean build export stop logs
 
@@ -21,7 +21,7 @@ $(name).tgz: $(name).build
 	touch $(name).tgz
 
 bash: build
-	docker run -it $(links) $(tag) bash
+	docker run -it $(links) -e http_proxy=http://webcache:8123/  $(tag) bash
 
 start: $(name).started
 
