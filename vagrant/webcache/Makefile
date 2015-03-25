@@ -1,7 +1,7 @@
 tag = webcache
 name = webcache
 volume = /var/cache/polipo
-links = --link=test-apt-cacher:apt-cache
+links = 
 
 .PHONY: all clean build export stop logs
 
@@ -21,7 +21,7 @@ $(name).tgz: $(name).build
 	touch $(name).tgz
 
 bash: build
-	docker run -it $(links) $(tag) bash
+	docker run -it $(links) --volumes-from $(name) $(tag) bash
 
 start: $(name).started
 
