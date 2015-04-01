@@ -1,0 +1,11 @@
+#!/bin/sh
+
+if [ $# -eq 0 ]
+then
+  echo "Provide repo file(s), eg. /etc/yum.repos.d/*.repo"
+  exit 1
+fi
+
+set -x
+
+sed -i --expression='s/^\(mirrorlist=.*\)\$/#\1/g' --expression='s/^#\(baseurl=.*\)\$/\1/g' 
