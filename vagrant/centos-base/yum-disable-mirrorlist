@@ -8,4 +8,4 @@ fi
 
 set -x
 
-sed -i --expression='s/^\(mirrorlist=.*\)\$/#\1/g' --expression='s/^#\(baseurl=.*\)\$/\1/g' 
+sed -i --expression='s/^\(mirrorlist=.*\)$/#\1/g' --expression='s/^#\(baseurl=.*\)$/\1/g' $*
