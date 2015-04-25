@@ -1,0 +1,8 @@
+#!/bin/sh
+if [ -z "$1" ]
+then
+  echo "Provide a docker container"
+  exit 1
+fi
+set -x
+sudo docker run -it --rm=true --volumes-from $1 $1 bash
