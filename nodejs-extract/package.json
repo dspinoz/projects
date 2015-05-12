@@ -5,7 +5,8 @@
   "description": "Extraction interface written in node",
   "author": "Daniel Spinozzi",
   "dependencies": {
+    "kue": "~0.9.3",
+    "cluster": "~0.7.7"
   },
-  "devDependencies": {
-  }
+  "devDependencies": {}
 }
