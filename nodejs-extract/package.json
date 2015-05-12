@@ -1,0 +1,11 @@
+{
+  "name": "nodejs-extract",
+  "main": "main.js",
+  "version": "0.0.1",
+  "description": "Extraction interface written in node",
+  "author": "Daniel Spinozzi",
+  "dependencies": {
+  },
+  "devDependencies": {
+  }
+}
