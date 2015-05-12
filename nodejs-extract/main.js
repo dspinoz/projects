@@ -3,10 +3,12 @@
 var util = require('util');
 var path = require('path');
 var fs = require('fs');
+var cluster = require('cluster');
 
 // non-standard modules
-var cluster = require('cluster');
 var kue = require('kue');
+var mmm = require('mmmagic'), Magic = mmm.Magic;
+var magic = new Magic(mmm.MAGIC_MIME_TYPE | mmm.MAGIC_MIME_ENCODING);
 
 //configuration
 var kue_port = 3000;
@@ -67,12 +69,13 @@ else
     var result = {};
     console.log('Extract-file Job %d processing: %s', job.id, job.data.path);
     
-    var high = 10;
-    var low = 1;
-    var rand = Math.floor(Math.random() * (high - low + 1) + low)*1000;
-    console.log('Job %d %d', job.id, rand);
+    magic.detectFile(job.data.path, function(err, result) {
+      if (err) throw err;
+      console.log('%s is %s', path.basename(job.data.path), result);
+      done(null, result);
+    });
+      
     
-    setTimeout(done, rand);
   });
 }
 
