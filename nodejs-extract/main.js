@@ -16,51 +16,6 @@ var workers = require('os').cpus().length;
 // globals
 var queue = kue.createQueue();
 var magic = new mmm.Magic(mmm.MAGIC_MIME_TYPE);
-var libs = {};
-var libs_loaded = 0;
-
-// load extraction libraries
-var files = fs.readdirSync('./lib');
-files.forEach(function(f) {
-  var real = fs.realpathSync(util.format('./lib/%s', f));
-  if (!real.match(/(.*)\.js$/))
-  {
-    return;
-  }
-  
-  var lib = require(real);
-  if ((lib.types || (lib.matches_buff && lib.matches_file)) &&
-      (lib.process_buff && lib.process_file))
-  {
-    console.log("Loading", path.basename(real));
-    var types = []
-    if (lib.types)
-    {
-      types = lib.types;
-    }
-    else
-    {
-      types = ['*'];
-    }
-    
-    types.forEach(function (t) {
-      if (!libs[t]) libs[t] = [];
-      libs[t].push(lib);
-    });
-    
-    libs_loaded++;
-  }
-  else
-  {
-    console.log("ERROR Invalid library", path.basename(real));
-  }
-});
-
-if (libs_loaded <= 0)
-{
-  console.log("ERROR No libraries loaded");
-  process.exit(1);
-}
 
 if (cluster.isMaster) 
 {
@@ -107,6 +62,53 @@ if (cluster.isMaster)
 }
 else
 {
+  var libs = {};
+  var libs_loaded = 0;
+
+  // load extraction libraries
+  var files = fs.readdirSync('./lib');
+  files.forEach(function(f) {
+    var real = fs.realpathSync(util.format('./lib/%s', f));
+    if (!real.match(/(.*)\.js$/))
+    {
+      return;
+    }
+    
+    var lib = require(real);
+    if ((lib.types || (lib.matches_buff && lib.matches_file)) &&
+        (lib.process_buff && lib.process_file))
+    {
+      var types = []
+      if (lib.types)
+      {
+        types = lib.types;
+        console.log("Loading", path.basename(real), types);
+      }
+      else
+      {
+        types = ['*'];
+        console.log("Loading", path.basename(real));
+      }
+      
+      types.forEach(function (t) {
+        if (!libs[t]) libs[t] = [];
+        libs[t].push(lib);
+      });
+      
+      libs_loaded++;
+    }
+    else
+    {
+      console.log("ERROR Invalid library", path.basename(real));
+    }
+  });
+
+  if (libs_loaded <= 0)
+  {
+    console.log("ERROR No libraries loaded");
+    process.exit(1);
+  }
+  
   // workers process one job at a time
   queue.process('extract-file', function(job, done) {
     
@@ -124,7 +126,7 @@ else
         {
           var lib = libs[result][i];
           if (job.data.path && 
-              lib.process_file(job.data.path, queue, done))
+              lib.process_file(job, job.data.path, queue, done))
           {
             break;
           }
