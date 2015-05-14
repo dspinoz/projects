@@ -114,25 +114,36 @@ else
     
     var err = null;
     var result = {};
-    console.log('Extract-file Job %d processing: %s', job.id, job.data.path);
+    console.log('Extract-file Job %d processing: %s', job.id, job.data.path ? job.data.path : 'buffer');
     
-    magic.detectFile(job.data.path, function(err, result) {
-      if (err) throw err;
-      console.log('%s is %s %s', path.basename(job.data.path), result, libs[result] == undefined ? "NO":"YES");
-      
-      if (libs[result])
-      {
-        for(var i = 0; i < libs[result].length; i++)
+    if (job.data.path)
+    {
+      magic.detectFile(job.data.path, function(err, result) {
+        if (err) throw err;
+        console.log('%s is %s %s', path.basename(job.data.path), result, libs[result] == undefined ? "NO":"YES");
+        
+        if (libs[result])
         {
-          var lib = libs[result][i];
-          if (job.data.path && 
-              lib.process_file(job, job.data.path, queue, done))
+          for(var i = 0; i < libs[result].length; i++)
           {
-            break;
+            var lib = libs[result][i];
+            if (job.data.path && 
+                lib.process_file(job, job.data.path, queue, done))
+            {
+              break;
+            }
           }
         }
-      }
-    });
+      });
+    }
+    else if (job.data.buffer)
+    {
+      var buf = new Buffer(job.data.buffer, 'base64');
+      magic.detect(buf, function(err, result) {
+        console.log('buffer %s is %s %s', job.data.name ? job.data.name : 'UNKNOWN', result, libs[result] == undefined ? "NO":"YES");
+        done(err,result);
+      });
+    }
   });
 }
 
