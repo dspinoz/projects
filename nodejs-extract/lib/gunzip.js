@@ -8,11 +8,11 @@ module.exports.matches_file = function(path) {
   
 };
 
-module.exports.process_buff = function(buff,queue,done) {
+module.exports.process_buff = function(job,buff,queue,done) {
   
 };
 
-module.exports.process_file = function(path,queue,done) {
+module.exports.process_file = function(job,path,queue,done) {
   
   console.log("gunzip processing");
   done(null,'gunzip done');
