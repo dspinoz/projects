@@ -1,21 +1,16 @@
 var fs = require('fs');
 var zlib = require('zlib');
+var fspath = require('path');
 
 module.exports.types = ['application/x-gzip'];
 
-module.exports.matches_buff = function(buff) {
-  
-};
+module.exports.matches_buff = function(buff) {};
 
-module.exports.matches_file = function(path) {
-  
-};
+module.exports.matches_file = function(path) {};
 
-module.exports.process_buff = function(job,buff,queue,done) {
-  
-};
+module.exports.process_buff = function(job,buff,queue,done) {};
 
-module.exports.process_file = function(job,path,queue,done) {
+module.exports.process_file = function(job,path,add_buff,add_file,done) {
   
   var buf = fs.readFile(path, function(fserr, buf) {
     if (fserr) done(fserr, null);
@@ -23,20 +18,19 @@ module.exports.process_file = function(job,path,queue,done) {
     zlib.gunzip(buf, function(err,res) {
       if (err) done(err, null);
       
-      console.log('gunzip', res);
+      var name = fspath.basename(path);
+      var groups = undefined;
       
-      queue.create('extract-file', {
-        title: 'gunzipped',
-        buffer: res.toString('base64')
-      })
-      .priority('normal') //low, normal, medium, high, critical
-      .attempts(1) // before being marked as failure
-      .ttl(60000) // milliseconds for maximum time in active state
-      .delay(0) // milliseconds for when job should be executed
-      .save();
+      console.log("GUNZIP", name, name.match(/(.*)\.(gz|tar)$/));
       
-      done();
+      if ((groups = name.match(/(.*)\.gz$/)) != null)
+      {
+        name = groups[1];
+      }
+      
+      add_buff(res, name, {parent: job.id});
+      
+      done(null,{zlib: 'gunzip'});
     });
   });
-  
 };
