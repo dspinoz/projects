@@ -1,6 +1,12 @@
 FROM centos:7
+
+# Make changes to yum config in order to use local cache/proxy
 RUN sed -i --expression='s/enabled=1/enabled=0/' /etc/yum/pluginconf.d/fastestmirror.conf
-ADD yum-disable-mirrorlist yum-install-epel usr/bin/
-#RUN  echo "Acquire::http { Proxy \"http://10.0.2.15:8123\"; };" >> /etc/apt/apt.conf.d/01proxy
-#RUN apt-get update
-CMD tail -f /var/log/messages
+RUN rm  -rf /etc/yum.repos.d/*.repo
+RUN echo "proxy=http://localhost:8123/" >> /etc/yum.conf
+ADD use-local-proxy.repo /etc/yum.repos.d/
+
+
+
+
+CMD tail -f /var/log/yum.log
