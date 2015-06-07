@@ -1,0 +1,12 @@
+{
+  "name": "nodejs-extract",
+  "main": "main.js",
+  "version": "0.0.1",
+  "description": "Extraction interface written in node",
+  "author": "Daniel Spinozzi",
+  "dependencies": {
+    "kue": "~0.9.3",
+    "mmmagic": "~0.3.14"
+  },
+  "devDependencies": {}
+}
