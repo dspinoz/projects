@@ -1,3 +1,5 @@
+VERSION = 0.4
+
 all: check 
 
 check: reposync2.py
@@ -44,7 +46,7 @@ test8: install
 	yum install -y --reposync2-enable trousers
 
 source: 
-	rm -rf tmp; mkdir -p tmp/reposync2-0.3; cp reposync2.conf reposync2.py README.md reposync2.spec Makefile tmp/reposync2-0.3/; cd tmp; zip -r ../reposync2-0.3.zip reposync2-0.3/
+	rm -rf tmp; mkdir -p tmp/reposync2-$(VERSION); cp reposync2.conf reposync2.py README.md reposync2.spec Makefile tmp/reposync2-$(VERSION)/; cd tmp; zip -r ../reposync2-$(VERSION).zip reposync2-$(VERSION)/
 
 install: reposync2.conf reposync2.py check
 	mkdir -p $(DESTDIR)/etc/yum/pluginconf.d $(DESTDIR)/usr/share/yum-plugins

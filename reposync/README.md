@@ -28,17 +28,29 @@ reposync --plugins --source --newest-only
 
 2. Perform yum commands
 
+   Upgrade the system to the latest packages available, but cache the downloaded packages (like reposync) and build "incremental" files.
+
    ```bash
 yum --reposync2-enable upgrade
-yum --reposync2-enable --downloadonly install gcc-c++
-...
 ```
 
-   Upgrade the system to the latest packages available, but cache the downloaded packages (like reposync) and build "incremental" files.
+   Allow yum to use packages (where available) that have been downloaded via reposync. This will help speed-up downloads and also produce a "incremental" files for new packages.
+
+   ```bash
+yum --reposync2-enable install git
+```
+
+   Download packages using yum, and build "incremental" files
+
+   ```bash
+yum --reposync2-enable --downloadonly install gcc-c++
+```
 
    Run commands inside the directory where reposync is performed, or ensure that --download_path is consistent between reposync and yum.
 
    See ```yum --help``` for more information
+
+   Incrementals may need to be unpacked, refer below.
 
 3. Transfer incremental files
 
@@ -68,6 +80,8 @@ yum --reposync2-merge --incremental-dir=<where copied to> --dest-dir=<all repos>
 * speedup download when using yum - if file exists in local cache use it! save from redownloading stuff (also removes the need to have to setup a repo)
 
 ## Changelog
+
+* Version 0.4 - when using yum, download files from reposync into the yum cache in order to speed up downloads
 
 * Version 0.3 - allow yum to build incrementals too! yum requires the --reposync2-enable option
 

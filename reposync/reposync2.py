@@ -72,6 +72,7 @@ class TarSplit:
 
 
 def package_is_valid(pack):
+	print "Valid", pack, os.path.isfile(pack.localPkg())
 	if os.path.isfile(pack.localPkg()) == True and os.path.getsize(pack.localPkg()) == int(pack.returnSimple('packagesize')) and pack.verifyLocalPkg() == True:
 		return True
 	return False
@@ -141,7 +142,7 @@ def merge_incrementals(opts, conduit):
 	meta.close()
 
 def init_hook(conduit):
-
+	print "INIT HOOK"
 	if hasattr(conduit.getOptParser(), 'parse_args'):
 		(opts, args) = conduit.getOptParser().parse_args()
 		if opts.merge:
@@ -179,14 +180,53 @@ def config_hook(conduit):
 			help='Directory where reposync writes')
 
 def predownload_hook(conduit):
+	print "PRE DOWNLOAD"
+	repodir = False
+	if hasattr(conduit.getOptParser(), 'parse_args'):
+		(opts, args) = conduit.getOptParser().parse_args()
+		if opts.reposync2enable == False:
+			return
+		repodir = opts.reposyncdir
+	
+
 	# new packages available in the repo, filter what we need to get
 	for pack in conduit.getDownloadPackages():
-		if package_is_valid(pack) != True:
+		
+		# Package is in the yum cache
+		package_cached = package_is_valid(pack)
+		
+		# Package has been downloaded already
+		package_downloaded = False
+		syncpath = False
+
+		if repodir != False:
+			# Check if package is available
+			syncpath = os.path.join(repodir, "%s/%s" %( pack.repo.id, pack.remote_path ))
+
+			if not os.path.isfile(syncpath):
+				# Access remote url on the object as will be used later on...
+				pack._remote_url()
+			else:
+				package_downloaded = True
+
+		# Already have the package, put it into the yum cache
+		# Speedup for yum - use the packages downloaded via reposync
+		if not package_cached and package_downloaded and syncpath != False:
+			dir = os.path.dirname(syncpath)
+			if not os.path.exists(dir):
+				os.makedirs(dir)
+			print "GOT FROM REPOSYNC DIR", pack
+			shutil.copy(syncpath, pack.localPkg())
+
+		# Build an incremental
+		if not package_cached or not package_downloaded:
 			pre_packages.append(pack)
 			
 def postdownload_hook(conduit):
 	if sys.argv[0] == '/bin/reposync':
 		return
+
+	print "POST DOWNLOAD"
 
 	# path for when inside yum
 	# --downloadonly skips here - see close_hook
@@ -194,14 +234,14 @@ def postdownload_hook(conduit):
 	build_incremental(conduit, conduit.getDownloadPackages())
 
 def close_hook(conduit):
-
+	print "CLOSE HOOK"
 	# Path for reposync
 	# Path for yum with --downloadonly
 	# TODO consolidate seperate paths into single function def
 	build_incremental(conduit, pre_packages)
 
 def build_incremental(conduit, packages):
-  
+  	print "BUILD INCREMENTAL"
 	if len(packages) == 0:
 		return
 		
@@ -229,21 +269,21 @@ def build_incremental(conduit, packages):
 					
 		else:
 			# in yum
-			localpath = os.path.join(reposyncdir, "%s/%s" %( pack.repo.id, pack.remote_path ))
-			localdir = os.path.dirname(localpath)
+			syncpath = os.path.join(reposyncdir, "%s/%s" %( pack.repo.id, pack.remote_path ))
+			syncdir = os.path.dirname(syncpath)
 
 			# A custom verify
 			#   1. verify it is available locally (downloaded to local yum cache)
 			#   2. check if its already in the cache (in reposync format)
 			#   3. verify has been downloaded in full
 
-			if os.path.isfile(pack.localPkg()) == True and pack.verifyLocalPkg() == True and os.path.isfile("%s/%s" %( localdir, os.path.basename(pack.localPkg()) )) == True:
+			if os.path.isfile(pack.localPkg()) == True and pack.verifyLocalPkg() == True and os.path.isfile("%s/%s" %( syncdir, os.path.basename(pack.localPkg()) )) == True:
 				# already in cache
 				continue
 
 			if os.path.isfile(pack.localPkg()) == True and pack.verifyLocalPkg() == True and os.path.getsize(pack.localPkg()) == int(pack.returnSimple('packagesize')):
 				# Put it into the cache - create the structure like reposync
-				pack.reposync2_output_path = localpath
+				pack.reposync2_output_path = syncpath
 				print "reposync2 - caching", "%s/%s" %( pack.repo.id, pack.remote_path )
 				forbuild.append(pack)
 	
