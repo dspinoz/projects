@@ -72,7 +72,6 @@ class TarSplit:
 
 
 def package_is_valid(pack):
-	print "Valid", pack, os.path.isfile(pack.localPkg())
 	if os.path.isfile(pack.localPkg()) == True and os.path.getsize(pack.localPkg()) == int(pack.returnSimple('packagesize')) and pack.verifyLocalPkg() == True:
 		return True
 	return False
@@ -142,7 +141,6 @@ def merge_incrementals(opts, conduit):
 	meta.close()
 
 def init_hook(conduit):
-	print "INIT HOOK"
 	if hasattr(conduit.getOptParser(), 'parse_args'):
 		(opts, args) = conduit.getOptParser().parse_args()
 		if opts.merge:
@@ -180,7 +178,6 @@ def config_hook(conduit):
 			help='Directory where reposync writes')
 
 def predownload_hook(conduit):
-	print "PRE DOWNLOAD"
 	repodir = False
 	if hasattr(conduit.getOptParser(), 'parse_args'):
 		(opts, args) = conduit.getOptParser().parse_args()
@@ -188,6 +185,8 @@ def predownload_hook(conduit):
 			return
 		repodir = opts.reposyncdir
 	
+	saved_downloads = 0
+	saved_packages = 0
 
 	# new packages available in the repo, filter what we need to get
 	for pack in conduit.getDownloadPackages():
@@ -215,18 +214,21 @@ def predownload_hook(conduit):
 			dir = os.path.dirname(syncpath)
 			if not os.path.exists(dir):
 				os.makedirs(dir)
-			print "GOT FROM REPOSYNC DIR", pack
 			shutil.copy(syncpath, pack.localPkg())
+
+			saved_packages += 1
+			saved_downloads += int(pack.returnSimple('packagesize'))
 
 		# Build an incremental
 		if not package_cached or not package_downloaded:
 			pre_packages.append(pack)
+
+	if saved_packages != 0:
+		print "Saved downloading", saved_packages, "packages (", saved_downloads, " bytes)"
 			
 def postdownload_hook(conduit):
 	if sys.argv[0] == '/bin/reposync':
 		return
-
-	print "POST DOWNLOAD"
 
 	# path for when inside yum
 	# --downloadonly skips here - see close_hook
@@ -234,14 +236,12 @@ def postdownload_hook(conduit):
 	build_incremental(conduit, conduit.getDownloadPackages())
 
 def close_hook(conduit):
-	print "CLOSE HOOK"
 	# Path for reposync
 	# Path for yum with --downloadonly
 	# TODO consolidate seperate paths into single function def
 	build_incremental(conduit, pre_packages)
 
 def build_incremental(conduit, packages):
-  	print "BUILD INCREMENTAL"
 	if len(packages) == 0:
 		return
 		
