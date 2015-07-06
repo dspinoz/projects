@@ -77,9 +77,10 @@ yum --reposync2-merge --incremental-dir=<where copied to> --dest-dir=<all repos>
 * allow command line options to override config file
 * specify options for all available in config
 * show progress when creating incremental (large run of reposync will download LOTS of packages)
-* speedup download when using yum - if file exists in local cache use it! save from redownloading stuff (also removes the need to have to setup a repo)
 
 ## Changelog
+
+* Version 0.5 - rewrite with OO. Much better for maintenance :)
 
 * Version 0.4 - when using yum, download files from reposync into the yum cache in order to speed up downloads
 
