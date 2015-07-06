@@ -279,32 +279,39 @@ class ReposyncYum(Reposync2Base):
 		
 		saved_downloads = 0
 		saved_packages = 0
-
+			
 		# new packages available in the repo, filter what we need to get
 		for pack in conduit.getDownloadPackages():
 			
-			# Package is already in the yum cache
-			if not self.has_local_package(pack):
-				continue
-			
 			syncpath = os.path.join(opts.reposyncdir, "%s/%s" %( pack.repo.id, pack.remote_path ))
-
-			# Don't have the package locally, have to go and download it
-			# Ensure we keep it as an incremental
-			if not os.path.isfile(syncpath):
+			
+			# Package has already been downloaded by yum
+			in_yum_cache = self.has_local_package(pack)
+			# Package has already been downloaded by reposync
+			in_reposync_cache = os.path.isfile(syncpath)
+			
+			# Don't have the package locally, have to go and download it and put into incremental
+			if not in_yum_cache and not in_reposync_cache:
 				self.add_package(pack)
 				continue
-
-			# Already have the package, put it into the yum cache
-			# Speedup for yum - use the packages downloaded via reposync
-			dir = os.path.dirname(syncpath)
-			if not os.path.exists(dir):
-				os.makedirs(dir)
 				
-			shutil.copy(syncpath, pack.localPkg())
+			# Track the locally downloaded package, put it into an incremental
+			if in_yum_cache and not in_reposync_cache:
+				self.add_package(pack)
+				continue
+				
+			if not in_yum_cache and in_reposync_cache:
+			
+				# Already have the package, put it into the yum cache
+				# Speedup for yum - use the packages downloaded via reposync
+				dir = os.path.dirname(syncpath)
+				if not os.path.exists(dir):
+					os.makedirs(dir)
+					
+				shutil.copy(syncpath, pack.localPkg())
 
-			saved_packages += 1
-			saved_downloads += int(pack.returnSimple('packagesize'))
+				saved_packages += 1
+				saved_downloads += int(pack.returnSimple('packagesize'))
 
 		if saved_packages != 0:
 			print "Saved downloading", saved_packages, "packages (", saved_downloads, " bytes)"
