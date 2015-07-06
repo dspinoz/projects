@@ -1,13 +1,13 @@
 Name:           reposync2
-Version:        0.4
+Version:        0.5
 Release:        1%{?dist}
 Summary:        Build incrementals from reposync
 
 License:        Free
 URL:            https://github.com/dspinoz/projects/reposync
-Source0:        reposync2-%{version}.zip
+Source0:        reposync2-%{version}.tgz
 
-BuildRequires:  make zip python
+BuildRequires:  make tar python
 Requires:       python yum-utils createrepo
 
 %description
