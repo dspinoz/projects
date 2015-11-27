@@ -11,7 +11,7 @@ build: $(name).build
 
 $(name).build: Dockerfile
 	docker build --tag=$(tag) .
-	docker create --name=$(name) $(links) $(tag)
+	docker create --name=$(name) $(links) --publish=8080:8080 $(tag)
 	touch $(name).build
 
 export: $(name).tgz
