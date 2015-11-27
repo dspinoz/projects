@@ -19,20 +19,9 @@ body {
   stroke-width: 2px;
 }
 
-.RdYlGn .q0-11{fill:rgb(165,0,38)}
-.RdYlGn .q1-11{fill:rgb(215,48,39)}
-.RdYlGn .q2-11{fill:rgb(244,109,67)}
-.RdYlGn .q3-11{fill:rgb(253,174,97)}
-.RdYlGn .q4-11{fill:rgb(254,224,139)}
-.RdYlGn .q5-11{fill:rgb(255,255,191)}
-.RdYlGn .q6-11{fill:rgb(217,239,139)}
-.RdYlGn .q7-11{fill:rgb(166,217,106)}
-.RdYlGn .q8-11{fill:rgb(102,189,99)}
-.RdYlGn .q9-11{fill:rgb(26,152,80)}
-.RdYlGn .q10-11{fill:rgb(0,104,55)}
-
 </style>
 <body>
+<h1>Debits</h1>
 <script src="/d3.js"></script>
 <script>
 
@@ -40,19 +29,19 @@ var width = 960,
     height = 136,
     cellSize = 17; // cell size
 
-var percent = d3.format(".1%"),
-    format = d3.time.format("%Y-%m-%d");
-
-var color = d3.scale.quantize()
-    .domain([-.05, .05])
-    .range(d3.range(11).map(function(d) { return "q" + d + "-11"; }));
+var percent = d3.format("$0.1"),
+    format = d3.time.format("%d/%m/%y"),
+    titleFormat = d3.time.format("%d %a %b");
+    
+var color = d3.scale.linear()
+    .domain([0, 100, 300, 600, 1000])
+    .range(["white", "blue", "yellow", "orange", "red"]);
 
 var svg = d3.select("body").selectAll("svg")
-    .data(d3.range(1990, 2011))
+    .data(d3.range(2010, 2016))
   .enter().append("svg")
     .attr("width", width)
     .attr("height", height)
-    .attr("class", "RdYlGn")
   .append("g")
     .attr("transform", "translate(" + ((width - cellSize * 53) / 2) + "," + (height - cellSize * 7 - 1) + ")");
 
@@ -61,18 +50,20 @@ svg.append("text")
     .style("text-anchor", "middle")
     .text(function(d) { return d; });
 
+var info = d3.select('body').append('div').attr('class', 'info');
+
 var rect = svg.selectAll(".day")
-    .data(function(d) { return d3.time.days(new Date(d, 0, 1), new Date(d + 1, 0, 1)); })
+    .data(function(d) { var days = d3.time.days(new Date(d, 0, 1), new Date(d + 1, 0, 1)); return days; })
   .enter().append("rect")
     .attr("class", "day")
     .attr("width", cellSize)
     .attr("height", cellSize)
     .attr("x", function(d) { return d3.time.weekOfYear(d) * cellSize; })
     .attr("y", function(d) { return d.getDay() * cellSize; })
-    .datum(format);
+    .datum(function(d) { return format(d); });
 
 rect.append("title")
-    .text(function(d) { return d; });
+    .text(function(d) { return titleFormat(format.parse(d)); });
 
 svg.selectAll(".month")
     .data(function(d) { return d3.time.months(new Date(d, 0, 1), new Date(d + 1, 0, 1)); })
@@ -80,18 +71,56 @@ svg.selectAll(".month")
     .attr("class", "month")
     .attr("d", monthPath);
 
-d3.csv("data.csv", function(error, csv) {
+d3.csv("/data.csv", function(error, csv) {
   if (error) throw error;
 
   var data = d3.nest()
     .key(function(d) { return d.Date; })
-    .rollup(function(d) { return (d[0].Close - d[0].Open) / d[0].Open; })
+    .rollup(function(group) { 
+		var total = 0;
+		group.forEach(function(d) {
+		  total += +d.Debit;
+		});
+		return total;
+	})
     .map(csv);
-
+    
+  //console.log('**** data', data, d3.entries(data));
+  //color.domain([0, 100, 300, 600, d3.max(d3.entries(data), function(d) { return d.value; })]);
+  
   rect.filter(function(d) { return d in data; })
-      .attr("class", function(d) { return "day " + color(data[d]); })
+      .style("fill", function(d) { return color(data[d]); })
+      .on('click', function(d) {
+		  
+		  var data = d3.nest()
+			.key(function(d) { return d.Date; })
+			.entries(csv)
+			.filter(function(f) {
+				return d == f.key;
+			});
+			
+		  if (data.length) {
+			data = data[0].values.filter(function(d) {
+			  return d.Debit > 0;
+			})
+			.sort(function(a,b) {
+				return d3.descending(+a.Debit, +b.Debit);
+			});
+		  }
+		  
+		  var p = d3.select('.info').selectAll('p').data(data);
+		  p.exit().remove();
+		  p.enter().append('p');
+		  p.html(function(d) {
+			 return '<b>' + d.Debit + "</b> " + d.Description;
+		  });
+		  
+		  d3.select('.info').append('p').html(function() {
+			 return '<b>Total ' + percent(d3.sum(data, function(d) { return +d.Debit; })) + '</b>';
+		  });
+	  })
     .select("title")
-      .text(function(d) { return d + ": " + percent(data[d]); });
+      .text(function(d) { return titleFormat(format.parse(d)) + ": " + percent(data[d]); })
 });
 
 function monthPath(t0) {
@@ -104,7 +133,5 @@ function monthPath(t0) {
       + "H" + (w1 + 1) * cellSize + "V" + 0
       + "H" + (w0 + 1) * cellSize + "Z";
 }
-
-d3.select(self.frameElement).style("height", "2910px");
 
 </script>
