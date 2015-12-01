@@ -19,6 +19,17 @@ body {
   stroke-width: 2px;
 }
 
+.year {
+  float:left;
+  width: 70%;
+}
+
+.info {
+  float: right:
+  width: 30%;
+  overflow: hidden;
+}
+
 </style>
 <body>
 <h1>Debits</h1>
@@ -27,13 +38,13 @@ body {
 
 var width = 960,
     height = 136,
-    buckets = 9,
+    buckets = 100,
     colors = ["#ffffd9","#edf8b1","#c7e9b4","#7fcdbb","#41b6c4","#1d91c0","#225ea8","#253494","#081d58"], // alternatively colorbrewer.YlGnBu[9]
     cellSize = 17; // cell size
 
 var percent = d3.format("$0.1"),
-    format = d3.time.format("%d/%m/%Y"),
-    titleFormat = d3.time.format("%d %a %b");
+    format = d3.time.format("%d/%m/%Y"), //may need to be "%-d/%m/%Y" for some data sets
+    titleFormat = d3.time.format("%a %d %b");
     
 var color = d3.scale.quantile() //linear()
   //  .domain([0, 100, 300, 600, 1000])
@@ -42,13 +53,14 @@ var color = d3.scale.quantile() //linear()
     .range(colors);
 
 
-var legend = d3.select("body").append("svg").attr("width", width).attr("height", height);
+var legend = d3.select("body").append("svg").attr("width", width).attr("height", height).attr('class', 'legend');
 
-var svg = d3.select("body").selectAll("svg")
-    .data(d3.range(2013, 2017))
+var svg = d3.select("body").selectAll("svg.year")
+    .data(d3.range(2015, 2016))
   .enter().append("svg")
     .attr("width", width)
     .attr("height", height)
+    .attr('class', 'year')
   .append("g")
     .attr("transform", "translate(" + ((width - cellSize * 53) / 2) + "," + (height - cellSize * 7 - 1) + ")");
 
@@ -95,7 +107,7 @@ d3.csv("/data.csv", function(error, csv) {
     })
     .map(csv);
     
-  //console.log('**** data', data, d3.entries(data));
+  console.log('**** data', data, d3.entries(data));
   //color.domain([0, 100, 300, 600, d3.max(d3.entries(data), function(d) { return d.value; })]);
  
   color.domain([1, buckets - 1, d3.max(d3.entries(data), function (d) { return d.value; })]);
@@ -122,7 +134,7 @@ d3.csv("/data.csv", function(error, csv) {
             return d3.descending(+a.Debit, +b.Debit);
           });
         }
-        console.log('click', d, d3.sum(data, function(d) { return +d.Debit; }), data);
+        console.log('click', d, d3.sum(data, function(d) { return +d.Debit; }), percent(d3.sum(data, function(d) { return +d.Debit; })), data);
         
         var p = d3.select('.info').selectAll('p').data(data);
         p.exit().remove();
@@ -132,7 +144,7 @@ d3.csv("/data.csv", function(error, csv) {
         });
         
         d3.select('.info').append('p').html(function() {
-          return '<b>Total ' + percent(d3.sum(data, function(d) { return +d.Debit; })) + '</b>';
+          return '<b>Total ' + percent(d3.sum(data, function(d) { return +d.Debit; }).toFixed(2)) + '</b>';
         });
       })
       .select("title")
