@@ -27,15 +27,22 @@ body {
 
 var width = 960,
     height = 136,
+    buckets = 9,
+    colors = ["#ffffd9","#edf8b1","#c7e9b4","#7fcdbb","#41b6c4","#1d91c0","#225ea8","#253494","#081d58"], // alternatively colorbrewer.YlGnBu[9]
     cellSize = 17; // cell size
 
 var percent = d3.format("$0.1"),
     format = d3.time.format("%d/%m/%y"),
     titleFormat = d3.time.format("%d %a %b");
     
-var color = d3.scale.linear()
-    .domain([0, 100, 300, 600, 1000])
-    .range(["white", "blue", "yellow", "orange", "red"]);
+var color = d3.scale.quantile() //linear()
+  //  .domain([0, 100, 300, 600, 1000])
+  //  .range(["white", "blue", "yellow", "orange", "red"]);
+    .domain([0, buckets - 1, 1000])
+    .range(colors);
+
+
+var legend = d3.select("body").append("svg").attr("width", width).attr("height", height);
 
 var svg = d3.select("body").selectAll("svg")
     .data(d3.range(2010, 2016))
@@ -49,6 +56,8 @@ svg.append("text")
     .attr("transform", "translate(-6," + cellSize * 3.5 + ")rotate(-90)")
     .style("text-anchor", "middle")
     .text(function(d) { return d; });
+
+
 
 var info = d3.select('body').append('div').attr('class', 'info');
 
@@ -71,6 +80,7 @@ svg.selectAll(".month")
     .attr("class", "month")
     .attr("d", monthPath);
 
+
 d3.csv("/data.csv", function(error, csv) {
   if (error) throw error;
 
@@ -87,7 +97,10 @@ d3.csv("/data.csv", function(error, csv) {
     
   //console.log('**** data', data, d3.entries(data));
   //color.domain([0, 100, 300, 600, d3.max(d3.entries(data), function(d) { return d.value; })]);
-  
+ 
+color.domain([0, buckets - 1, 3000]); //d3.max(d3.entries(data), function (d) { return d.value; })]);
+
+ 
   rect.filter(function(d) { return d in data; })
       .style("fill", function(d) { return color(data[d]); })
       .on('click', function(d) {
@@ -120,7 +133,31 @@ d3.csv("/data.csv", function(error, csv) {
 		  });
 	  })
     .select("title")
-      .text(function(d) { return titleFormat(format.parse(d)) + ": " + percent(data[d]); })
+      .text(function(d) { return titleFormat(format.parse(d)) + ": " + percent(data[d]); });
+      
+      
+	  var l = legend.selectAll(".legend")
+		  .data([0].concat(color.quantiles()), function(d) { return d; });
+
+	  l.enter().append("g")
+		  .attr("class", "legend");
+
+	  l.append("rect")
+		.attr("x", function(d, i) { return (width/9)  * i; })
+		.attr("y", 50)
+		.attr("width", width/9)
+		.attr("height", cellSize)
+		.style("fill", function(d, i) { return colors[i]; });
+
+	  l.append("text")
+		.attr("class", "mono")
+		.text(function(d) { return "≥ " + Math.round(d); })
+		.attr("x", function(d, i) { return (width/9) * i; })
+		.attr("y", 50 + 10 + cellSize);
+
+	  l.exit().remove();
+	
+      
 });
 
 function monthPath(t0) {
