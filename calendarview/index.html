@@ -11,6 +11,7 @@ body {
 .day {
   fill: #fff;
   stroke: #ccc;
+  stroke-width: 1px;
 }
 
 .month {
@@ -80,7 +81,13 @@ var rect = svg.selectAll(".day")
     .attr("width", cellSize)
     .attr("height", cellSize)
     .attr("x", function(d) { return d3.time.weekOfYear(d) * cellSize; })
-    .attr("y", function(d) { return d.getDay() * cellSize; })
+    .attr("y", function(d) { return d.getDay() * cellSize; }) 
+    .on('mouseover',function() {
+      d3.select(this).style('stroke-width', '3px');
+    })
+    .on('mouseout',function () {
+      d3.select(this).style('stroke-width', '1px');
+    })
     .datum(function(d) { return format(d); });
 
 rect.append("title")
