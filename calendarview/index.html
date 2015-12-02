@@ -118,6 +118,14 @@ d3.csv("/data.csv", function(error, csv) {
     })
     .map(csv);
     
+  // cleanup no debits
+  d3.entries(data).forEach(function(d) {
+    if (+d.value <= 0)
+    {
+      delete data[d.key];
+    }
+  });
+    
   console.log('**** data', data, d3.entries(data));
   //color.domain([0, 100, 300, 600, d3.max(d3.entries(data), function(d) { return d.value; })]);
  
