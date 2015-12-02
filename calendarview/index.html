@@ -50,7 +50,13 @@ console.log('colors', colors.length, colors);
 var dollar = d3.format("$0.2f"),
     format = d3.time.format("%d/%m/%Y"), //may need to be "%-d/%m/%Y" for some data sets
     titleFormat = d3.time.format("%a %d %b"),
-    monthFormat = d3.time.format("%m");
+    monthFormat = d3.time.format("%m"),
+    inputDateFormats = [
+      d3.time.format("%-d/%m/%y"), 
+      d3.time.format("%-d/%m/%Y"), 
+      d3.time.format("%d/%m/%y"), 
+      d3.time.format("%d/%m/%Y")
+    ];
     
 var color = d3.scale.quantile() //linear()
   //  .domain([0, 100, 300, 600, 1000])
@@ -125,9 +131,29 @@ var monthDebit = svg.selectAll(".monthDebit")
     .attr('y', -8);
 
 d3.csv("/data.csv", function(d) {
+  
+    var parsedDate = undefined;
+    for(var i = 0; i < inputDateFormats.length; i++)
+    {
+      parsedDate = inputDateFormats[i].parse(d.Date);
+      
+      if (parsedDate != undefined && i > 0) {
+        console.log('parsed date', d.Date, 'on go', i+1);
+      }
+      
+      if (parsedDate != undefined) {
+        break;
+      }
+    }
+    
+    if (parsedDate == undefined) {
+      console.log('could not parse date', d.Date);
+      return;
+    }
+  
     return {
-      _date: format.parse(d.Date),
-      Date: d.Date,
+      _date: parsedDate,
+      Date: format(parsedDate),
       Debit: +d.Debit,
       Credit: +d.Credit,
       Description: d.Description
