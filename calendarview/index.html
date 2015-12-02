@@ -35,14 +35,17 @@ body {
 <body>
 <h1>Debits</h1>
 <script src="/d3.js"></script>
+<script src="/colorbrewer.js"></script>
 <script>
 
 var width = 960,
     height = 136,
     buckets = 100,
-    colors = ["#ffffd9","#edf8b1","#c7e9b4","#7fcdbb","#41b6c4","#1d91c0","#225ea8","#253494","#081d58"], // alternatively colorbrewer.YlGnBu[9]
+    colors = colorbrewer.BuGn[9].slice(0,4).concat(colorbrewer.OrRd[5].slice(1,5)),
     cellSize = 17; // cell size
-
+    
+console.log('colors', colors.length, colors);
+    
 var percent = d3.format("$0.1"),
     format = d3.time.format("%d/%m/%Y"), //may need to be "%-d/%m/%Y" for some data sets
     titleFormat = d3.time.format("%a %d %b");
