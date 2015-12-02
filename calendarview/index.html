@@ -8,6 +8,10 @@ body {
   shape-rendering: crispEdges;
 }
 
+.arc {
+  shape-rendering: auto;
+}
+
 .day {
   fill: #fff;
   stroke: #ccc;
@@ -49,8 +53,9 @@ console.log('colors', colors.length, colors);
     
 var dollar = d3.format("$0.2f"),
     format = d3.time.format("%d/%m/%Y"), //may need to be "%-d/%m/%Y" for some data sets
-    titleFormat = d3.time.format("%a %d %b"),
+    titleFormat = d3.time.format("%a %d %b %y"),
     monthFormat = d3.time.format("%m"),
+    monthDayFormat = d3.time.format("%b"),
     inputDateFormats = [
       d3.time.format("%-d/%m/%y"), 
       d3.time.format("%-d/%m/%Y"), 
@@ -58,9 +63,7 @@ var dollar = d3.format("$0.2f"),
       d3.time.format("%d/%m/%Y")
     ];
     
-var color = d3.scale.quantile() //linear()
-  //  .domain([0, 100, 300, 600, 1000])
-  //  .range(["white", "blue", "yellow", "orange", "red"]);
+var color = d3.scale.quantile()
     .domain([0, buckets - 1, maxval])
     .range(colors);
 
@@ -85,6 +88,28 @@ svg.append("text")
 
 var info = d3.select('body').append('div').attr('class', 'info');
 
+var pieWidth = 200,
+    pieHeight = 200,
+    pieRadius = Math.min(pieWidth, pieHeight)/2,
+    pieSvg = d3.select("body").append("svg")
+      .attr("width", pieWidth)
+      .attr("height", pieHeight)
+      .attr('class', 'info')
+    .append("g")
+      .attr("transform", "translate(" + (pieWidth/2) + "," + (pieHeight/2) + ")");
+      
+var pie = d3.layout.pie()
+    .sort(function(a,b) {
+      return d3.ascending(+a.key, +b.key);
+    })
+    .value(function(d) { console.log('pie value', d); return +d.value; });
+var pieArc = d3.svg.arc()
+    .outerRadius(pieRadius - 5);
+var pieLabelArc = d3.svg.arc()
+    .outerRadius(pieRadius - 40)
+    .innerRadius(pieRadius - 40);
+    
+    
 var rect = svg.selectAll(".day")
     .data(function(d) { var days = d3.time.days(new Date(d, 0, 1), new Date(d + 1, 0, 1)); return days; })
   .enter().append("rect")
@@ -184,12 +209,31 @@ d3.csv("/data.csv", function(d) {
     })
     .map(csv);
     
-    var m = monthDebit.filter(function(d) {
-      return monthFormat(d) in monthDebitData;
-    })
-    .text(function(d) {
-      return dollar(monthCreditData[monthFormat(d)] - monthDebitData[monthFormat(d)]);
-    });
+  console.log('monthly', 'debit', monthDebitData, 'credit', monthCreditData);
+    
+  monthDebit.filter(function(d) {
+    return monthFormat(d) in monthDebitData;
+  })
+  .text(function(d) {
+    return dollar(monthCreditData[monthFormat(d)] - monthDebitData[monthFormat(d)]);
+  });
+  
+  var pieG = pieSvg.selectAll(".arc")
+      .data(pie(d3.entries(monthDebitData)))
+    .enter().append("g")
+      .attr("class", "arc");
+
+  pieG.append("path")
+      .attr("d", pieArc)
+      .style("fill", function(d) { return color(d.value); })
+      .attr('stroke', '#ccc')
+      .attr('stroke-width', 1);
+  
+  pieG.append("text")
+      .attr("transform", function(d) { return "translate(" + pieLabelArc.centroid(d) + ")"; })
+      .attr("dy", ".35em")
+      .text(function(d) { return monthDayFormat(monthFormat.parse(d.data.key)); });
+  
   
   
   var data = d3.nest()
