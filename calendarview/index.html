@@ -64,29 +64,14 @@ var dollar = d3.format("$0.2f"),
     ];
     
 var color = d3.scale.quantile()
-    .domain([0, buckets - 1, maxval])
-    .range(colors);
+      .domain([0, buckets - 1, maxval])
+      .range(colors),
+    pieColor = d3.scale.quantile()
+      .domain([0, 5, maxval])
+      .range(colors);
 
 
 var legend = d3.select("body").append("svg").attr("width", width).attr("height", height).attr('class', 'legend');
-
-var svg = d3.select("body").selectAll("svg.year")
-    .data(d3.range(2015, 2016))
-  .enter().append("svg")
-    .attr("width", width)
-    .attr("height", height)
-    .attr('class', 'year')
-  .append("g")
-    .attr("transform", "translate(" + ((width - cellSize * 53) / 2) + "," + (height - cellSize * 7 - 1) + ")");
-
-svg.append("text")
-    .attr("transform", "translate(-6," + cellSize * 3.5 + ")rotate(-90)")
-    .style("text-anchor", "middle")
-    .text(function(d) { return d; });
-
-
-
-var info = d3.select('body').append('div').attr('class', 'info');
 
 var pieWidth = 200,
     pieHeight = 200,
@@ -108,6 +93,26 @@ var pieArc = d3.svg.arc()
 var pieLabelArc = d3.svg.arc()
     .outerRadius(pieRadius - 40)
     .innerRadius(pieRadius - 40);
+
+
+var svg = d3.select("body").selectAll("svg.year")
+    .data(d3.range(2015, 2016))
+  .enter().append("svg")
+    .attr("width", width)
+    .attr("height", height)
+    .attr('class', 'year')
+  .append("g")
+    .attr("transform", "translate(" + ((width - cellSize * 53) / 2) + "," + (height - cellSize * 7 - 1) + ")");
+
+svg.append("text")
+    .attr("transform", "translate(-6," + cellSize * 3.5 + ")rotate(-90)")
+    .style("text-anchor", "middle")
+    .text(function(d) { return d; });
+
+
+
+var info = d3.select('body').append('div').attr('class', 'info');
+
     
     
 var rect = svg.selectAll(".day")
@@ -119,10 +124,10 @@ var rect = svg.selectAll(".day")
     .attr("x", function(d) { return d3.time.weekOfYear(d) * cellSize; })
     .attr("y", function(d) { return d.getDay() * cellSize; }) 
     .on('click', function(d) {
-      var div = d3.select('.info').selectAll('div').data([d]);
+      var div = d3.select('div.info').selectAll('div').data([d]);
       div.enter().append('div');
       div.html('<b>'+d+'</b>');
-      var p = d3.select('.info').selectAll('p').data([]).exit().remove();
+      var p = d3.select('div.info').selectAll('p').data([]).exit().remove();
     })
     .on('mouseover',function(d) {
       d3.select(this).style('stroke-width', '2px');
@@ -215,8 +220,13 @@ d3.csv("/data.csv", function(d) {
     return monthFormat(d) in monthDebitData;
   })
   .text(function(d) {
-    return dollar(monthCreditData[monthFormat(d)] - monthDebitData[monthFormat(d)]);
+    //return dollar(monthCreditData[monthFormat(d)] - monthDebitData[monthFormat(d)]);
+    //return dollar(monthCreditData[monthFormat(d)];
+    return dollar(monthDebitData[monthFormat(d)]);
   });
+  
+  
+  pieColor.domain([d3.min(d3.entries(monthDebitData), function(d) { return d.value; }), buckets-1, d3.max(d3.entries(monthDebitData), function (d) { return d.value; })]);
   
   var pieG = pieSvg.selectAll(".arc")
       .data(pie(d3.entries(monthDebitData)))
@@ -225,7 +235,7 @@ d3.csv("/data.csv", function(d) {
 
   pieG.append("path")
       .attr("d", pieArc)
-      .style("fill", function(d) { return color(d.value); })
+      .style("fill", function(d) { return pieColor(d.value); })
       .attr('stroke', '#ccc')
       .attr('stroke-width', 1);
   
@@ -234,6 +244,27 @@ d3.csv("/data.csv", function(d) {
       .attr("dy", ".35em")
       .text(function(d) { return monthDayFormat(monthFormat.parse(d.data.key)); });
   
+  var pieL = pieG.selectAll(".legend")
+    .data([0].concat(pieColor.quantiles()), function(d) { return d; });
+
+  pieL.enter().append("g")
+    .attr("class", "legend");
+
+  pieL.append("rect")
+  .attr("x", function(d, i) { return (pieWidth/9) * i - (pieWidth/2); })
+  .attr("y", (-1*(pieHeight/2))+(cellSize/2))
+  .attr("width", pieWidth/9)
+  .attr("height", cellSize)
+  .style("fill", function(d, i) { return colors[i]; });
+
+  pieL.append("text")
+  .attr("class", "mono")
+  .style('font-size', '7px')
+  .text(function(d) { return Math.round(d); })
+  .attr("x", function(d, i) { return (pieWidth/9) * i - (pieWidth/2) + 2; })
+  .attr("y", (-1*(pieHeight/2))+(2.2*(cellSize/2)));
+
+  pieL.exit().remove();
   
   
   var data = d3.nest()
@@ -265,7 +296,7 @@ d3.csv("/data.csv", function(d) {
   rect.filter(function(d) { return d in data; })
     .on('click', function(d) {
 
-      var div = d3.select('.info').selectAll('div').data([d]);
+      var div = d3.select('div.info').selectAll('div').data([d]);
       div.enter().append('div');
       div.html('<b>'+d+'</b>');
     
@@ -287,14 +318,14 @@ d3.csv("/data.csv", function(d) {
       }
       console.log('click', d, d3.sum(data, function(d) { return +d.Debit; }), dollar(d3.sum(data, function(d) { return +d.Debit; })), data);
       
-      var p = d3.select('.info').selectAll('p').data(data);
+      var p = d3.select('div.info').selectAll('p').data(data);
       p.exit().remove();
       p.enter().append('p');
       p.html(function(d) {
         return '<b>' + dollar(d.Debit) + "</b> " + d.Description;
       });
       
-      d3.select('.info').append('p').html(function() {
+      d3.select('div.info').append('p').html(function() {
         return '<b>Total ' + dollar(d3.sum(data, function(d) { return +d.Debit; }).toFixed(2)) + '</b>';
       });
     })
