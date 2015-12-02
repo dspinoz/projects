@@ -47,7 +47,7 @@ var width = 960,
     
 console.log('colors', colors.length, colors);
     
-var percent = d3.format("$0.1"),
+var dollar = d3.format("$0.1"),
     format = d3.time.format("%-d/%m/%Y"), //may need to be "%-d/%m/%Y" for some data sets
     titleFormat = d3.time.format("%a %d %b");
     
@@ -86,8 +86,14 @@ var rect = svg.selectAll(".day")
     .attr("height", cellSize)
     .attr("x", function(d) { return d3.time.weekOfYear(d) * cellSize; })
     .attr("y", function(d) { return d.getDay() * cellSize; }) 
-    .on('mouseover',function() {
-      d3.select(this).style('stroke-width', '3px');
+    .on('click', function(d) {
+      var div = d3.select('.info').selectAll('div').data([d]);
+      div.enter().append('div');
+      div.html('<b>'+d+'</b>');
+      var p = d3.select('.info').selectAll('p').data([]).exit().remove();
+    })
+    .on('mouseover',function(d) {
+      d3.select(this).style('stroke-width', '2px');
     })
     .on('mouseout',function () {
       d3.select(this).style('stroke-width', '1px');
@@ -132,64 +138,69 @@ d3.csv("/data.csv", function(error, csv) {
   color.domain([1, buckets - 1, Math.min(d3.max(d3.entries(data), function (d) { return d.value; }), maxval)]);
 
   
- 
+
   rect.filter(function(d) { return d in data; })
-      .style("fill", function(d) { return color(data[d]); })
-      .on('click', function(d) {
+    .on('click', function(d) {
 
-        var data = d3.nest()
-          .key(function(d) { return d.Date; })
-          .entries(csv)
-          .filter(function(f) {
-            return d == f.key;
-          });
-
-          
-        if (data.length) {
-          data = data[0].values.filter(function(d) {
-            return +d.Debit > 0;
-          })
-          .sort(function(a,b) {
-            return d3.descending(+a.Debit, +b.Debit);
-          });
-        }
-        console.log('click', d, d3.sum(data, function(d) { return +d.Debit; }), percent(d3.sum(data, function(d) { return +d.Debit; })), data);
-        
-        var p = d3.select('.info').selectAll('p').data(data);
-        p.exit().remove();
-        p.enter().append('p');
-        p.html(function(d) {
-          return '<b>' + d.Debit + "</b> " + d.Description;
+      var div = d3.select('.info').selectAll('div').data([d]);
+      div.enter().append('div');
+      div.html('<b>'+d+'</b>');
+    
+      var data = d3.nest()
+        .key(function(d) { return d.Date; })
+        .entries(csv)
+        .filter(function(f) {
+          return d == f.key;
         });
+
         
-        d3.select('.info').append('p').html(function() {
-          return '<b>Total ' + percent(d3.sum(data, function(d) { return +d.Debit; }).toFixed(2)) + '</b>';
+      if (data.length) {
+        data = data[0].values.filter(function(d) {
+          return +d.Debit > 0;
+        })
+        .sort(function(a,b) {
+          return d3.descending(+a.Debit, +b.Debit);
         });
-      })
-      .select("title")
-        .text(function(d) { return titleFormat(format.parse(d)) + ": " + percent(data[d]); });
+      }
+      console.log('click', d, d3.sum(data, function(d) { return +d.Debit; }), dollar(d3.sum(data, function(d) { return +d.Debit; })), data);
       
+      var p = d3.select('.info').selectAll('p').data(data);
+      p.exit().remove();
+      p.enter().append('p');
+      p.html(function(d) {
+        return '<b>' + dollar(d.Debit) + "</b> " + d.Description;
+      });
       
-    var l = legend.selectAll(".legend")
-      .data([0].concat(color.quantiles()), function(d) { return d; });
+      d3.select('.info').append('p').html(function() {
+        return '<b>Total ' + dollar(d3.sum(data, function(d) { return +d.Debit; }).toFixed(2)) + '</b>';
+      });
+    })
+    .select("title")
+      .text(function(d) { return titleFormat(format.parse(d)) + ": " + dollar(data[d]); });
+    
+  rect.style("fill", function(d) { return color(data[d]); })
+    
+    
+  var l = legend.selectAll(".legend")
+    .data([0].concat(color.quantiles()), function(d) { return d; });
 
-    l.enter().append("g")
-      .attr("class", "legend");
+  l.enter().append("g")
+    .attr("class", "legend");
 
-    l.append("rect")
-    .attr("x", function(d, i) { return (width/9)  * i; })
-    .attr("y", 50)
-    .attr("width", width/9)
-    .attr("height", cellSize)
-    .style("fill", function(d, i) { return colors[i]; });
+  l.append("rect")
+  .attr("x", function(d, i) { return (width/9)  * i; })
+  .attr("y", 50)
+  .attr("width", width/9)
+  .attr("height", cellSize)
+  .style("fill", function(d, i) { return colors[i]; });
 
-    l.append("text")
-    .attr("class", "mono")
-    .text(function(d) { return "≥ " + Math.round(d); })
-    .attr("x", function(d, i) { return (width/9) * i; })
-    .attr("y", 50 + 10 + cellSize);
+  l.append("text")
+  .attr("class", "mono")
+  .text(function(d) { return "≥ " + Math.round(d); })
+  .attr("x", function(d, i) { return (width/9) * i; })
+  .attr("y", 50 + 10 + cellSize);
 
-    l.exit().remove();
+  l.exit().remove();
 
       
 });
