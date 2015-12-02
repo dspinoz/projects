@@ -40,6 +40,7 @@ body {
 
 var width = 960,
     height = 136,
+    maxval = 5000,
     buckets = 100,
     colors = colorbrewer.BuGn[9].slice(0,4).concat(colorbrewer.OrRd[5].slice(1,5)),
     cellSize = 17; // cell size
@@ -47,13 +48,13 @@ var width = 960,
 console.log('colors', colors.length, colors);
     
 var percent = d3.format("$0.1"),
-    format = d3.time.format("%d/%m/%Y"), //may need to be "%-d/%m/%Y" for some data sets
+    format = d3.time.format("%-d/%m/%Y"), //may need to be "%-d/%m/%Y" for some data sets
     titleFormat = d3.time.format("%a %d %b");
     
 var color = d3.scale.quantile() //linear()
   //  .domain([0, 100, 300, 600, 1000])
   //  .range(["white", "blue", "yellow", "orange", "red"]);
-    .domain([0, buckets - 1, 1000])
+    .domain([0, buckets - 1, maxval])
     .range(colors);
 
 
@@ -120,7 +121,7 @@ d3.csv("/data.csv", function(error, csv) {
   console.log('**** data', data, d3.entries(data));
   //color.domain([0, 100, 300, 600, d3.max(d3.entries(data), function(d) { return d.value; })]);
  
-  color.domain([1, buckets - 1, d3.max(d3.entries(data), function (d) { return d.value; })]);
+  color.domain([1, buckets - 1, Math.min(d3.max(d3.entries(data), function (d) { return d.value; }), maxval)]);
 
   
  
