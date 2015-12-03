@@ -45,6 +45,44 @@ body {
 <script src="/d3.js"></script>
 <script src="/colorbrewer.js"></script>
 <script>
+//https://gist.github.com/andrei-m/982927
+// Compute the edit distance between the two given strings
+// https://en.wikipedia.org/wiki/Levenshtein_distance
+function getEditDistance(a, b){
+  if(a.length == 0) return b.length; 
+  if(b.length == 0) return a.length; 
+
+  var matrix = [];
+
+  // increment along the first column of each row
+  var i;
+  for(i = 0; i <= b.length; i++){
+    matrix[i] = [i];
+  }
+
+  // increment each column in the first row
+  var j;
+  for(j = 0; j <= a.length; j++){
+    matrix[0][j] = j;
+  }
+
+  // Fill in the rest of the matrix
+  for(i = 1; i <= b.length; i++){
+    for(j = 1; j <= a.length; j++){
+      if(b.charAt(i-1) == a.charAt(j-1)){
+        matrix[i][j] = matrix[i-1][j-1];
+      } else {
+        matrix[i][j] = Math.min(matrix[i-1][j-1] + 1, // substitution
+                                Math.min(matrix[i][j-1] + 1, // insertion
+                                         matrix[i-1][j] + 1)); // deletion
+      }
+    }
+  }
+
+  return matrix[b.length][a.length];
+};
+
+
 
 var width = 960,
     height = 136,
@@ -392,37 +430,79 @@ d3.csv("/data.csv", function(d) {
     return d; 
   });
   
+  // use "similar" strings for grouping 
+  // some companies with lots of eftpos machines show differently on statements 
+  var editDistances = {};
+  descriptions.forEach(function(d) {
+    descriptions.forEach(function(e) {
+      if (editDistances[d.Description] == undefined) {
+        editDistances[d.Description] = {};
+      }
+      if (editDistances[d.Description][e.Description] == undefined) {
+        editDistances[d.Description][e.Description] = getEditDistance(d.Description, e.Description);
+      }
+    });
+  });
+  
+  var replacements = {};
+  
+  descriptions.forEach(function(d) {
+    descriptions.forEach(function(e) {
+      if (editDistances[d.Description][e.Description] <= 7 &&
+          (replacements[d.Description] == undefined ||
+          replacements[e.Description] == undefined)) {
+        replacements[d.Description] = d.Description;
+        replacements[e.Description] = d.Description;
+      }
+    });
+  });
+  
   var uniqueDescriptions = d3.nest()
-    .key(function(d) { return d.Description; })
+    .key(function(d) { 
+      var repl = replacements[d.Description];
+      if (repl == undefined) {
+        repl = d.Description; 
+      }
+      return repl;
+    })
     .rollup(function(group) {
     
-      var totalC = 0, totalD = 0, num = 0;
+      var totalC = 0, totalD = 0, numC = 0, numD = 0;
       
       group.forEach(function(d) {
         totalC += +d.Credit;
         totalD += +d.Debit;
-        num++;
+        
+        if (d.Credit > 0) {
+          numC++;
+        }
+        if (d.Debit > 0) {
+          numD++;
+        }
       });
       
-      return {Credit: totalC, Debit: totalD, Count: num};
+      return {Credit: totalC, Debit: totalD, CreditCount: numC, DebitCount: numD};
     })
     .entries(descriptions);
+    
   
-  var p = extra.selectAll('p').data(uniqueDescriptions.filter(function(d) {
-      return d.values.Debit > 0;
+  var top10Debits = uniqueDescriptions.filter(function(d) {
+      return d.values.Debit > 0 || d.values.Credit > 0;
     })
     .sort(function(a,b) {
         return d3.descending(a.values.Debit, b.values.Debit);
     })
     .splice(0, 10)
-  );
+    ;
+  
+  var p = extra.selectAll('p').data(top10Debits);
   
   p.enter().append('p');
   
   p.exit().remove();
   
   p.html(function(d) {
-    return d.key + " " + dollar(d.values.Credit) + " <b>" + dollar(d.values.Debit) + "</b>";
+    return d.key + " " + dollar(d.values.Credit) + " <b>" + dollar(d.values.Debit) + "</b> <small>(" + (d.values.CreditCount + d.values.DebitCount) + " avg " +dollar(d.values.Credit > 0 ? (d.values.Credit/d.values.CreditCount) : 0)+ " <b>" + dollar(d.values.Debit > 0 ? (d.values.Debit/d.values.DebitCount) : 0) + "</b>)</small>";
   });
       
 });
