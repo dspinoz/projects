@@ -19,9 +19,9 @@
   </style>
 </head>
 <body>
-<h1>Slice and Dice <span id="data-count">Showing <span class="filter-count"></span> of <span class="total-count"></span></span></h1>
-<h3>Credit vs Debit</h3>
+<h1>Transactions <span id="data-count">Showing <span class="filter-count"></span> of <span class="total-count"></span></span></h1>
 <div id="credit-vs-debit"></div>
+<div id="day-week"></div>
 <table id="data-table">
   <thead>
     <tr>
@@ -42,6 +42,7 @@ var format = d3.time.format("%d/%m/%Y"),
 
 var dataTable = dc.dataTable("#data-table");
 var creditVsDebitChart = dc.pieChart("#credit-vs-debit");
+var dayOfWeekChart = dc.rowChart("#day-week");
                         
 d3.csv("/data.csv", function(d) {
   var parsedDate = undefined;
@@ -84,6 +85,26 @@ function(error, csv) {
       return "N/A";
   });
   
+  var dimDayOfWeek = facts.dimension(function (d) {
+    var day = d._date.getDay();
+    switch (day) {
+      case 0:
+        return "0.Sun";
+      case 1:
+        return "1.Mon";
+      case 2:
+        return "2.Tue";
+      case 3:
+        return "3.Wed";
+      case 4:
+        return "4.Thu";
+      case 5:
+        return "5.Fri";
+      case 6:
+        return "6.Sat";
+    }
+  });
+  
   
   dc.dataCount("#data-count")
    .dimension(facts)
@@ -108,6 +129,18 @@ function(error, csv) {
     .title(function(d){return d.value;})
     .group(dimCreditDebit.group());
     
+  dayOfWeekChart.width(300)
+    .height(220)
+    .margins({top: 5, left: 10, right: 10, bottom: 20})
+    .dimension(dimDayOfWeek)
+    .group(dimDayOfWeek.group())
+    .colors(d3.scale.category10())
+    .label(function (d){
+       return d.key.split(".")[1];
+    })
+    .title(function(d){return d.value;})
+    .elasticX(true)
+    .xAxis().ticks(4);
     
   dc.renderAll();
 
