@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+  <meta charset='utf-8'>
+  <title>dc.js Experiment</title>
+  <script src='/d3.js' type='text/javascript'></script>
+  <script src='/crossfilter.js' type='text/javascript'></script>
+  <script src='/dc.js' type='text/javascript'></script>
+  <link href='/dc.css' rel='stylesheet' type='text/css'>
+  <style type="text/css"></style>
+  <style>
+    body {
+      font: 10px sans-serif;
+      shape-rendering: crispEdges;
+    }
+  </style>
+</head>
+<body>
+<h1>Slice and Dice <span id="data-count">Showing <span class="filter-count"></span> of <span class="total-count"></span></span></h1>
+<table id="table-graph">
+</table>
+<script type="text/javascript">
+
+var format = d3.time.format("%d/%m/%Y"),
+    inputDateFormats = [d3.time.format("%-d/%m/%y"), 
+                        d3.time.format("%-d/%m/%Y"), 
+                        d3.time.format("%d/%m/%y"), 
+                        d3.time.format("%d/%m/%Y")];
+
+d3.csv("/data.csv", function(d) {
+  var parsedDate = undefined;
+  for(var i = 0; i < inputDateFormats.length; i++)
+  {
+    parsedDate = inputDateFormats[i].parse(d.Date);
+    if (parsedDate != undefined) {
+      break;
+    }
+  }
+  
+  if (parsedDate == undefined) {
+    console.log('could not parse date', d.Date);
+    return;
+  }
+
+  return {
+    _date: parsedDate,
+    Date: format(parsedDate),
+    Debit: +d.Debit,
+    Credit: +d.Credit,
+    Description: d.Description
+  };
+}, 
+function(error, csv) {
+
+  var cx = crossfilter(csv);
+  var all = cx.groupAll();
+
+  dc.dataCount("#data-count")
+   .dimension(cx)
+   .group(all);
+
+
+  var p = d3.select('body').selectAll('p').data(csv);
+  p.enter().append('p');
+  p.exit().remove();
+  p.text(function(d) { return JSON.stringify(d); });
+
+  
+  dc.renderAll();
+
+});
+</script>    
+</body>
+</html>
