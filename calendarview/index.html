@@ -35,6 +35,10 @@ body {
   overflow: hidden;
 }
 
+.extra {
+  overflow: hidden;
+  width: 60%;
+}
 </style>
 <body>
 <h1>Debits</h1>
@@ -113,6 +117,8 @@ svg.append("text")
 
 var info = d3.select('body').append('div').attr('class', 'info');
 
+var extra = d3.select('body').append('div').attr('class', 'extra');
+extra.append('h4').text('Top 10 Transactions');
     
     
 var rect = svg.selectAll(".day")
@@ -356,6 +362,68 @@ d3.csv("/data.csv", function(d) {
 
   l.exit().remove();
 
+  
+  // remove times in order to better compare description values
+  var descriptionDateFormats = [
+    d3.time.format('%d%b%H:%M')
+  ];
+  
+  var descriptions = csv.map(function(d) {
+  
+    d._Description = d.Description;
+    
+    d.Description = d.Description.replace('Eftpos Purchase', '');
+    
+    var tok = d.Description.match(/\S+/g);
+    var out = "";
+    
+    for(var i = 0; i < tok.length; i++) { 
+      var t = undefined;    
+      for(var j = 0; j < descriptionDateFormats.length && t == undefined; j++) {
+        t = descriptionDateFormats[j].parse(tok[i]);
+      }
+      if (t == undefined) {
+        out += (out.length > 0 ? ' ' : '') + tok[i];
+      }
+    }
+    
+    d.Description = out;
+    
+    return d; 
+  });
+  
+  var uniqueDescriptions = d3.nest()
+    .key(function(d) { return d.Description; })
+    .rollup(function(group) {
+    
+      var totalC = 0, totalD = 0, num = 0;
+      
+      group.forEach(function(d) {
+        totalC += +d.Credit;
+        totalD += +d.Debit;
+        num++;
+      });
+      
+      return {Credit: totalC, Debit: totalD, Count: num};
+    })
+    .entries(descriptions);
+  
+  var p = extra.selectAll('p').data(uniqueDescriptions.filter(function(d) {
+      return d.values.Debit > 0;
+    })
+    .sort(function(a,b) {
+        return d3.descending(a.values.Debit, b.values.Debit);
+    })
+    .splice(0, 10)
+  );
+  
+  p.enter().append('p');
+  
+  p.exit().remove();
+  
+  p.html(function(d) {
+    return d.key + " " + dollar(d.values.Credit) + " <b>" + dollar(d.values.Debit) + "</b>";
+  });
       
 });
 
