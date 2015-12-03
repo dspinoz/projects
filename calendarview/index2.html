@@ -13,11 +13,22 @@
       font: 10px sans-serif;
       shape-rendering: crispEdges;
     }
+    #table-graph tbody td.dc-table-column._3 {
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
 <h1>Slice and Dice <span id="data-count">Showing <span class="filter-count"></span> of <span class="total-count"></span></span></h1>
 <table id="table-graph">
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Description</th>
+      <th>Credit</th>
+      <th>Debit</th>
+    </tr>
+  </thead>
 </table>
 <script type="text/javascript">
 
@@ -27,6 +38,8 @@ var format = d3.time.format("%d/%m/%Y"),
                         d3.time.format("%d/%m/%y"), 
                         d3.time.format("%d/%m/%Y")];
 
+var dataTable = dc.dataTable("#table-graph");
+                        
 d3.csv("/data.csv", function(d) {
   var parsedDate = undefined;
   for(var i = 0; i < inputDateFormats.length; i++)
@@ -52,13 +65,29 @@ d3.csv("/data.csv", function(d) {
 }, 
 function(error, csv) {
 
-  var cx = crossfilter(csv);
-  var all = cx.groupAll();
+  var facts = crossfilter(csv);
+  var all = facts.groupAll();
 
+  var dateDimension = facts.dimension(function (d) {
+    return d._date.getTime();
+  });
+  
   dc.dataCount("#data-count")
-   .dimension(cx)
+   .dimension(facts)
    .group(all);
-
+   
+  dataTable.width(960).height(800)
+    .dimension(dateDimension)
+    .group(function(d) { return "Last Transactions"; })
+    .size(10)
+    .columns([
+      function(d) { return d.Date; },
+      function(d) { return d.Description; },
+      function(d) { return d.Credit; },
+      function(d) { return d.Debit; }
+    ]);
+    
+  dc.renderAll();
 
   var p = d3.select('body').selectAll('p').data(csv);
   p.enter().append('p');
@@ -66,7 +95,6 @@ function(error, csv) {
   p.text(function(d) { return JSON.stringify(d); });
 
   
-  dc.renderAll();
 
 });
 </script>    
