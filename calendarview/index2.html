@@ -21,8 +21,8 @@
 <body>
 <h1>Transactions <span id="data-count">Showing <span class="filter-count"></span> of <span class="total-count"></span></span></h1>
 <div id="credit-vs-debit"></div>
-<div id="day"></div>
 <div id="month"></div>
+<div id="day"></div>
 <table id="data-table">
   <thead>
     <tr>
@@ -37,6 +37,7 @@
 
 var format = d3.time.format("%d/%m/%Y"),
     dayFormat = d3.time.format('%w.%a'),
+    monthFormat = d3.time.format('%m.%b'),
     inputDateFormats = [d3.time.format("%-d/%m/%y"), 
                         d3.time.format("%-d/%m/%Y"), 
                         d3.time.format("%d/%m/%y"), 
@@ -45,7 +46,7 @@ var format = d3.time.format("%d/%m/%Y"),
 var dataTable = dc.dataTable("#data-table");
 var creditVsDebitChart = dc.pieChart("#credit-vs-debit");
 var dayChart = dc.rowChart("#day");
-//var monthChart = dc.rowChart("#month");
+var monthChart = dc.rowChart("#month");
                         
 d3.csv("/data.csv", function(d) {
   var parsedDate = undefined;
@@ -92,6 +93,10 @@ function(error, csv) {
     return dayFormat(d._date);
   });
   
+  var dimMonth = facts.dimension(function (d) {
+    return monthFormat(d._date);
+  });
+  
   
   dc.dataCount("#data-count")
    .dimension(facts)
@@ -128,6 +133,20 @@ function(error, csv) {
     .title(function(d){return d.value;})
     .elasticX(true)
     .xAxis().ticks(4);
+    
+  monthChart.width(300)
+    .height(220)
+    .margins({top: 5, left: 10, right: 10, bottom: 20})
+    .dimension(dimMonth)
+    .group(dimMonth.group())
+    .colors(d3.scale.category10())
+    .label(function (d){
+       return d.key.split(".")[1];
+    })
+    .title(function(d){return d.value;})
+    .elasticX(true)
+    .xAxis().ticks(4);
+    
     
   dc.renderAll();
 
