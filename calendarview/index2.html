@@ -91,7 +91,16 @@ function(error, csv) {
     else
       return "N/A";
   });
-  
+ 
+  var groupCreditDebit = dimCreditDebit.group().reduceSum(function(d) {
+      if (d.Credit > 0 && d.Credit > d.Debit)
+        return d.Credit;
+      else if (d.Debit > 0 && d.Debit > d.Credit)
+        return d.Debit;
+      else
+        return 0;
+    });
+    
   var dimDay = facts.dimension(function (d) {
     return dayFormat(d._date);
   });
@@ -122,7 +131,7 @@ function(error, csv) {
     .colors(d3.scale.ordinal().domain(d3.range("Credit", "Debit", "N/A")).range(colorbrewer.Set1[3]))
     .dimension(dimCreditDebit)
     .title(function(d){return d.value;})
-    .group(dimCreditDebit.group());
+    .group(groupCreditDebit);
     
   dayChart.width(300)
     .height(220)
