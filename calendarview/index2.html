@@ -21,7 +21,8 @@
 <body>
 <h1>Transactions <span id="data-count">Showing <span class="filter-count"></span> of <span class="total-count"></span></span></h1>
 <div id="credit-vs-debit"></div>
-<div id="day-week"></div>
+<div id="day"></div>
+<div id="month"></div>
 <table id="data-table">
   <thead>
     <tr>
@@ -35,6 +36,7 @@
 <script type="text/javascript">
 
 var format = d3.time.format("%d/%m/%Y"),
+    dayFormat = d3.time.format('%w.%a'),
     inputDateFormats = [d3.time.format("%-d/%m/%y"), 
                         d3.time.format("%-d/%m/%Y"), 
                         d3.time.format("%d/%m/%y"), 
@@ -42,7 +44,8 @@ var format = d3.time.format("%d/%m/%Y"),
 
 var dataTable = dc.dataTable("#data-table");
 var creditVsDebitChart = dc.pieChart("#credit-vs-debit");
-var dayOfWeekChart = dc.rowChart("#day-week");
+var dayChart = dc.rowChart("#day");
+//var monthChart = dc.rowChart("#month");
                         
 d3.csv("/data.csv", function(d) {
   var parsedDate = undefined;
@@ -85,24 +88,8 @@ function(error, csv) {
       return "N/A";
   });
   
-  var dimDayOfWeek = facts.dimension(function (d) {
-    var day = d._date.getDay();
-    switch (day) {
-      case 0:
-        return "0.Sun";
-      case 1:
-        return "1.Mon";
-      case 2:
-        return "2.Tue";
-      case 3:
-        return "3.Wed";
-      case 4:
-        return "4.Thu";
-      case 5:
-        return "5.Fri";
-      case 6:
-        return "6.Sat";
-    }
+  var dimDay = facts.dimension(function (d) {
+    return dayFormat(d._date);
   });
   
   
@@ -129,11 +116,11 @@ function(error, csv) {
     .title(function(d){return d.value;})
     .group(dimCreditDebit.group());
     
-  dayOfWeekChart.width(300)
+  dayChart.width(300)
     .height(220)
     .margins({top: 5, left: 10, right: 10, bottom: 20})
-    .dimension(dimDayOfWeek)
-    .group(dimDayOfWeek.group())
+    .dimension(dimDay)
+    .group(dimDay.group())
     .colors(d3.scale.category10())
     .label(function (d){
        return d.key.split(".")[1];
