@@ -24,6 +24,7 @@
 <div id="credit-vs-debit"></div>
 <div id="month"></div>
 <div id="day"></div>
+<div id="day-year"></div>
 <table id="data-table">
   <thead>
     <tr>
@@ -48,7 +49,8 @@ var dataTable = dc.dataTable("#data-table");
 var creditVsDebitChart = dc.pieChart("#credit-vs-debit");
 var dayChart = dc.rowChart("#day");
 var monthChart = dc.rowChart("#month");
-                        
+var dayYearChart = dc.lineChart("#day-year");
+            
 d3.csv("/data.csv", function(d) {
   var parsedDate = undefined;
   for(var i = 0; i < inputDateFormats.length; i++)
@@ -78,7 +80,7 @@ function(error, csv) {
   var all = facts.groupAll();
 
   var dateDimension = facts.dimension(function (d) {
-    return d._date.getTime();
+    return d._date;
   });
   
   var dimCreditDebit = facts.dimension(function (d) {
@@ -97,7 +99,6 @@ function(error, csv) {
   var dimMonth = facts.dimension(function (d) {
     return monthFormat(d._date);
   });
-  
   
   dc.dataCount("#data-count")
    .dimension(facts)
@@ -149,9 +150,20 @@ function(error, csv) {
     .elasticX(true)
     .xAxis().ticks(4);
     
+  dayYearChart.width(960)
+    .height(150)
+    .transitionDuration(500)
+    //    .mouseZoomable(true)
+    .margins({top: 10, right: 10, bottom: 20, left: 40})
+    .dimension(dateDimension)
+    .group(dateDimension.group().reduceSum(function(d) { return d.Credit - d.Debit; }))
+    //    .brushOn(false)			// added for title
+    //.title('AAAA')
+    .elasticY(true)
+    .x(d3.time.scale().domain(d3.extent(csv, function(d) { return d._date; })))
+    .xAxis();
     
   dc.renderAll();
-
   
   var p = d3.select('body').selectAll('p').data(csv);
   p.enter().append('p');
