@@ -168,13 +168,13 @@ function(error, csv) {
   dayYearChart.width(960)
     .height(150)
     .transitionDuration(500)
-    //    .mouseZoomable(true)
     .margins({top: 10, right: 10, bottom: 20, left: 40})
     .dimension(dateDimension)
-    .group(dateDimension.group().reduceSum(function(d) { return d.Credit - d.Debit; }))
-    //    .brushOn(false)			// added for title
-    //.title('AAAA')
-    .elasticY(true)
+    .colors(d3.scale.ordinal().domain(d3.range("Credit", "Debit", "N/A")).range(colorbrewer.Set1[3]))
+    .group(dateDimension.group().reduceSum(function(d) { return d.Credit; })) 
+    .stack(dateDimension.group().reduceSum(function(d) { return -1*d.Debit; }))
+    .elasticY(false)
+    .legend(dc.legend().x(60).y(10).itemHeight(13).gap(5))
     .x(d3.time.scale().domain(d3.extent(csv, function(d) { return d._date; })))
     .xAxis();
     
