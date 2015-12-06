@@ -50,7 +50,11 @@ var creditVsDebitChart = dc.pieChart("#credit-vs-debit");
 var dayChart = dc.rowChart("#day");
 var monthChart = dc.rowChart("#month");
 var dayYearChart = dc.lineChart("#day-year");
-            
+     
+var sumCreditDebit = function(d) {
+  return d.Credit + d.Debit;
+};
+
 d3.csv("/data.csv", function(d) {
   var parsedDate = undefined;
   for(var i = 0; i < inputDateFormats.length; i++)
@@ -130,14 +134,14 @@ function(error, csv) {
     .innerRadius(30)
     .colors(d3.scale.ordinal().domain(d3.range("Credit", "Debit", "N/A")).range(colorbrewer.Set1[3]))
     .dimension(dimCreditDebit)
-    .title(function(d){return d.value;})
+    .title(function(d){console.log(d);return d.value;})
     .group(groupCreditDebit);
     
   dayChart.width(300)
     .height(220)
     .margins({top: 5, left: 10, right: 10, bottom: 20})
     .dimension(dimDay)
-    .group(dimDay.group())
+    .group(dimDay.group().reduceSum(sumCreditDebit))
     .colors(d3.scale.category10())
     .label(function (d){
        return d.key.split(".")[1];
@@ -150,7 +154,7 @@ function(error, csv) {
     .height(220)
     .margins({top: 5, left: 10, right: 10, bottom: 20})
     .dimension(dimMonth)
-    .group(dimMonth.group())
+    .group(dimMonth.group().reduceSum(sumCreditDebit))
     .colors(d3.scale.category20())
     .label(function (d){
        return d.key.split(".")[1];
