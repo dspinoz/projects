@@ -20,6 +20,7 @@
   </style>
 </head>
 <body>
+<h3 id="test"></h3>
 <h1>Transactions <span id="data-count">Showing <span class="filter-count"></span> of <span class="total-count"></span></span></h1>
 <div id="credit-vs-debit"></div>
 <div id="month"></div>
@@ -55,6 +56,76 @@ var sumCreditDebit = function(d) {
   return d.Credit + d.Debit;
 };
 
+dc.myChart = function(parent, chartGroup) {
+  var _chart = dc.baseChart({});
+  var _size = 5;
+  var _valueFormat = undefined;
+  var _keyFormat = undefined;
+
+  _chart.size = function(s) {
+    if (!arguments.length) return _size;
+    _size = s;
+    return _chart;
+  };
+  
+  _chart.keyFormat = function(f) {
+    if (!arguments.length) return _keyFormat;
+    _keyFormat = f;
+    return _chart;
+  };
+  
+  _chart.valueFormat = function(f) {
+    if (!arguments.length) return _valueFormat;
+    _valueFormat = f;
+    return _chart;
+  };
+    
+  _chart.doRender = function() {
+    
+    var data = [];
+    
+    _chart.group().all().forEach(function(d) {
+      data.push(d);
+    });
+    
+    if (data.length == 2) {
+      data.push({key: 'Diff', value: data[0].value - data[1].value});
+    }
+    
+    var span = _chart.selectAll("span").data(data);
+    
+    span.enter()
+      .append('span');
+      
+    span.exit().remove();
+    
+    span.attr('class', function(d) {
+        return d.key;
+      })
+      .text(function(d,i) {
+        var val = d.value;
+        if (_valueFormat) {
+          val = _valueFormat(d.value);
+        }
+        
+        var key = d.key;
+        if (_keyFormat) {
+          key = _keyFormat(d.key);
+        }
+        
+        return key + ": " + val;
+      });
+
+    return _chart;
+  };
+
+  _chart.doRedraw = function(){
+      return _chart.doRender();
+  };
+
+  return _chart.anchor(parent, chartGroup);
+};
+
 d3.csv("/data.csv", function(d) {
   var parsedDate = undefined;
   for(var i = 0; i < inputDateFormats.length; i++)
@@ -88,18 +159,18 @@ function(error, csv) {
   });
   
   var dimCreditDebit = facts.dimension(function (d) {
-    if (d.Credit > 0 && d.Credit > d.Debit)
+    if (d.Credit > 0)
       return "Credit";
-    else if (d.Debit > 0 && d.Debit > d.Credit)
+    else if (d.Debit > 0)
       return "Debit";
     else
       return "N/A";
   });
  
   var groupCreditDebit = dimCreditDebit.group().reduceSum(function(d) {
-      if (d.Credit > 0 && d.Credit > d.Debit)
+      if (d.Credit > 0)
         return d.Credit;
-      else if (d.Debit > 0 && d.Debit > d.Credit)
+      else if (d.Debit > 0)
         return d.Debit;
       else
         return 0;
@@ -116,6 +187,11 @@ function(error, csv) {
   dc.dataCount("#data-count")
    .dimension(facts)
    .group(all);
+   
+  dc.myChart("#test")
+    .dimension(dimCreditDebit)
+    .group(groupCreditDebit)
+    .valueFormat(d3.format("$0.2f"));
    
   dataTable.width(960).height(800)
     .dimension(dateDimension)
