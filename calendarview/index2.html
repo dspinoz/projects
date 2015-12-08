@@ -27,6 +27,7 @@
 <div id="month"></div>
 <div id="day"></div>
 <div id="day-year"></div>
+<div id="heat-map"></div>
 <table id="data-table">
   <thead>
     <tr>
@@ -52,9 +53,12 @@ var creditVsDebitChart = dc.pieChart("#credit-vs-debit");
 var dayChart = dc.rowChart("#day");
 var monthChart = dc.rowChart("#month");
 var dayYearChart = dc.barChart("#day-year");
-     
+
 var sumCreditDebit = function(d) {
   return d.Credit + d.Debit;
+};
+var diffCreditMinusDebit = function(d) {
+  return d.Credit - d.Debit;
 };
 
 dc.myChart = function(parent, chartGroup) {
@@ -122,6 +126,141 @@ dc.myChart = function(parent, chartGroup) {
 
   _chart.doRedraw = function(){
       return _chart.doRender();
+  };
+
+  return _chart.anchor(parent, chartGroup);
+};
+
+
+dc.dateHeatMap = function (parent, chartGroup) {
+  var _g;
+  var _day;
+  var _range;
+  var _map;
+  var _cellSize = 17;
+  var _format = d3.time.format("%d/%m/%Y");
+  var _titleFormat = d3.time.format("%a %d %b %y");
+  
+  var 
+    _maxval = 5000,
+    _buckets = 10,
+    _colors = colorbrewer.BuGn[9].slice(1,4).concat(colorbrewer.OrRd[5].slice(1,5)),
+    _color = d3.scale.quantile()
+      .domain([0, _buckets - 1, _maxval])
+      .range(_colors);
+      
+  var _chart = dc.capped(dc.colorChart(dc.baseChart({})));
+
+  _chart.range = function(f) {
+    if (!arguments.length) return _range;
+    _range = f;
+    return _chart;
+  };
+  
+  _chart.doRender = function () {
+    _chart.resetSvg();
+
+    _g = _chart.svg()
+        .append("g")
+        .attr("transform", "translate(0,0)");
+        
+    var years = d3.range(_range[0].getFullYear(), _range[1].getFullYear()+1);
+    var yearHeight = _chart.height() / years.length;
+        
+    var year = _g.selectAll("g.year")
+        .data(years)
+      .enter().append("g")
+        .attr('class', 'year')
+      .append("g")
+        .attr("transform", function(d,i) { 
+          return "translate(" + ((_chart.width() - _cellSize * 53) / 2) + "," + yearHeight*i + ")";
+        });
+
+    year.append("text")
+        .attr("transform", "translate(-6," + _cellSize * 3.5 + ")rotate(-90)")
+        .style("text-anchor", "middle")
+        .text(function(d) { return d; });
+
+    _day = year.selectAll(".day")
+      .data(function(d) { var days = d3.time.days(new Date(d, 0, 1), new Date(d + 1, 0, 1)); return days; })
+    .enter().append("rect")
+      .attr("class", "day")
+      .style("fill", "#fff")
+      .style("stroke", "#ccc")
+      .style("stroke-width", "1px")
+      .attr("width", _cellSize)
+      .attr("height", _cellSize)
+      .attr("x", function(d) { return d3.time.weekOfYear(d) * _cellSize; })
+      .attr("y", function(d) { return d.getDay() * _cellSize; }) 
+      .on('click', function(d) {
+        console.log('heatmap click', d, _map[d]);
+      })
+      .on('mouseover',function(d) {
+        d3.select(this).style('stroke-width', '2px');
+      })
+      .on('mouseout',function () {
+        d3.select(this).style('stroke-width', '1px');
+      })
+      .datum(function(d) { return _format(d); });
+
+    _day.append("title")
+        .text(function(d) { return _titleFormat(_format.parse(d)); });
+
+    var month = year.selectAll(".month")
+        .data(function(d) { return d3.time.months(new Date(d, 0, 1), new Date(d + 1, 0, 1)); })
+      .enter().append("path")
+        .attr("class", "month")
+        .style("fill", "none")
+        .style("stroke", "#000")
+        .style("stroke-width", "2px")
+        .attr("d", monthPath);
+          
+    drawChart();
+
+    return _chart;
+  };
+
+  function drawChart() {
+    if (_chart.dataSet()) {
+      var data = _chart.assembleCappedData();
+
+      if (_g && _day) {
+      
+        _map = d3.nest().key(function(d) { return d.key; }).rollup(function(v) { return v[0].value; }).map(data);
+        
+        console.log('heatmap', data, _map);
+            
+        _day.filter(function(d) { return d in _map; })
+          .transition()
+          .duration(500)
+          .style("fill", function(d) { 
+            if (_map[d] < 1) {
+              //reset as naviagating through data
+              return "#fff";
+            }
+            return _color(_map[d]); 
+          });
+          
+        _day.select("title")
+          .text(function(d) { return JSON.stringify({key: d, value: _map[d]}); });
+      }
+    }
+  }
+  
+  function monthPath(t0) {
+    var t1 = new Date(t0.getFullYear(), t0.getMonth() + 1, 0),
+        d0 = t0.getDay(), w0 = d3.time.weekOfYear(t0),
+        d1 = t1.getDay(), w1 = d3.time.weekOfYear(t1);
+    return "M" + (w0 + 1) * _cellSize + "," + d0 * _cellSize 
+        + "H" + w0 * _cellSize + "V" + 7 * _cellSize
+        + "H" + w1 * _cellSize + "V" + (d1 + 1) * _cellSize
+        + "H" + (w1 + 1) * _cellSize + "V" + 0
+        + "H" + (w0 + 1) * _cellSize + "Z";
+  }
+  
+  _chart.doRedraw = function () {
+    drawChart();
+    return _chart;
   };
 
   return _chart.anchor(parent, chartGroup);
@@ -235,6 +374,20 @@ function(error, csv) {
     .dimension(dimCreditDebit)
     .group(groupCreditDebit)
     .valueFormat(d3.format("$0.2f"));
+    
+    
+  var dimDay2 = facts.dimension(function (d) {
+    return d3.time.format('%d/%m/%Y')(d._date);
+  });
+  
+  var dateRange = d3.extent(csv, function(d) { return d._date; });
+    
+  dc.dateHeatMap("#heat-map")
+    .width(960)
+    .height(150)
+    .dimension(dimDay2)
+    .group(dimDay2.group().reduceSum(sumCreditDebit))
+    .range(dateRange);
    
   dataTable.width(960).height(800)
     .dimension(dateDimension)
