@@ -21,7 +21,8 @@
 </head>
 <body>
 <h3 id="test"></h3>
-<h1>Transactions <span id="data-count">Showing <span class="filter-count"></span> of <span class="total-count"></span></span></h1>
+<h3>Credit: <span id="num-credit"></span> Debit: <span id="num-debit"></span> Offset: <span id="num-diff-credit-debit"></span></h3>
+<h3>Transactions <span id="data-count">Showing <span class="filter-count"></span> of <span class="total-count"></span></span></h3>
 <div id="credit-vs-debit"></div>
 <div id="month"></div>
 <div id="day"></div>
@@ -206,6 +207,29 @@ function(error, csv) {
   dc.dataCount("#data-count")
    .dimension(facts)
    .group(all);
+   
+  dc.numberDisplay("#num-credit")
+    .group(facts.groupAll().reduceSum(function(d) { if (d.Credit > 0) return d.Credit; return 0 }))
+    .valueAccessor(function(d) {
+      return d;
+    })
+    .formatNumber(d3.format("$0.2f"));
+    
+  dc.numberDisplay("#num-debit")
+    .group(facts.groupAll().reduceSum(function(d) { if (d.Debit > 0) return d.Debit; return 0 }))
+    .valueAccessor(function(d) {
+      return d;
+    })
+    .formatNumber(d3.format("$0.2f"));
+    
+  dc.numberDisplay("#num-diff-credit-debit")
+    .group(facts.groupAll().reduceSum(function(d) { return d.Credit - d.Debit; }))
+    .valueAccessor(function(d) {
+      return d;
+    })
+    .formatNumber(d3.format("$0.2f"));
+    
+    
    
   dc.myChart("#test")
     .dimension(dimCreditDebit)
