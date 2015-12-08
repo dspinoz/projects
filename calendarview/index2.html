@@ -50,7 +50,7 @@ var dataTable = dc.dataTable("#data-table");
 var creditVsDebitChart = dc.pieChart("#credit-vs-debit");
 var dayChart = dc.rowChart("#day");
 var monthChart = dc.rowChart("#month");
-var dayYearChart = dc.lineChart("#day-year");
+var dayYearChart = dc.barChart("#day-year");
      
 var sumCreditDebit = function(d) {
   return d.Credit + d.Debit;
@@ -184,6 +184,25 @@ function(error, csv) {
     return monthFormat(d._date);
   });
   
+  var dimMonth2 = facts.dimension(function (d) {
+    //slightly offset the dates to ensure that stack-ing 
+    //does not draw over the top of one another
+    //NOTE: only supports 999 max transactions per day!
+  
+    if (d.Credit > 0)
+    {
+      d._date.setHours(1);
+      d._date.setMilliseconds(d._date.getMilliseconds()+1);
+    }
+    if (d.Debit > 0)
+    {
+      d._date.setHours(2);
+      d._date.setMilliseconds(d._date.getMilliseconds()+1);
+    }
+  
+    return d._date;
+  });
+  
   dc.dataCount("#data-count")
    .dimension(facts)
    .group(all);
@@ -210,7 +229,7 @@ function(error, csv) {
     .innerRadius(30)
     .colors(d3.scale.ordinal().domain(d3.range("Credit", "Debit", "N/A")).range(colorbrewer.Set1[3]))
     .dimension(dimCreditDebit)
-    .title(function(d){console.log(d);return d.value;})
+    .title(function(d){return d.value;})
     .group(groupCreditDebit);
     
   dayChart.width(300)
@@ -241,18 +260,30 @@ function(error, csv) {
     .elasticX(true)
     .xAxis().ticks(4);
     
-  dayYearChart.width(960)
-    .height(150)
-    .transitionDuration(0)
-    .margins({top: 10, right: 10, bottom: 20, left: 40})
-    .dimension(dateDimension)
+  dayYearChart.width(990) 
+    .height(100)
+    .margins({top: 0, right: 50, bottom: 20, left: 40})
+    .dimension(dimMonth2)
     .colors(d3.scale.ordinal().domain(d3.range("Credit", "Debit", "N/A")).range(colorbrewer.Set1[3]))
-    .group(dateDimension.group().reduceSum(function(d) { if (d.Credit > 0) return d.Credit; return 0; })) 
-    .stack(dateDimension.group().reduceSum(function(d) { if (d.Debit > 0) return -1*d.Debit; return 0; }))
-    .elasticY(false)
-    .legend(dc.legend().x(60).y(10).itemHeight(13).gap(5))
-    .x(d3.time.scale().domain(d3.extent(csv, function(d) { return d._date; })))
-    .xAxis();
+    .group(dimMonth2.group().reduceSum(function (d) { if (d.Credit > 0) return d.Credit; return 0; }))
+    .stack(dimMonth2.group().reduce(
+      // show debits as negative bars
+      function (p, v) {
+        if (v.Debit > 0)
+          return p - v.Debit;
+        return p;
+      },
+      function (p, v) {
+        if (v.Debit > 0)
+          return p + v.Debit;
+        return p;
+      },
+      function() {
+        return 0;
+      }
+    ))
+    .x(d3.time.scale().domain(d3.extent(csv, function(d) { return d._date; })));
+    
     
   dc.renderAll();
   
