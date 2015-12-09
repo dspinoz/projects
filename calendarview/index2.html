@@ -149,6 +149,8 @@ dc.dateHeatMap = function (parent, chartGroup) {
       .domain([0, _buckets - 1, _maxval])
       .range(_colors);
       
+  var _selected = {};
+      
   var _chart = dc.capped(dc.colorChart(dc.baseChart({})));
 
   _chart.range = function(f) {
@@ -193,13 +195,36 @@ dc.dateHeatMap = function (parent, chartGroup) {
       .attr("x", function(d) { return d3.time.weekOfYear(d) * _cellSize; })
       .attr("y", function(d) { return d.getDay() * _cellSize; }) 
       .on('click', function(d) {
-        console.log('heatmap click', d, _map[d]);
+        console.log('heatmap click', d, _map[d], d._clicked);
+      
+        if (d in _selected) {
+          d3.select(this)
+            .style("stroke", "#ccc")
+            .style("stroke-width", "1px")
+            .style("fill", "#fff");
+          delete _selected[d];
+        } 
+        else {
+          d3.select(this)
+            .style("stroke", "#000")
+            .style("stroke-width", "3px")
+            .style("fill", "blue");
+          _selected[d] = true;
+        }
+        
+        _chart.onClick({key: d, value: _map[d]});
+        
       })
+      
       .on('mouseover',function(d) {
-        d3.select(this).style('stroke-width', '2px');
+        if (!(d in _selected)) {
+          d3.select(this).style('stroke-width', '2px');
+        }
       })
-      .on('mouseout',function () {
-        d3.select(this).style('stroke-width', '1px');
+      .on('mouseout',function (d) {
+        if (!(d in _selected)) {
+          d3.select(this).style('stroke-width', '1px');
+        }
       })
       .datum(function(d) { return _format(d); });
 
@@ -219,7 +244,7 @@ dc.dateHeatMap = function (parent, chartGroup) {
 
     return _chart;
   };
-
+  
   function drawChart() {
     if (_chart.dataSet()) {
       var data = _chart.assembleCappedData();
