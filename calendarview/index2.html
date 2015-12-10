@@ -20,7 +20,6 @@
   </style>
 </head>
 <body>
-<h3 id="test"></h3>
 <h3>Credit: <span id="num-credit"></span> Debit: <span id="num-debit"></span> Offset: <span id="num-diff-credit-debit"></span></h3>
 <h3>Transactions <span id="data-count">Showing <span class="filter-count"></span> of <span class="total-count"></span></span></h3>
 <div id="credit-vs-debit"></div>
@@ -39,6 +38,8 @@
   </thead>
 </table>
 <script type="text/javascript">
+
+var colorsCreditDebit = d3.scale.ordinal().domain(d3.range("Credit", "Debit", "N/A")).range(colorbrewer.Set1[3]);
 
 var format = d3.time.format("%d/%m/%Y"),
     dayFormat = d3.time.format('%w.%a'),
@@ -63,15 +64,8 @@ var diffCreditMinusDebit = function(d) {
 
 dc.myChart = function(parent, chartGroup) {
   var _chart = dc.baseChart({});
-  var _size = 5;
   var _valueFormat = undefined;
   var _keyFormat = undefined;
-
-  _chart.size = function(s) {
-    if (!arguments.length) return _size;
-    _size = s;
-    return _chart;
-  };
   
   _chart.keyFormat = function(f) {
     if (!arguments.length) return _keyFormat;
@@ -92,10 +86,6 @@ dc.myChart = function(parent, chartGroup) {
     _chart.group().all().forEach(function(d) {
       data.push(d);
     });
-    
-    if (data.length == 2) {
-      data.push({key: 'Diff', value: data[0].value - data[1].value});
-    }
     
     var span = _chart.selectAll("span").data(data);
     
@@ -423,13 +413,6 @@ function(error, csv) {
     .formatNumber(d3.format("$0.2f"));
     
     
-   
-  dc.myChart("#test")
-    .dimension(dimCreditDebit)
-    .group(groupCreditDebit)
-    .valueFormat(d3.format("$0.2f"));
-    
-    
   var dimDay2 = facts.dimension(function (d) {
     return d3.time.format('%d/%m/%Y')(d._date);
   });
@@ -458,7 +441,7 @@ function(error, csv) {
     .height(220)
     .radius(100)
     .innerRadius(30)
-    .colors(d3.scale.ordinal().domain(d3.range("Credit", "Debit", "N/A")).range(colorbrewer.Set1[3]))
+    .colors(colorsCreditDebit)
     .dimension(dimCreditDebit)
     .title(function(d){return d.value;})
     .group(groupCreditDebit);
