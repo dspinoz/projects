@@ -144,9 +144,10 @@ dc.dateHeatMap = function (parent, chartGroup) {
   var 
     _maxval = 5000,
     _buckets = 10,
-    _colors = colorbrewer.BuGn[9].slice(1,4).concat(colorbrewer.OrRd[5].slice(1,5)),
+    _colorsNum = 9,
+    _colors = colorbrewer.RdBu[_colorsNum].reverse(),
     _color = d3.scale.quantile()
-      .domain([0, _buckets - 1, _maxval])
+      .domain([-1*_maxval, _buckets-1, _maxval])
       .range(_colors);
       
   var _selected = {};
@@ -161,10 +162,38 @@ dc.dateHeatMap = function (parent, chartGroup) {
   
   _chart.doRender = function () {
     _chart.resetSvg();
+    
+    // as we go from negative to positive always show where 0 is
+    var q = _color.quantiles();
+    q.splice(d3.bisect(q, 0), 0, 0);
+    console.log(_color.quantiles(), q);
+    
+    var legendSz = 10;
+    var l = _chart.svg().append('g')
+      .attr("transform", "translate(0,0)")    
+      .selectAll(".legend")
+        .data(q);
 
-    _g = _chart.svg()
-        .append("g")
-        .attr("transform", "translate(0,0)");
+    l.enter().append("g")
+      .attr("class", "legend");
+
+    l.append("rect")
+    .attr("x", function(d, i) { return (_chart.width()/_colorsNum)  * i; })
+    .attr("width", _chart.width()/_colorsNum)
+    .attr("height", _cellSize)
+    .style("fill", function(d, i) { return _colors[i]; });
+
+    l.append("text")
+    .attr("class", "mono")
+    .text(function(d) { return "≥ " + Math.round(d); })
+    .attr("x", function(d, i) { return (_chart.width()/_colorsNum) * i; })
+    .attr("y", legendSz + _cellSize);
+
+    l.exit().remove();
+    
+    
+    _g = _chart.svg().append("g")
+      .attr("transform", "translate(0,"+(legendSz+2+_cellSize)+")");
         
     var years = d3.range(_range[0].getFullYear(), _range[1].getFullYear()+1);
     var yearHeight = _chart.height() / years.length;
@@ -236,8 +265,8 @@ dc.dateHeatMap = function (parent, chartGroup) {
       .enter().append("path")
         .attr("class", "month")
         .style("fill", "none")
-        .style("stroke", "#000")
-        .style("stroke-width", "2px")
+        .style("stroke", "#555")
+        .style("stroke-width", "1px")
         .attr("d", monthPath);
           
     drawChart();
@@ -250,19 +279,14 @@ dc.dateHeatMap = function (parent, chartGroup) {
       var data = _chart.assembleCappedData();
 
       if (_g && _day) {
-      
-        _map = d3.nest().key(function(d) { return d.key; }).rollup(function(v) { return v[0].value; }).map(data);
+        _map = d3.nest().key(function(d) { return d.key; }).rollup(function(v) { console.log('rollup', v);return v[0].value; }).map(data);
         
-        console.log('heatmap', data, _map);
+        console.log('heatmap data', data, _map);
             
         _day.filter(function(d) { return d in _map; })
           .transition()
           .duration(500)
-          .style("fill", function(d) { 
-            if (_map[d] < 1) {
-              //reset as naviagating through data
-              return "#fff";
-            }
+          .style("fill", function(d) {
             return _color(_map[d]); 
           });
           
