@@ -287,6 +287,11 @@ dc.dateHeatMap = function (parent, chartGroup) {
           .transition()
           .duration(500)
           .style("fill", function(d) {
+            var v = _map[d];
+            if (v > -1 && v < 1) {
+              return _colors[Math.floor(_colorsNum/2)];
+            }
+            
             return _color(_map[d]); 
           });
           
