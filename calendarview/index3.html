@@ -23,13 +23,19 @@
     </tr>
   </thead>
 </table>
+<div id="category-pie"></div>
+<div id="subcategory-pie"></div>
 <script type="text/javascript">
 
 var dataTable = dc.dataTable("#data-table");
+var catPie = dc.pieChart("#category-pie");
+var subcatPie = dc.pieChart("#subcategory-pie");
+
 var facts = crossfilter();
 var all = facts.groupAll();
 
-var tf = d3.time.format('%A %b %e %H:%M');
+var tf = d3.time.format('%A %b %e %H:%M'),
+    mf = d3.time.format('%b');
   
 d3.csv("/transactions.csv", 
   function(d) { 
@@ -55,6 +61,30 @@ d3.csv("/transactions.csv",
         function(d) { return d.amount; },
         function(d) { return d.note; }
       ]);
+      
+    var catPieDim = facts.dimension(function(d) { return d.category; });
+    
+    catPie
+      .width(250)
+      .height(220)
+      .radius(100)
+      .innerRadius(30)
+      .dimension(catPieDim)
+      .title(function(d){return d.value;})
+      .group(catPieDim.group().reduceCount());
+      
+    var subcatPieDim = facts.dimension(function(d) { return d.subcategory; });
+    
+    subcatPie
+      .width(250)
+      .height(220)
+      .radius(100)
+      .innerRadius(30)
+      .dimension(subcatPieDim)
+      .title(function(d){return d.value;})
+      .group(subcatPieDim.group().reduceCount());
+      
+      
       
     dc.renderAll();
 });
