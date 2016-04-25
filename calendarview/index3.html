@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+  <meta charset='utf-8'>
+  <title>Spending Data</title>
+  <script src='/colorbrewer.js' type='text/javascript'></script>
+  <script src='/d3.js' type='text/javascript'></script>
+  <script src='/crossfilter.js' type='text/javascript'></script>
+  <script src='/dc.js' type='text/javascript'></script>
+  <link href='/dc.css' rel='stylesheet' type='text/css'>
+  <style type="text/css"></style>
+  <style>
+  </style>
+</head>
+<body>
+<table id="data-table">
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Description</th>
+      <th>Amount</th>
+      <th>Note</th>
+    </tr>
+  </thead>
+</table>
+<script type="text/javascript">
+
+var dataTable = dc.dataTable("#data-table");
+var facts = crossfilter();
+var all = facts.groupAll();
+
+var tf = d3.time.format('%A %b %e %H:%M');
+  
+d3.csv("/transactions.csv", 
+  function(d) { 
+    d.datetime = (d.datetime*1000).toFixed(0)*1;
+    d._date = new Date(d.datetime);
+    return d; 
+  }, 
+  function(error, csv) {
+
+    facts.add(csv);
+     
+    dataTable.width(960).height(800)
+      .dimension(facts.dimension(function (d) {
+        return d.eid;
+      }))
+      .sortBy(function(d) { return d._date; })
+      .group(function(d) { return "Last Transactions"; })
+      .size(10)
+      .order(d3.descending)
+      .columns([
+        function(d) { return tf(d._date); },
+        function(d) { return '<b>'+ d.category + '</b> ' + d.subcategory; },
+        function(d) { return d.amount; },
+        function(d) { return d.note; }
+      ]);
+      
+    dc.renderAll();
+});
+</script>    
+</body>
+</html>
