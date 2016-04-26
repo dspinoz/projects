@@ -13,16 +13,23 @@
     div.row p {
       display: inline;
     }
+    p.big {
+      width: 300px;
+      position: absolute;
+      text-align: center;
+      vertical-align: middle;
+      font-size: 50px;
+    }
   </style>
 </head>
 <body>
 <div class='row'>
   <p id='data-count'></p>
-  <p id="total-spend"></p>
 </div>
 <div class='row'>
   <p id="category-pie"></p>
   <p id="subcategory-pie"></p>
+  <p class="big" id="total-spend"></p>
 </div>
 <div class="row">
   <p id="year-row"></p>
@@ -45,6 +52,8 @@
 <script type="text/javascript">
 
 var facts = crossfilter();
+
+var dollarFormat = d3.format("$,.4r");
 
 var totalSpend = dc.numberDisplay("#total-spend"),
     dataTable = dc.dataTable("#data-table"),
@@ -76,7 +85,7 @@ totalSpend
   .valueAccessor(function(d) {
     return d;
   })
-  .formatNumber(d3.format("$,.4r"));
+  .formatNumber(dollarFormat);
   
 dataTable
   .width(960)
@@ -84,7 +93,6 @@ dataTable
   .order(d3.descending)
   .sortBy(function(d) { return d._date; })
   .group(function(d) { return tableFormat(d._date); })
-  .size(30)
   .dimension(facts.dimension(function (d) {
     return d.eid;
   }))
@@ -99,8 +107,7 @@ var catPieDim = facts.dimension(function(d) { return d.category; });
 
 catPie
   .innerRadius(30)
-  .slicesCap(6)
-  .title(function(d){return d.value;})
+  .title(function(d){return d.key + ": " + dollarFormat(d.value);})
   .dimension(catPieDim)
   .group(catPieDim.group().reduceSum(function(d) { return d.amount; }));
   
@@ -108,8 +115,8 @@ var subcatPieDim = facts.dimension(function(d) { return d.subcategory; });
 
 subcatPie
   .innerRadius(30)
-  .slicesCap(8)
-  .title(function(d){return d.value;})
+  //.slicesCap(8)
+  .title(function(d){return d.key + ": " + dollarFormat(d.value);})
   .dimension(subcatPieDim)
   .group(subcatPieDim.group().reduceSum(function(d) { return d.amount; }));
   
@@ -147,8 +154,6 @@ weekBar
   .dimension(weekDim)
   .group(weekDim.group().reduceSum(function(d) { return d.amount; }))
   .yAxis().ticks([5]).tickFormat(d3.format("$s"));
-  
-weekBar.margins().left = 50;
   
 d3.csv("/transactions.csv", 
   function(d) { 
