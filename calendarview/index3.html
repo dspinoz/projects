@@ -127,11 +127,13 @@ dayRow
 var weekDim = facts.dimension(function(d) { return +wf(d._date); });
 
 weekBar
+  .width(500)
   .elasticY(true)
   .x(d3.scale.linear().domain([0,53]))
   .xAxisLabel("#Week")
   .dimension(weekDim)
-  .group(weekDim.group().reduceCount());
+  .group(weekDim.group().reduceCount())
+  .yAxis().ticks([5]);
   
 d3.csv("/transactions.csv", 
   function(d) { 
