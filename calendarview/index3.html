@@ -21,6 +21,14 @@
   <p id="category-pie"></p>
   <p id="subcategory-pie"></p>
 </div>
+<div class="row">
+  <p id="year-row"></p>
+  <p id="month-row"></p>
+  <p id="day-row"></p>
+</div>
+<div class="row">
+  <p id="week-row"></p>
+</div>
 <table id="data-table">
   <thead>
     <tr>
@@ -36,16 +44,20 @@
 var facts = crossfilter();
 var all = facts.groupAll();
 
-var dataTable = dc.dataTable("#data-table");
-var catPie = dc.pieChart("#category-pie");
-var subcatPie = dc.pieChart("#subcategory-pie");
+var dataTable = dc.dataTable("#data-table"),
+    catPie = dc.pieChart("#category-pie"),
+    subcatPie = dc.pieChart("#subcategory-pie"),
+    yearRow = dc.rowChart("#year-row"),
+    monthRow = dc.rowChart("#month-row"),
+    dayRow = dc.rowChart("#day-row"),
+    weekBar = dc.barChart("#week-row");
 
 var tf = d3.time.format('%A %b %e %H:%M'),
     df = d3.time.format('%a'),
     mf = d3.time.format('%b'),
     hf = d3.time.format('%H'),
     wf = d3.time.format('%W'),
-    yf = d3.time.format('%y'),
+    yf = d3.time.format('%Y'),
     tableFormat = d3.time.format('%Y-%m');
   
 dc.dataCount('#data-count')
@@ -76,9 +88,6 @@ dataTable
 var catPieDim = facts.dimension(function(d) { return d.category; });
 
 catPie
-  .width(250)
-  .height(220)
-  .radius(100)
   .innerRadius(30)
   .slicesCap(6)
   .title(function(d){return d.value;})
@@ -88,14 +97,41 @@ catPie
 var subcatPieDim = facts.dimension(function(d) { return d.subcategory; });
 
 subcatPie
-  .width(250)
-  .height(220)
-  .radius(100)
   .innerRadius(30)
   .slicesCap(8)
   .title(function(d){return d.value;})
   .dimension(subcatPieDim)
   .group(subcatPieDim.group().reduceCount());
+  
+var yearDim = facts.dimension(function(d) { return yf(d._date); });
+
+yearRow
+  .elasticX(true)
+  .dimension(yearDim)
+  .group(yearDim.group().reduceCount());
+  
+var monthDim = facts.dimension(function(d) { return mf(d._date); });
+
+monthRow
+  .elasticX(true)
+  .dimension(monthDim)
+  .group(monthDim.group().reduceCount());
+  
+var dayDim = facts.dimension(function(d) { return df(d._date); });
+
+dayRow
+  .elasticX(true)
+  .dimension(dayDim)
+  .group(dayDim.group().reduceCount());
+  
+var weekDim = facts.dimension(function(d) { return +wf(d._date); });
+
+weekBar
+  .elasticY(true)
+  .x(d3.scale.linear().domain([0,53]))
+  .xAxisLabel("#Week")
+  .dimension(weekDim)
+  .group(weekDim.group().reduceCount());
   
 d3.csv("/transactions.csv", 
   function(d) { 
