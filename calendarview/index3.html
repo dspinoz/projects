@@ -10,10 +10,17 @@
   <link href='/dc.css' rel='stylesheet' type='text/css'>
   <style type="text/css"></style>
   <style>
+    div.row p {
+      display: inline;
+    }
   </style>
 </head>
 <body>
-<div id='data-count'></div>
+<p id='data-count'></p>
+<div class='row'>
+  <p id="category-pie"></p>
+  <p id="subcategory-pie"></p>
+</div>
 <table id="data-table">
   <thead>
     <tr>
@@ -24,8 +31,6 @@
     </tr>
   </thead>
 </table>
-<div id="category-pie"></div>
-<div id="subcategory-pie"></div>
 <script type="text/javascript">
 
 var facts = crossfilter();
@@ -36,7 +41,12 @@ var catPie = dc.pieChart("#category-pie");
 var subcatPie = dc.pieChart("#subcategory-pie");
 
 var tf = d3.time.format('%A %b %e %H:%M'),
-    mf = d3.time.format('%b');
+    df = d3.time.format('%a'),
+    mf = d3.time.format('%b'),
+    hf = d3.time.format('%H'),
+    wf = d3.time.format('%W'),
+    yf = d3.time.format('%y'),
+    tableFormat = d3.time.format('%Y-%m');
   
 dc.dataCount('#data-count')
   .dimension(facts)
@@ -51,8 +61,8 @@ dataTable
   .height(800)
   .order(d3.descending)
   .sortBy(function(d) { return d._date; })
-  .group(function(d) { return "Last Transactions"; })
-  .size(10)
+  .group(function(d) { return tableFormat(d._date); }, function(d) {return 'aaa';})
+  .size(30)
   .dimension(facts.dimension(function (d) {
     return d.eid;
   }))
