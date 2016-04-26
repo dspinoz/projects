@@ -16,7 +16,10 @@
   </style>
 </head>
 <body>
-<p id='data-count'></p>
+<div class='row'>
+  <p id='data-count'></p>
+  <p id="total-spend"></p>
+</div>
 <div class='row'>
   <p id="category-pie"></p>
   <p id="subcategory-pie"></p>
@@ -42,9 +45,9 @@
 <script type="text/javascript">
 
 var facts = crossfilter();
-var all = facts.groupAll();
 
-var dataTable = dc.dataTable("#data-table"),
+var totalSpend = dc.numberDisplay("#total-spend"),
+    dataTable = dc.dataTable("#data-table"),
     catPie = dc.pieChart("#category-pie"),
     subcatPie = dc.pieChart("#subcategory-pie"),
     yearRow = dc.rowChart("#year-row"),
@@ -62,11 +65,18 @@ var tf = d3.time.format('%A %b %e %H:%M'),
   
 dc.dataCount('#data-count')
   .dimension(facts)
-  .group(all)
+  .group(facts.groupAll())
   .html({
     some: '%filter-count/%total-count',
     all: 'All'
   });
+  
+totalSpend
+  .group(facts.groupAll().reduceSum(function(d) { return d.amount; }))
+  .valueAccessor(function(d) {
+    return d;
+  })
+  .formatNumber(d3.format("$,.4r"));
   
 dataTable
   .width(960)
@@ -139,6 +149,7 @@ d3.csv("/transactions.csv",
   function(d) { 
     d.datetime = (d.datetime*1000).toFixed(0)*1;
     d._date = new Date(d.datetime);
+    d.amount = +d.amount;
     return d; 
   }, 
   function(error, csv) {
