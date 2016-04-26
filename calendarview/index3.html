@@ -13,6 +13,7 @@
   </style>
 </head>
 <body>
+<div id='data-count'></div>
 <table id="data-table">
   <thead>
     <tr>
@@ -27,15 +28,19 @@
 <div id="subcategory-pie"></div>
 <script type="text/javascript">
 
+var facts = crossfilter();
+var all = facts.groupAll();
+
 var dataTable = dc.dataTable("#data-table");
 var catPie = dc.pieChart("#category-pie");
 var subcatPie = dc.pieChart("#subcategory-pie");
 
-var facts = crossfilter();
-var all = facts.groupAll();
 
 var tf = d3.time.format('%A %b %e %H:%M'),
     mf = d3.time.format('%b');
+  
+  
+  
   
 d3.csv("/transactions.csv", 
   function(d) { 
@@ -46,6 +51,14 @@ d3.csv("/transactions.csv",
   function(error, csv) {
 
     facts.add(csv);
+     
+    dc.dataCount('#data-count')
+      .dimension(facts)
+      .group(all)
+      .html({
+        some: '%filter-count/%total-count',
+        all: 'All'
+      });
      
     dataTable.width(960).height(800)
       .dimension(facts.dimension(function (d) {
