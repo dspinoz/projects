@@ -35,12 +35,55 @@ var dataTable = dc.dataTable("#data-table");
 var catPie = dc.pieChart("#category-pie");
 var subcatPie = dc.pieChart("#subcategory-pie");
 
-
 var tf = d3.time.format('%A %b %e %H:%M'),
     mf = d3.time.format('%b');
   
+dc.dataCount('#data-count')
+  .dimension(facts)
+  .group(all)
+  .html({
+    some: '%filter-count/%total-count',
+    all: 'All'
+  });
   
+dataTable
+  .width(960)
+  .height(800)
+  .dimension(facts.dimension(function (d) {
+    return d.eid;
+  }))
+  .sortBy(function(d) { return d._date; })
+  .group(function(d) { return "Last Transactions"; })
+  .size(10)
+  .order(d3.descending)
+  .columns([
+    function(d) { return tf(d._date); },
+    function(d) { return '<b>'+ d.category + '</b> ' + d.subcategory; },
+    function(d) { return d.amount; },
+    function(d) { return d.note; }
+  ]);
   
+var catPieDim = facts.dimension(function(d) { return d.category; });
+
+catPie
+  .width(250)
+  .height(220)
+  .radius(100)
+  .innerRadius(30)
+  .dimension(catPieDim)
+  .title(function(d){return d.value;})
+  .group(catPieDim.group().reduceCount());
+  
+var subcatPieDim = facts.dimension(function(d) { return d.subcategory; });
+
+subcatPie
+  .width(250)
+  .height(220)
+  .radius(100)
+  .innerRadius(30)
+  .dimension(subcatPieDim)
+  .title(function(d){return d.value;})
+  .group(subcatPieDim.group().reduceCount());
   
 d3.csv("/transactions.csv", 
   function(d) { 
@@ -49,58 +92,10 @@ d3.csv("/transactions.csv",
     return d; 
   }, 
   function(error, csv) {
-
     facts.add(csv);
-     
-    dc.dataCount('#data-count')
-      .dimension(facts)
-      .group(all)
-      .html({
-        some: '%filter-count/%total-count',
-        all: 'All'
-      });
-     
-    dataTable.width(960).height(800)
-      .dimension(facts.dimension(function (d) {
-        return d.eid;
-      }))
-      .sortBy(function(d) { return d._date; })
-      .group(function(d) { return "Last Transactions"; })
-      .size(10)
-      .order(d3.descending)
-      .columns([
-        function(d) { return tf(d._date); },
-        function(d) { return '<b>'+ d.category + '</b> ' + d.subcategory; },
-        function(d) { return d.amount; },
-        function(d) { return d.note; }
-      ]);
-      
-    var catPieDim = facts.dimension(function(d) { return d.category; });
-    
-    catPie
-      .width(250)
-      .height(220)
-      .radius(100)
-      .innerRadius(30)
-      .dimension(catPieDim)
-      .title(function(d){return d.value;})
-      .group(catPieDim.group().reduceCount());
-      
-    var subcatPieDim = facts.dimension(function(d) { return d.subcategory; });
-    
-    subcatPie
-      .width(250)
-      .height(220)
-      .radius(100)
-      .innerRadius(30)
-      .dimension(subcatPieDim)
-      .title(function(d){return d.value;})
-      .group(subcatPieDim.group().reduceCount());
-      
-      
-      
     dc.renderAll();
-});
+  }
+);
 </script>    
 </body>
 </html>
