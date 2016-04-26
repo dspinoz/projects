@@ -83,7 +83,7 @@ dataTable
   .height(800)
   .order(d3.descending)
   .sortBy(function(d) { return d._date; })
-  .group(function(d) { return tableFormat(d._date); }, function(d) {return 'aaa';})
+  .group(function(d) { return tableFormat(d._date); })
   .size(30)
   .dimension(facts.dimension(function (d) {
     return d.eid;
@@ -102,7 +102,7 @@ catPie
   .slicesCap(6)
   .title(function(d){return d.value;})
   .dimension(catPieDim)
-  .group(catPieDim.group().reduceCount());
+  .group(catPieDim.group().reduceSum(function(d) { return d.amount; }));
   
 var subcatPieDim = facts.dimension(function(d) { return d.subcategory; });
 
@@ -111,28 +111,31 @@ subcatPie
   .slicesCap(8)
   .title(function(d){return d.value;})
   .dimension(subcatPieDim)
-  .group(subcatPieDim.group().reduceCount());
+  .group(subcatPieDim.group().reduceSum(function(d) { return d.amount; }));
   
 var yearDim = facts.dimension(function(d) { return yf(d._date); });
 
 yearRow
   .elasticX(true)
   .dimension(yearDim)
-  .group(yearDim.group().reduceCount());
+  .group(yearDim.group().reduceSum(function(d) { return d.amount; }))
+  .xAxis().ticks([5]).tickFormat(d3.format("$s"));
   
 var monthDim = facts.dimension(function(d) { return mf(d._date); });
 
 monthRow
   .elasticX(true)
   .dimension(monthDim)
-  .group(monthDim.group().reduceCount());
+  .group(monthDim.group().reduceSum(function(d) { return d.amount; }))
+  .xAxis().ticks([5]).tickFormat(d3.format("$s"));
   
 var dayDim = facts.dimension(function(d) { return df(d._date); });
 
 dayRow
   .elasticX(true)
   .dimension(dayDim)
-  .group(dayDim.group().reduceCount());
+  .group(dayDim.group().reduceSum(function(d) { return d.amount; }))
+  .xAxis().ticks([5]).tickFormat(d3.format("$s"));
   
 var weekDim = facts.dimension(function(d) { return +wf(d._date); });
 
@@ -142,8 +145,10 @@ weekBar
   .x(d3.scale.linear().domain([0,53]))
   .xAxisLabel("#Week")
   .dimension(weekDim)
-  .group(weekDim.group().reduceCount())
-  .yAxis().ticks([5]);
+  .group(weekDim.group().reduceSum(function(d) { return d.amount; }))
+  .yAxis().ticks([5]).tickFormat(d3.format("$s"));
+  
+weekBar.margins().left = 50;
   
 d3.csv("/transactions.csv", 
   function(d) { 
