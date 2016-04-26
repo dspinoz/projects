@@ -65,8 +65,8 @@ var totalSpend = dc.numberDisplay("#total-spend"),
     weekBar = dc.barChart("#week-row");
 
 var tf = d3.time.format('%A %b %e %H:%M'),
-    df = d3.time.format('%a'),
-    mf = d3.time.format('%b'),
+    df = d3.time.format('%w.%a'),
+    mf = d3.time.format('%m.%b'),
     hf = d3.time.format('%H'),
     wf = d3.time.format('%W'),
     yf = d3.time.format('%Y'),
@@ -132,6 +132,7 @@ var monthDim = facts.dimension(function(d) { return mf(d._date); });
 
 monthRow
   .elasticX(true)
+  .label(function (d) { return d.key.split(".")[1]; })
   .dimension(monthDim)
   .group(monthDim.group().reduceSum(function(d) { return d.amount; }))
   .xAxis().ticks([5]).tickFormat(d3.format("$s"));
@@ -140,6 +141,7 @@ var dayDim = facts.dimension(function(d) { return df(d._date); });
 
 dayRow
   .elasticX(true)
+  .label(function (d) { return d.key.split(".")[1]; })
   .dimension(dayDim)
   .group(dayDim.group().reduceSum(function(d) { return d.amount; }))
   .xAxis().ticks([5]).tickFormat(d3.format("$s"));
