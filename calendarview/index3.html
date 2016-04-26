@@ -49,13 +49,13 @@ dc.dataCount('#data-count')
 dataTable
   .width(960)
   .height(800)
-  .dimension(facts.dimension(function (d) {
-    return d.eid;
-  }))
+  .order(d3.descending)
   .sortBy(function(d) { return d._date; })
   .group(function(d) { return "Last Transactions"; })
   .size(10)
-  .order(d3.descending)
+  .dimension(facts.dimension(function (d) {
+    return d.eid;
+  }))
   .columns([
     function(d) { return tf(d._date); },
     function(d) { return '<b>'+ d.category + '</b> ' + d.subcategory; },
@@ -70,8 +70,9 @@ catPie
   .height(220)
   .radius(100)
   .innerRadius(30)
-  .dimension(catPieDim)
+  .slicesCap(6)
   .title(function(d){return d.value;})
+  .dimension(catPieDim)
   .group(catPieDim.group().reduceCount());
   
 var subcatPieDim = facts.dimension(function(d) { return d.subcategory; });
@@ -81,8 +82,9 @@ subcatPie
   .height(220)
   .radius(100)
   .innerRadius(30)
-  .dimension(subcatPieDim)
+  .slicesCap(8)
   .title(function(d){return d.value;})
+  .dimension(subcatPieDim)
   .group(subcatPieDim.group().reduceCount());
   
 d3.csv("/transactions.csv", 
