@@ -5,7 +5,9 @@ dc.mytreeChart = function (parent, chartGroup) {
   
   var _data, _treeG, _treeData;
   
-  var _tree = d3.layout.tree();
+  var _tree = d3.layout.tree()
+    .children(function(d) { return Array.isArray(d.values) ? d.values : []; });
+    
   var _nest = d3.nest();
   
   var _diagonal = d3.svg.diagonal().projection(function(d) { return [d.x, d.y]; });

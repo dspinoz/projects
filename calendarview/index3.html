@@ -98,7 +98,6 @@ var tf = d3.time.format('%A %b %e %H:%M'),
 var filterTracker = {
   filters: {},
   redraw: function() {
-    console.log('aaa',filterTracker.filters, d3.entries(filterTracker.filters));
     var data = d3.entries(filterTracker.filters).filter(function(d) { return d.value; });
     var p = d3.select("#filters").selectAll('p').data(data);
     p.exit().remove();
@@ -203,21 +202,21 @@ weekBar
   .on('filtered', filterTracker.notify("Week"))
   .yAxis().ticks([5]).tickFormat(d3.format("$s"));
   
-
-myTree
-  .treeChildren(function(d) { return Array.isArray(d.values) ? d.values : []; })
-  .nest()
-    .key(function(d) { return d.category; })
-    .key(function(d) { return d.subcategory; })
-    .rollup(function(values) { 
-      var tot = 0;
-      values.forEach(function(d) {
-        tot += d.amount;
-      });
-      return tot;
+myTree.nest()
+  .key(function(d) { return d.category; })
+  .key(function(d) { return d.subcategory; })
+  .rollup(function(values) { 
+    console.log(values);
+    
+    var tot = 0;
+    values.forEach(function(d) {
+      tot += d.amount;
     });
+    return tot;
+  });
 
-myTree.scale().range([1,30]);
+myTree.scale()
+  .range([1,30]);
 
 d3.csv("/transactions.csv", 
   function(d) { 
