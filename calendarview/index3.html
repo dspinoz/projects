@@ -99,10 +99,11 @@ var filterTracker = {
   filters: {},
   redraw: function() {
     console.log('aaa',filterTracker.filters, d3.entries(filterTracker.filters));
-    var p = d3.select("#filters").selectAll('p').data(d3.entries(filterTracker.filters).filter(function(d) { return d.value; }));
+    var data = d3.entries(filterTracker.filters).filter(function(d) { return d.value; });
+    var p = d3.select("#filters").selectAll('p').data(data);
     p.exit().remove();
     p.enter().append('p');
-    p.text(function(d) { return JSON.stringify(d); });
+    p.html(function(d) { return '<b>' + d.key + '</b> : ' + d.value; });
   },
   notify : function(name) {
     return function(chart, filter) {
