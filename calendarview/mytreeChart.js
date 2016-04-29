@@ -6,10 +6,11 @@ dc.mytreeChart = function (parent, chartGroup) {
   var _data, _max;
   
   var _tree = d3.layout.tree();
+  var _nest = d3.nest();
   
   var _diagonal = d3.svg.diagonal().projection(function(d) { return [d.x, d.y]; });
   var _color = d3.scale.category10();
-  var _scale = d3.scale.linear();
+  var _scale = d3.scale.linear().range([0,50]);
   
   _chart._doRender = function () {
     _chart.resetSvg();
@@ -26,10 +27,11 @@ dc.mytreeChart = function (parent, chartGroup) {
         .attr("height", _height + margin.top + margin.bottom)
       .append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-      
-    _scale.domain([0,_max]).range([2,30]);
     
-    var nodes = _tree.nodes(_data);
+    // allow the user to build up tree nodes
+    var data = _chart.dataRoot(_nest.entries(_data));
+    
+    var nodes = _tree.nodes(data);
     
     var links = catTree.selectAll('path.link').data(_tree.links(nodes));
     links.exit().remove();
@@ -110,12 +112,28 @@ dc.mytreeChart = function (parent, chartGroup) {
     return _chart;
   };
 
+  _chart.scale = function (scale) {
+    if (!arguments.length) {
+      return _scale;
+    }
+    _scale = scale;
+    return _chart;
+  };
+  
   _chart.treeChildren = function (f) {
     if (!arguments.length) {
       return _tree.children();
     }
     _tree.children(f);
     return _chart;
+  };
+
+  _chart.nest = function() {
+    return _nest;
+  };
+  
+  _chart.dataRoot = function(entries) {
+    return {key: "Root", values: entries};
   };
 
   return _chart.anchor(parent, chartGroup);

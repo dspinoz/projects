@@ -205,8 +205,19 @@ weekBar
   
 
 myTree
-  .treeChildren(function(d) { return Array.isArray(d.values) ? d.values : []; });
+  .treeChildren(function(d) { return Array.isArray(d.values) ? d.values : []; })
+  .nest()
+    .key(function(d) { return d.category; })
+    .key(function(d) { return d.subcategory; })
+    .rollup(function(values) { 
+      var tot = 0;
+      values.forEach(function(d) {
+        tot += d.amount;
+      });
+      return tot;
+     });
 
+myTree.scale().range([1,30]);
 
 d3.csv("/transactions.csv", 
   function(d) { 
@@ -218,24 +229,10 @@ d3.csv("/transactions.csv",
   function(error, csv) {
     facts.add(csv);
     
-    var max = 0;
-    
-    var categorised = d3.nest()
-      .key(function(d) { return d.category; })
-      .key(function(d) { return d.subcategory; })
-      .rollup(function(values) { 
-        var tot = 0;
-        values.forEach(function(d) {
-          tot += d.amount;
-        });
-        if (tot > max) max = tot;
-        return tot;
-       })
-      .entries(csv);
-      
     myTree
-      .max(max)
-      .data({key: "Root", values: categorised});
+      .data(csv)
+      .scale()
+        .domain(d3.extent(csv, function(d) { return d.amount; }));
     
     dc.renderAll();
   }
