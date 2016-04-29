@@ -205,8 +205,6 @@ weekBar
   
 
 myTree
-  .dimension(catPieDim)
-  .group(catPieDim.groupAll())
   .treeChildren(function(d) { return Array.isArray(d.values) ? d.values : []; });
 
 

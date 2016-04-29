@@ -1,6 +1,8 @@
 dc.mytreeChart = function (parent, chartGroup) {
   var _chart = dc.colorMixin(dc.marginMixin(dc.baseMixin({})));
   
+  _chart._mandatoryAttributes([]);
+  
   var _data, _max;
   
   var _tree = d3.layout.tree();
