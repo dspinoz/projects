@@ -26,6 +26,19 @@
       stroke: #ccc;
       stroke-width: 0.5px;
     }
+    
+    g.node {
+      cursor: pointer;
+    }
+    
+    g.node circle {
+      stroke-width: 1px;
+      fill-opacity: 0.2;
+    }
+    
+    g.node circle.selected {
+      fill-opacity: 0.9;
+    }
   </style>
 </head>
 <body>
@@ -231,10 +244,17 @@ d3.csv("/transactions.csv",
         var d = d3.select(this).datum();
         console.log('tree click', d);
         
+        d3.select(this).select('circle').classed('selected', d._selected = !d._selected);
+        
         if (!d.parent) {
           //on the root node, reset filters
           catPie.filter(null);
           subcatPie.filter(null);
+          
+          g.select('circle').classed('selected', function(d) {
+            d._selected = false;
+            return d._selected; 
+          });
         }
         else {
           
@@ -257,6 +277,7 @@ d3.csv("/transactions.csv",
     c.exit().remove();
     c.enter().append('circle').attr('r', rScale(1));
     c.attr('fill', function(d) { return color(d.key); })
+    c.attr('stroke', function(d) { return color(d.key); })
       .attr('r', function(d) { 
         if (Array.isArray(d.values)) {
           return rScale(1); 
