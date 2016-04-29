@@ -3,7 +3,7 @@ dc.mytreeChart = function (parent, chartGroup) {
   
   _chart._mandatoryAttributes([]);
   
-  var _data, _max;
+  var _data, _treeG, _treeData;
   
   var _tree = d3.layout.tree();
   var _nest = d3.nest();
@@ -12,38 +12,22 @@ dc.mytreeChart = function (parent, chartGroup) {
   var _color = d3.scale.category10();
   var _scale = d3.scale.linear().range([0,50]);
   
-  _chart._doRender = function () {
-    _chart.resetSvg();
-    console.log('mytree render');
+  _chart.drawTreeNodes = function() {
     
-    var width = _chart.width() - _chart.margins().right - _chart.margins().left,
-        height = _chart.height() - _chart.margins().top - _chart.margins().bottom;
-
-    _tree.size([width, height]);
-
-    var catTree = _chart.svg()
-        .attr("width", width + _chart.margins().right + _chart.margins().left)
-        .attr("height", height + _chart.margins().top + _chart.margins().bottom)
-      .append("g")
-        .attr("transform", "translate(" + _chart.margins().left + "," + _chart.margins().top + ")");
+    var nodes = _tree.nodes(_treeData);
     
-    // allow the user to build up tree nodes
-    var data = _chart.dataRoot(_nest.entries(_data));
-    
-    var nodes = _tree.nodes(data);
-    
-    var links = catTree.selectAll('path.link').data(_tree.links(nodes));
+    var links = _treeG.selectAll('path.link').data(_tree.links(nodes));
     links.exit().remove();
     links.enter().append('path').attr('class', 'link');
     links.transition().attr('d', _diagonal);
     
-    var g = catTree.selectAll('g.node').data(nodes);
+    var g = _treeG.selectAll('g.node').data(nodes);
     
     g.exit().remove();
     g.enter().append('g').attr('class', 'node')
       .on('click', function() {
         var d = d3.select(this).datum();
-        console.log('tree click', d);
+        console.log('tree click', d, d3.select(this).attr('class'));
         
         d3.select(this).select('circle').classed('selected', d._selected = !d._selected);
         
@@ -85,13 +69,35 @@ dc.mytreeChart = function (parent, chartGroup) {
         }
         return _scale(d.values);
       });
+  };
+  
+  _chart._doRender = function () {
+    _chart.resetSvg();
+    console.log('mytree render');
     
+    var width = _chart.width() - _chart.margins().right - _chart.margins().left,
+        height = _chart.height() - _chart.margins().top - _chart.margins().bottom;
+
+    _tree.size([width, height]);
+
+    _treeG = _chart.svg()
+        .attr("width", width + _chart.margins().right + _chart.margins().left)
+        .attr("height", height + _chart.margins().top + _chart.margins().bottom)
+      .append("g")
+        .attr("transform", "translate(" + _chart.margins().left + "," + _chart.margins().top + ")");
+    
+    _treeData = _chart.dataRoot(_nest.entries(_data));
+    
+    _chart.drawTreeNodes();
     
     return _chart;
   };
 
   _chart._doRedraw = function () {
     console.log('mytree redraw');
+    
+    _chart.drawTreeNodes();
+    
     return _chart;
   };
 
@@ -100,14 +106,6 @@ dc.mytreeChart = function (parent, chartGroup) {
       return _data;
     }
     _data = data;
-    return _chart;
-  };
-  
-  _chart.max = function (max) {
-    if (!arguments.length) {
-      return _max;
-    }
-    _max = max;
     return _chart;
   };
 
