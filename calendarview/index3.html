@@ -45,6 +45,7 @@
 <body>
 <div class='row'>
   <p id='data-count'></p>
+  <p id='filters'></p>
 </div>
 <div class='row'>
   <p id="category-pie"></p>
@@ -93,7 +94,24 @@ var tf = d3.time.format('%A %b %e %H:%M'),
     wf = d3.time.format('%W'),
     yf = d3.time.format('%Y'),
     tableFormat = d3.time.format('%Y-%m');
-  
+
+var filterTracker = {
+  filters: {},
+  redraw: function() {
+    console.log('aaa',filterTracker.filters, d3.entries(filterTracker.filters));
+    var p = d3.select("#filters").selectAll('p').data(d3.entries(filterTracker.filters).filter(function(d) { return d.value; }));
+    p.exit().remove();
+    p.enter().append('p');
+    p.text(function(d) { return JSON.stringify(d); });
+  },
+  notify : function(name) {
+    return function(chart, filter) {
+      filterTracker.filters[name] = chart.filterPrinter()(chart.filters());
+      filterTracker.redraw();
+    }
+  }
+};
+
 dc.dataCount('#data-count')
   .dimension(facts)
   .group(facts.groupAll())
@@ -131,7 +149,8 @@ catPie
   .innerRadius(30)
   .title(function(d){return d.key + ": " + dollarFormat(d.value);})
   .dimension(catPieDim)
-  .group(catPieDim.group().reduceSum(function(d) { return d.amount; }));
+  .group(catPieDim.group().reduceSum(function(d) { return d.amount; }))
+  .on('filtered', filterTracker.notify("Category"));
   
 var subcatPieDim = facts.dimension(function(d) { return d.subcategory; });
 
@@ -139,7 +158,8 @@ subcatPie
   .innerRadius(30)
   .title(function(d){return d.key + ": " + dollarFormat(d.value);})
   .dimension(subcatPieDim)
-  .group(subcatPieDim.group().reduceSum(function(d) { return d.amount; }));
+  .group(subcatPieDim.group().reduceSum(function(d) { return d.amount; }))
+  .on('filtered', filterTracker.notify("Sub Category"));
   
 var yearDim = facts.dimension(function(d) { return yf(d._date); });
 
@@ -147,6 +167,7 @@ yearRow
   .elasticX(true)
   .dimension(yearDim)
   .group(yearDim.group().reduceSum(function(d) { return d.amount; }))
+  .on('filtered', filterTracker.notify("Year"))
   .xAxis().ticks([5]).tickFormat(d3.format("$s"));
   
 var monthDim = facts.dimension(function(d) { return mf(d._date); });
@@ -156,6 +177,7 @@ monthRow
   .label(function (d) { return d.key.split(".")[1]; })
   .dimension(monthDim)
   .group(monthDim.group().reduceSum(function(d) { return d.amount; }))
+  .on('filtered', filterTracker.notify("Month"))
   .xAxis().ticks([5]).tickFormat(d3.format("$s"));
   
 var dayDim = facts.dimension(function(d) { return df(d._date); });
@@ -165,6 +187,7 @@ dayRow
   .label(function (d) { return d.key.split(".")[1]; })
   .dimension(dayDim)
   .group(dayDim.group().reduceSum(function(d) { return d.amount; }))
+  .on('filtered', filterTracker.notify("Day"))
   .xAxis().ticks([5]).tickFormat(d3.format("$s"));
   
 var weekDim = facts.dimension(function(d) { return +wf(d._date); });
@@ -176,8 +199,9 @@ weekBar
   .xAxisLabel("#Week")
   .dimension(weekDim)
   .group(weekDim.group().reduceSum(function(d) { return d.amount; }))
+  .on('filtered', filterTracker.notify("Week"))
   .yAxis().ticks([5]).tickFormat(d3.format("$s"));
-
+  
 
 myTree
   .dimension(catPieDim)
