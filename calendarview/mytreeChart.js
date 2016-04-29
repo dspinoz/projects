@@ -16,17 +16,16 @@ dc.mytreeChart = function (parent, chartGroup) {
     _chart.resetSvg();
     console.log('mytree render');
     
-    var margin = {top: 10, right: 20, bottom: 20, left: 20},
-        _width = _chart.width() - margin.right - margin.left,
-        _height = _chart.height() - margin.top - margin.bottom;
+    var width = _chart.width() - _chart.margins().right - _chart.margins().left,
+        height = _chart.height() - _chart.margins().top - _chart.margins().bottom;
 
-    _tree.size([_width, _height]);
+    _tree.size([width, height]);
 
     var catTree = _chart.svg()
-        .attr("width", _width + margin.right + margin.left)
-        .attr("height", _height + margin.top + margin.bottom)
+        .attr("width", width + _chart.margins().right + _chart.margins().left)
+        .attr("height", height + _chart.margins().top + _chart.margins().bottom)
       .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+        .attr("transform", "translate(" + _chart.margins().left + "," + _chart.margins().top + ")");
     
     // allow the user to build up tree nodes
     var data = _chart.dataRoot(_nest.entries(_data));
