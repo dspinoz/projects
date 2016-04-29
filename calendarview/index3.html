@@ -206,8 +206,6 @@ myTree.nest()
   .key(function(d) { return d.category; })
   .key(function(d) { return d.subcategory; })
   .rollup(function(values) { 
-    console.log(values);
-    
     var tot = 0;
     values.forEach(function(d) {
       tot += d.amount;
