@@ -88,6 +88,8 @@ dc.myinteractionsChart = function (parent, chartGroup) {
   var _current, _saved;
   
   var _savedData = [], _dimensions = [], _charts = [];
+  
+  var _listeners = d3.dispatch('reset');
       
   var _text = function(d) { console.log('text', d); return d; };
   
@@ -116,10 +118,12 @@ dc.myinteractionsChart = function (parent, chartGroup) {
   };
   
   _chart.reset = function() {
+    
+    _listeners.reset(_chart);
+    
     /*_dimensions.forEach(function(d) {
       d.filterAll();
     });*/
-    filterTracker.filters = {};
     
     _charts.forEach(function(d) {
       d.filter(null);
@@ -177,6 +181,11 @@ dc.myinteractionsChart = function (parent, chartGroup) {
     return _chart;
   };
   
+  _chart.on = function (event, listener) {
+    _listeners.on(event, listener);
+    return _chart;
+  };
+  
   return _chart;
 };
 
@@ -202,7 +211,10 @@ myInteractions
   .chart(yearRow)
   .chart(monthRow)
   .chart(dayRow)
-  .chart(weekBar);
+  .chart(weekBar)
+  .on('reset', function(chart) {
+    console.log('reset event!');
+  });
 
 var tf = d3.time.format('%A %b %e %H:%M'),
     df = d3.time.format('%w.%a'),
