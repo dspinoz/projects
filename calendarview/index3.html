@@ -89,7 +89,7 @@ dc.myinteractionsChart = function (parent, chartGroup) {
   
   var _savedData = [], _dimensions = [], _charts = [];
   
-  var _listeners = d3.dispatch('reset');
+  var _listeners = d3.dispatch('set', 'save', 'reset');
       
   var _text = function(d) { console.log('text', d); return d; };
   
@@ -147,11 +147,13 @@ dc.myinteractionsChart = function (parent, chartGroup) {
   };
   
   _chart.set = function(d) {
+    _listeners.set(_chart, d);
     _current.datum(d);
     _chart._doRedraw();
   };
   
   _chart.save = function(d) {
+    _listeners.save(_chart, d);
     _chart.set(undefined);
     _savedData.push(JSON.parse(JSON.stringify(d)));
     _chart._doRedraw();
