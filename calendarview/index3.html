@@ -43,35 +43,142 @@
   </style>
 </head>
 <body>
-<div class='row'>
-  <p id='data-count'></p>
-  <p id='filters'></p>
+<div class="container" style="float:right; display: inline;">
+  <h3>Interactions</h3>
+  <div id="interactions"></div>
 </div>
-<div class='row'>
-  <p id="category-pie"></p>
-  <p id="subcategory-pie"></p>
-  <p class="big" id="total-spend"></p>
+<div class="container" style="float:left; display: inline;">
+  <div class='row'>
+    <p id='data-count'></p>
+    <p id='filters'></p>
+  </div>
+  <div class='row'>
+    <p id="category-pie"></p>
+    <p id="subcategory-pie"></p>
+    <p class="big" id="total-spend"></p>
+  </div>
+  <div class="row">
+    <p id="year-row"></p>
+    <p id="month-row"></p>
+    <p id="day-row"></p>
+  </div>
+  <div class="row">
+    <p id="week-row"></p>
+    <p id="my-tree"></p>
+  </div>
+  <table id="data-table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Description</th>
+        <th>Amount</th>
+        <th>Note</th>
+      </tr>
+    </thead>
+  </table>
 </div>
-<div class="row">
-  <p id="year-row"></p>
-  <p id="month-row"></p>
-  <p id="day-row"></p>
-</div>
-<div class="row">
-  <p id="week-row"></p>
-  <p id="my-tree"></p>
-</div>
-<table id="data-table">
-  <thead>
-    <tr>
-      <th>Date</th>
-      <th>Description</th>
-      <th>Amount</th>
-      <th>Note</th>
-    </tr>
-  </thead>
-</table>
 <script type="text/javascript">
+
+dc.myinteractionsChart = function (parent, chartGroup) {
+  var _chart = dc.baseMixin({});
+  
+  _chart._mandatoryAttributes([])
+    .anchor(parent, chartGroup);
+  
+  var _current, _saved;
+  
+  var _savedData = [], _dimensions = [], _charts = [];
+      
+  var _text = function(d) { console.log('text', d); return d; };
+  
+  _chart._doRender = function () {
+    
+    var div = _chart.selectAll('div').data(['current', 'saved']);
+    
+    div.enter()
+      .append('div')
+        .attr('class', function(d) { return d; });
+    
+    _current = _chart.select('div.current')
+      .datum(undefined)
+      .on('click', function() {
+        var d = d3.select(this).datum();
+        console.log('clicked current', d);
+        _chart.save(d);
+        _chart.reset();
+      });
+      
+    _saved = _chart.select('div.saved');
+    
+    _chart._doRedraw();
+    
+    return _chart;
+  };
+  
+  _chart.reset = function() {
+    /*_dimensions.forEach(function(d) {
+      d.filterAll();
+    });*/
+    filterTracker.filters = {};
+    
+    _charts.forEach(function(d) {
+      d.filter(null);
+    });
+    
+    dc.redrawAll();
+  };
+
+  _chart._doRedraw = function () {
+    
+    console.log('filters', filterTracker.filters);
+    
+    _current.text(_text);
+    
+    var li = _saved.selectAll('li').data(_savedData);
+    li.exit().remove();
+    li.enter().append('li');
+    li.text(_text);
+    
+    return _chart;
+  };
+  
+  _chart.set = function(d) {
+    _current.datum(d);
+    _chart._doRedraw();
+  };
+  
+  _chart.save = function(d) {
+    _chart.set(undefined);
+    _savedData.push(JSON.parse(JSON.stringify(d)));
+    _chart._doRedraw();
+  };
+  
+  _chart.text = function (f) {
+    if (!arguments.length) {
+      return _text;
+    }
+    _text = f;
+    return _chart;
+  };
+  
+  _chart.dimension = function (d) {
+    if (!arguments.length) {
+      return _dimensions;
+    }
+    _dimensions.push(d);
+    return _chart;
+  };
+  
+  _chart.chart = function (c) {
+    if (!arguments.length) {
+      return _charts;
+    }
+    _charts.push(c);
+    return _chart;
+  };
+  
+  return _chart;
+};
 
 var facts = crossfilter();
 
@@ -85,7 +192,17 @@ var totalSpend = dc.numberDisplay("#total-spend"),
     monthRow = dc.rowChart("#month-row"),
     dayRow = dc.rowChart("#day-row"),
     weekBar = dc.barChart("#week-row"),
-    myTree = dc.mytreeChart("#my-tree");
+    myTree = dc.mytreeChart("#my-tree"),
+    myInteractions = dc.myinteractionsChart('#interactions');
+
+myInteractions
+  .text(function(d) { return JSON.stringify(d); })
+  .chart(catPie)
+  .chart(subcatPie)
+  .chart(yearRow)
+  .chart(monthRow)
+  .chart(dayRow)
+  .chart(weekBar);
 
 var tf = d3.time.format('%A %b %e %H:%M'),
     df = d3.time.format('%w.%a'),
@@ -106,11 +223,19 @@ var filterTracker = {
   },
   notify : function(name) {
     return function(chart, filter) {
-      filterTracker.filters[name] = chart.filterPrinter()(chart.filters());
-      filterTracker.redraw();
+      var fstr = chart.filterPrinter()(chart.filters());
+      if (fstr.length) {
+        filterTracker.filters[name] = fstr;
+        filterTracker.redraw();
+        myInteractions.set(filterTracker.filters);
+      }
+      else {
+        delete filterTracker.filters[name];
+      }
     }
   }
 };
+
 
 dc.dataCount('#data-count')
   .dimension(facts)
@@ -144,6 +269,7 @@ dataTable
   ]);
   
 var catPieDim = facts.dimension(function(d) { return d.category; });
+myInteractions.dimension(catPieDim);
 
 catPie
   .innerRadius(30)
@@ -153,6 +279,7 @@ catPie
   .on('filtered', filterTracker.notify("Category"));
   
 var subcatPieDim = facts.dimension(function(d) { return d.subcategory; });
+myInteractions.dimension(subcatPieDim);
 
 subcatPie
   .innerRadius(30)
