@@ -40,6 +40,18 @@
     g.node circle.selected {
       fill-opacity: 0.9;
     }
+    
+    #interactions div.current {
+      font-weight:bold;
+      cursor: pointer;
+    }
+    #interactions div.saved {
+      font-style: italic;
+      cursor: pointer;
+    }
+    #interactions div.saved li.selected {
+      color: blue;
+    }
   </style>
 </head>
 <body>
@@ -89,7 +101,7 @@ dc.myinteractionsChart = function (parent, chartGroup) {
   
   var _savedData = [], _dimensions = [], _charts = [];
   
-  var _listeners = d3.dispatch('set', 'save', 'reset');
+  var _listeners = d3.dispatch('set', 'save', 'reset', 'restore');
       
   var _text = function(d) { console.log('text', d); return d; };
   
@@ -102,12 +114,14 @@ dc.myinteractionsChart = function (parent, chartGroup) {
         .attr('class', function(d) { return d; });
     
     _current = _chart.select('div.current')
+      .attr('title', "Click to save")
       .datum(undefined)
       .on('click', function() {
         var d = d3.select(this).datum();
         console.log('clicked current', d);
         _chart.save(d);
         _chart.reset();
+        dc.redrawAll();
       });
       
     _saved = _chart.select('div.saved');
@@ -119,28 +133,42 @@ dc.myinteractionsChart = function (parent, chartGroup) {
   
   _chart.reset = function() {
     
-    _listeners.reset(_chart);
-    
-    /*_dimensions.forEach(function(d) {
-      d.filterAll();
-    });*/
-    
     _charts.forEach(function(d) {
       d.filter(null);
     });
     
-    dc.redrawAll();
+    _listeners.reset(_chart);
   };
 
   _chart._doRedraw = function () {
-    
-    console.log('filters', filterTracker.filters);
     
     _current.text(_text);
     
     var li = _saved.selectAll('li').data(_savedData);
     li.exit().remove();
-    li.enter().append('li');
+    li.enter().append('li')
+      .attr('title', "Click to restore")
+      .on('click', function() {
+        
+        var self = this;
+        _saved.selectAll('li').data(_savedData)
+          .filter(function(d) { if (self != this) { d._selected=false; return true; } return false; })
+          .classed('selected',false);
+        
+        var d = d3.select(this).datum();
+        
+        d3.select(this).classed('selected', d._selected = !d._selected);
+        
+        if (d._selected) {
+          _chart.reset();
+          _listeners.restore(_chart, d);
+        }
+        else {
+          _chart.reset();
+        }
+        
+        dc.redrawAll();
+      });
     li.text(_text);
     
     return _chart;
@@ -216,6 +244,16 @@ myInteractions
   .chart(weekBar)
   .on('reset', function(chart) {
     console.log('reset event!');
+  })
+  .on('restore', function(chart, d) {
+    console.log('aaa', d);
+    for (var i = 0; i< d.filters.length; i++)
+    {
+       var filter = d.filters[i].Filter;
+       if(filter instanceof Array) filter = dc.filters.RangedFilter(filter[0], filter[1]);
+       dc.chartRegistry.list()[d.filters[i].ChartID-1].filter(filter);
+    }
+    dc.redrawAll();
   });
 
 var tf = d3.time.format('%A %b %e %H:%M'),
@@ -239,13 +277,26 @@ var filterTracker = {
     return function(chart, filter) {
       var fstr = chart.filterPrinter()(chart.filters());
       if (fstr.length) {
-        filterTracker.filters[name] = fstr;
+        filterTracker.filters[name] = chart.filters();
         filterTracker.redraw();
-        myInteractions.set(filterTracker.filters);
+        
+        var filters = [];
+        for (var i = 0; i < dc.chartRegistry.list().length; i++) {
+            var chart = dc.chartRegistry.list()[i];
+            for (var j = 0; j < chart.filters().length; j++){
+                filters.push({ChartID: chart.chartID(), Filter: chart.filters()[j]});
+            }
+        }
+        
+        filterTracker.filters[name] = {filters: filters};
+        
       }
       else {
         delete filterTracker.filters[name];
       }
+      
+      // TBD too many "filters"
+      myInteractions.set(filterTracker.filters[name]);
     }
   }
 };
