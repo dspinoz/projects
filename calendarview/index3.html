@@ -119,6 +119,11 @@ dc.myinteractionsChart = function (parent, chartGroup) {
       .on('click', function() {
         var d = d3.select(this).datum();
         console.log('clicked current', d);
+        
+        _savedData.forEach(function(d) {
+          d._selected=false;
+        });
+        
         _chart.save(d);
         _chart.reset();
         dc.redrawAll();
@@ -153,7 +158,7 @@ dc.myinteractionsChart = function (parent, chartGroup) {
         var self = this;
         _saved.selectAll('li').data(_savedData)
           .filter(function(d) { if (self != this) { d._selected=false; return true; } return false; })
-          .classed('selected',false);
+          .classed('selected', false);
         
         var d = d3.select(this).datum();
         
@@ -169,7 +174,9 @@ dc.myinteractionsChart = function (parent, chartGroup) {
         
         dc.redrawAll();
       });
-    li.text(_text);
+    li
+      .classed('selected', function(d) { return d._selected; })
+      .text(_text);
     
     return _chart;
   };
@@ -253,7 +260,6 @@ myInteractions
        if(filter instanceof Array) filter = dc.filters.RangedFilter(filter[0], filter[1]);
        dc.chartRegistry.list()[d.filters[i].ChartID-1].filter(filter);
     }
-    dc.redrawAll();
   });
 
 var tf = d3.time.format('%A %b %e %H:%M'),
