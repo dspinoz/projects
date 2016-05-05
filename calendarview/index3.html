@@ -104,6 +104,7 @@ dc.myinteractionsChart = function (parent, chartGroup) {
   var _listeners = d3.dispatch('set', 'save', 'reset', 'restore');
       
   var _text = function(d) { console.log('text', d); return d; };
+  var _equal = function(a,b) { console.log('equal', a,b); return a == b; };
   
   _chart._doRender = function () {
     
@@ -120,11 +121,22 @@ dc.myinteractionsChart = function (parent, chartGroup) {
         var d = d3.select(this).datum();
         console.log('clicked current', d);
         
+        //check for already existing filter
+        var alreadySaved = false;
+        for(var i = 0; i < _savedData.length; i++) {
+          if (_equal(d, _savedData[i])) {
+            alreadySaved = true;
+            break;
+          }
+        }
+        
         _savedData.forEach(function(d) {
           d._selected=false;
         });
         
-        _chart.save(d);
+        if (!alreadySaved) {
+          _chart.save(d);
+        }
         _chart.reset();
         dc.redrawAll();
       });
@@ -202,6 +214,14 @@ dc.myinteractionsChart = function (parent, chartGroup) {
     return _chart;
   };
   
+  _chart.equal = function (f) {
+    if (!arguments.length) {
+      return _text;
+    }
+    _equal = f;
+    return _chart;
+  };
+  
   _chart.dimension = function (d) {
     if (!arguments.length) {
       return _dimensions;
@@ -243,6 +263,27 @@ var totalSpend = dc.numberDisplay("#total-spend"),
 
 myInteractions
   .text(function(d) { return JSON.stringify(d); })
+  .equal(function(a,b) {
+    if (a.filters.length != b.filters.length) return false;
+    
+    var matches = 0;
+    
+    for(var i = 0; i < a.filters.length; i++) {
+      var aa = a.filters[i];
+      var bb = b.filters[i];
+      
+      if (aa.ChartID == bb.ChartID && 
+          aa.Filter == bb.Filter) {
+        matches++;
+      }
+    }
+    
+    if (matches == a.filters.length) {
+      return true;
+    }
+    
+    return false;
+  })
   .chart(catPie)
   .chart(subcatPie)
   .chart(yearRow)
