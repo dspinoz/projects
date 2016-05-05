@@ -59,6 +59,7 @@
   <h3>Interactions</h3>
   <div id="interactions"></div>
 </div>
+<div id="dimensions"></div>
 <div class="container" style="float:left; display: inline;">
   <div class='row'>
     <p id='data-count'></p>
@@ -94,6 +95,48 @@
 </div>
 <script type="text/javascript">
 
+dc.myDimensions = function(parent, chartGroup) {
+  var _chart = dc.baseMixin({});
+  
+  _chart._mandatoryAttributes([])
+    .anchor(parent, chartGroup);
+    
+  var _dimensions = [];
+  
+  _chart._doRender = function () {
+    
+    _chart._doRedraw();
+    
+    return _chart;
+  };
+  
+  _chart._doRedraw = function () {
+    
+    var div = _chart.selectAll('div').data(_dimensions);
+    
+    div.exit().remove();
+    
+    div.enter()
+      .append('div');
+      
+    div.text(function(d) {
+      return d;
+    });
+    
+    return _chart;
+  };
+  
+  _chart.dimension = function (d) {
+    if (!arguments.length) {
+      return _dimensions;
+    }
+    _dimensions.push(d);
+    return _chart;
+  };
+  
+  return _chart;
+};
+
 dc.myinteractionsChart = function (parent, chartGroup) {
   var _chart = dc.baseMixin({});
   
@@ -122,7 +165,6 @@ dc.myinteractionsChart = function (parent, chartGroup) {
       .datum(undefined)
       .on('click', function() {
         var d = d3.select(this).datum();
-        console.log('clicked current', d);
         
         //check for already existing filter
         var alreadySaved = false;
@@ -263,7 +305,8 @@ var totalSpend = dc.numberDisplay("#total-spend"),
     weekBar = dc.barChart("#week-row"),
     hourBar = dc.barChart("#hour-row"),
     myTree = dc.mytreeChart("#my-tree"),
-    myInteractions = dc.myinteractionsChart('#interactions');
+    myInteractions = dc.myinteractionsChart('#interactions'),
+    myDimensions = dc.myDimensions('#dimensions');
 
 myInteractions
   .text(function(d) { return JSON.stringify(d); })
@@ -387,6 +430,7 @@ dataTable
   
 var catPieDim = facts.dimension(function(d) { return d.category; });
 myInteractions.dimension(catPieDim);
+myDimensions.dimension(catPieDim);
 
 catPie
   .innerRadius(30)
@@ -483,7 +527,6 @@ d3.csv("/transactions.csv",
     };
   
     d2._date = new Date(d2.datetime);
-    console.log(d2);
     return d2; 
   }, 
   function(error, csv) {
