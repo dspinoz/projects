@@ -9,6 +9,7 @@
   <script src='/dc.js' type='text/javascript'></script>
   <link href='/dc.css' rel='stylesheet' type='text/css'>
   <script src='/mytreeChart.js' type='text/javascript'></script>
+  <script src='/myDimensions.js' type='text/javascript'></script>
   <style type="text/css"></style>
   <style>
     div.row p {
@@ -94,48 +95,6 @@
   </table>
 </div>
 <script type="text/javascript">
-
-dc.myDimensions = function(parent, chartGroup) {
-  var _chart = dc.baseMixin({});
-  
-  _chart._mandatoryAttributes([])
-    .anchor(parent, chartGroup);
-    
-  var _dimensions = [];
-  
-  _chart._doRender = function () {
-    
-    _chart._doRedraw();
-    
-    return _chart;
-  };
-  
-  _chart._doRedraw = function () {
-    
-    var div = _chart.selectAll('div').data(_dimensions);
-    
-    div.exit().remove();
-    
-    div.enter()
-      .append('div');
-      
-    div.text(function(d) {
-      return d;
-    });
-    
-    return _chart;
-  };
-  
-  _chart.dimension = function (d) {
-    if (!arguments.length) {
-      return _dimensions;
-    }
-    _dimensions.push(d);
-    return _chart;
-  };
-  
-  return _chart;
-};
 
 dc.myinteractionsChart = function (parent, chartGroup) {
   var _chart = dc.baseMixin({});
@@ -430,7 +389,14 @@ dataTable
   
 var catPieDim = facts.dimension(function(d) { return d.category; });
 myInteractions.dimension(catPieDim);
-myDimensions.dimension(catPieDim);
+
+myDimensions.dimension(catPieDim, function(d) { return d.category; });
+myDimensions.dimension(catPieDim.group().reduceSum(function(d) { return d.amount; }), 
+                       function(d) { 
+                         var f = Math.floor(d.value);
+                         if (f > 0)
+                         return d.key + ": " + f; 
+                       });
 
 catPie
   .innerRadius(30)
