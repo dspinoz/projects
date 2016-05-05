@@ -76,6 +76,9 @@
   </div>
   <div class="row">
     <p id="week-row"></p>
+    <p id="hour-row"></p>
+  </div>
+  <div class="row">
     <p id="my-tree"></p>
   </div>
   <table id="data-table">
@@ -258,6 +261,7 @@ var totalSpend = dc.numberDisplay("#total-spend"),
     monthRow = dc.rowChart("#month-row"),
     dayRow = dc.rowChart("#day-row"),
     weekBar = dc.barChart("#week-row"),
+    hourBar = dc.barChart("#hour-row"),
     myTree = dc.mytreeChart("#my-tree"),
     myInteractions = dc.myinteractionsChart('#interactions');
 
@@ -290,6 +294,7 @@ myInteractions
   .chart(monthRow)
   .chart(dayRow)
   .chart(weekBar)
+  .chart(hourBar)
   .on('reset', function(chart) {
     console.log('reset event!');
   })
@@ -439,6 +444,18 @@ weekBar
   .dimension(weekDim)
   .group(weekDim.group().reduceSum(function(d) { return d.amount; }))
   .on('filtered', filterTracker.notify("Week"))
+  .yAxis().ticks([5]).tickFormat(d3.format("$s"));
+
+var hourDim = facts.dimension(function(d) { return +hf(d._date); });
+
+hourBar
+  .width(500)
+  .elasticY(true)
+  .x(d3.scale.linear().domain([0,23]))
+  .xAxisLabel("#Hour")
+  .dimension(hourDim)
+  .group(hourDim.group().reduceSum(function(d) { return d.amount; }))
+  .on('filtered', filterTracker.notify("Hour"))
   .yAxis().ticks([5]).tickFormat(d3.format("$s"));
   
 myTree.nest()
