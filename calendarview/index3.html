@@ -410,10 +410,17 @@ myTree.scale()
 
 d3.csv("/transactions.csv", 
   function(d) { 
-    d.datetime = (d.datetime*1000).toFixed(0)*1;
-    d._date = new Date(d.datetime);
-    d.amount = +d.amount;
-    return d; 
+    var d2 = {
+      _orig: d,
+      datetime: (d.datetime*1000).toFixed(0)*1,
+      amount: +d.amount,
+      category: d.category,
+      subcategory: d.subcategory
+    };
+  
+    d2._date = new Date(d2.datetime);
+    console.log(d2);
+    return d2; 
   }, 
   function(error, csv) {
     facts.add(csv);
