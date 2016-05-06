@@ -488,6 +488,8 @@ myTree
   .filterFunc(function(d) {
     if (d.depth <= 1)
       return d.key;
+      
+    subcatPie.filter(d.key);
     return d.parent.key;
   })
   .nest()
