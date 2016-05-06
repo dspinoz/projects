@@ -7,15 +7,33 @@ dc.mytreeChart = function (parent, chartGroup) {
   
   var _treeG;
   
-  var _tree = d3.layout.tree()
-    .children(function(d) { return Array.isArray(d.values) ? d.values : []; });
-    
   var _nest = d3.nest();
-  var _title = function(d) { return d; };
-  var _filterFunc = function(d) { return d; };
+  var _title = function(d) { return _key(d); };
+  var _filterFunc = function(d) { return _key(d); };
+  var _projection = function(d) { return [d.x, d.y]; };
+  var _children = function(d) { return Array.isArray(d.values) ? d.values : undefined; };
+  var _key = function(d) { return d.key; };
+  var _value = function(d) { 
+    if (Array.isArray(d.values)) {
+      return 1; 
+    }
+    return d.values;
+  };
+  var _renderNode = function(selection) {
+    var c = selection.selectAll('circle').data(function(d) { return [d]; });
+    c.exit().remove();
+    c.enter().append('circle').attr('r', _scale(1));
+    c
+      .attr('fill', _chart.getColor)
+      .attr('stroke', _chart.getColor)
+      .attr('r', function(d) {
+        return _scale(_value(d));
+      });
+  };
   
-  var _diagonal = d3.svg.diagonal().projection(function(d) { return [d.x, d.y]; });
-  var _scale = d3.scale.linear().range([0,50]);
+  var _tree = d3.layout.tree().children(_children);
+  var _diagonal = d3.svg.diagonal().projection(_projection);
+  var _scale = d3.scale.linear().range([5,30]);
   
   _chart.drawTreeNodes = function() {
     
@@ -50,23 +68,11 @@ dc.mytreeChart = function (parent, chartGroup) {
     t.enter().append('title');
     t.text(_chart.title());
     
-    var c = g.selectAll('circle').data(function(d) { return [d]; });
-    c.exit().remove();
-    c.enter().append('circle').attr('r', _scale(1));
-    c
-      .attr('fill', _chart.getColor)
-      .attr('stroke', _chart.getColor)
-      .attr('r', function(d) { 
-        if (Array.isArray(d.values)) {
-          return _scale(1); 
-        }
-        return _scale(d.values);
-      });
+    _renderNode(g);
   };
   
   _chart._doRender = function () {
     _chart.resetSvg();
-    console.log('mytree render');
     
     var width = _chart.width() - _chart.margins().right - _chart.margins().left,
         height = _chart.height() - _chart.margins().top - _chart.margins().bottom;
@@ -85,21 +91,44 @@ dc.mytreeChart = function (parent, chartGroup) {
   };
 
   _chart._doRedraw = function () {
-    console.log('mytree redraw');
     
     _chart.drawTreeNodes();
     
     return _chart;
   };
 
-  _chart.data = function (data) {
+  _chart.children = function (f) {
     if (!arguments.length) {
-      return _data;
+      return _children;
     }
-    _data = data;
+    _children = f;
     return _chart;
   };
 
+  _chart.projection = function (f) {
+    if (!arguments.length) {
+      return _projection;
+    }
+    _projection = f;
+    return _chart;
+  };
+
+  _chart.key = function (f) {
+    if (!arguments.length) {
+      return _key;
+    }
+    _key = f;
+    return _chart;
+  };
+  
+  _chart.value = function (f) {
+    if (!arguments.length) {
+      return _value;
+    }
+    _value = f;
+    return _chart;
+  };
+  
   _chart.scale = function (scale) {
     if (!arguments.length) {
       return _scale;
@@ -121,6 +150,14 @@ dc.mytreeChart = function (parent, chartGroup) {
       return _title;
     }
     _title = f;
+    return _chart;
+  };
+  
+  _chart.renderNode = function (f) {
+    if (!arguments.length) {
+      return _renderNode;
+    }
+    _renderNode = f;
     return _chart;
   };
 

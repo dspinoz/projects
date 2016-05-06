@@ -484,6 +484,13 @@ myTree
     
     return d.key + ": " + tot; 
   })
+  //.scale(d3.scale.linear().range([5,50]).domain([1,300]))
+  /*.renderNode(function(sel) {
+    var c = sel.selectAll('circle').data(function(d) { return [d]; });
+    c.exit().remove();
+    c.enter().append('circle');
+    c.attr('r', 5);
+  })*/
   .dimension(facts.dimension(function(d) { return d.category; }))
   .filterFunc(function(d) {
     if (d.depth <= 1)
@@ -491,21 +498,22 @@ myTree
       
     subcatPie.filter(d.key);
     return d.parent.key;
-  })
-  .nest()
-    .key(function(d) { return d.category; })
-    .key(function(d) { return d.subcategory; })
-    .rollup(function(values) { 
-      var tot = 0;
-      values.forEach(function(d) {
-        tot += d.amount;
-      });
-      return tot;
+  });
+  
+myTree.nest()
+  .key(function(d) { return d.category; })
+  .key(function(d) { return d.subcategory; })
+  .rollup(function(values) { 
+    var tot = 0;
+    values.forEach(function(d) {
+      tot += d.amount;
     });
-
+    return tot;
+  });
+/*
 myTree.scale()
   .range([1,30]);
-
+*/
 d3.csv("/transactions.csv", 
   function(d) { 
     var d2 = {
