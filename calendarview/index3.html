@@ -543,8 +543,8 @@ d3.csv("/transactions.csv",
   function(error, csv) {
     facts.add(csv);
     
+    
     myTree
-      .data(csv)
       .scale()
         .domain(d3.extent(csv, function(d) { return d.amount; }));
     
