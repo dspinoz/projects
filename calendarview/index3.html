@@ -63,6 +63,7 @@
     <p id='filters'></p>
   </div>
   <div class='row'>
+    <p id="type-pie"></p>
     <p id="category-pie"></p>
     <p id="subcategory-pie"></p>
     <p class="big" id="total-spend"></p>
@@ -79,6 +80,9 @@
     <p id="week-row"></p>
     <p id="hour-row"></p>
   </div>
+  <div class="row">
+    <p id="heatmap"></p>
+  </div>
   <table id="data-table">
     <thead>
       <tr>
@@ -89,6 +93,9 @@
       </tr>
     </thead>
   </table>
+  <div class="row">
+    <p id="all"></p>
+  </div>
 </div>
 <script type="text/javascript">
 
@@ -252,6 +259,7 @@ var dollarFormat = d3.format("$,.4r");
 
 var totalSpend = dc.numberDisplay("#total-spend"),
     dataTable = dc.dataTable("#data-table"),
+    typePie = dc.pieChart("#type-pie"),
     catPie = dc.pieChart("#category-pie"),
     subcatPie = dc.pieChart("#subcategory-pie"),
     yearRow = dc.rowChart("#year-row"),
@@ -259,6 +267,7 @@ var totalSpend = dc.numberDisplay("#total-spend"),
     dayRow = dc.rowChart("#day-row"),
     weekBar = dc.barChart("#week-row"),
     hourBar = dc.barChart("#hour-row"),
+    heatMap = dc.heatMap('#heatmap'),
     myTree = dc.mytreeChart("#my-tree"),
     myInteractions = dc.myinteractionsChart('#interactions'),
     myDimensions = dc.myDimensions('#dimensions');
@@ -286,6 +295,7 @@ myInteractions
     
     return false;
   })
+  .chart(typePie)
   .chart(catPie)
   .chart(subcatPie)
   .chart(yearRow)
@@ -306,12 +316,14 @@ myInteractions
     }
   });
 
-var tf = d3.time.format('%A %b %e %H:%M'),
+var dataTimeFormat = d3.time.format('%Y/%m/%d'),
+    tf = d3.time.format('%A %b %e'),
     df = d3.time.format('%w.%a'),
     mf = d3.time.format('%m.%b'),
     hf = d3.time.format('%H'),
     wf = d3.time.format('%W'),
     yf = d3.time.format('%Y'),
+    dyf = d3.time.format('%j'),
     tableFormat = d3.time.format('%Y-%m'),
     catColors = d3.scale.category20();
 
@@ -384,6 +396,13 @@ dataTable
     function(d) { return d.note; }
   ]);
   
+var typePieDim = facts.dimension(function(d) { return d.type; });
+typePie
+  .innerRadius(30)
+  .dimension(typePieDim)
+  .group(typePieDim.group().reduceCount())
+  .on('filtered', filterTracker.notify("Type"));
+
 var catPieDim = facts.dimension(function(d) { return d.category; });
 myInteractions.dimension(catPieDim);
 
@@ -467,6 +486,13 @@ hourBar
   .on('filtered', filterTracker.notify("Hour"))
   .yAxis().ticks([5]).tickFormat(d3.format("$s"));
   
+var heatMapDim = facts.dimension(function(d) { return +dyf(d._date); }),
+    heatMapGroup = heatMapDim.group().reduceSum(function(d) {return d.amount; });
+  
+heatMap
+  .dimension(heatMapDim)
+  .group(heatMapGroup);
+  
 myTree
   .colors(catColors)
   .colorAccessor(function(d) {
@@ -521,10 +547,12 @@ d3.csv("/transactions.csv",
       datetime: (d.datetime*1000).toFixed(0)*1,
       amount: +d.amount,
       category: d.category,
-      subcategory: d.subcategory
+      subcategory: d.subcategory,
+      note: d.note,
+      type: d.type == 1 ? "Income" : "Expense"
     };
   
-    d2._date = new Date(d2.datetime);
+    d2._date = dataTimeFormat.parse(d.syear + '/' + d.smonth + '/' + d.sday);
     return d2; 
   }, 
   function(error, csv) {
@@ -536,6 +564,12 @@ d3.csv("/transactions.csv",
         .domain(d3.extent(csv, function(d) { return d.amount; }));
     
     dc.renderAll();
+    /*
+    var p = d3.select('#all').selectAll('pre').data(csv.reverse().slice(0,20));
+    p.exit().remove();
+    p.enter().append('pre');
+    p.text(function(d) { return JSON.stringify(d,true, ' '); });
+    */
   }
 );
 </script>    
