@@ -74,9 +74,9 @@
   <div class="row">
     <p id="year-row"></p>
     <p id="month-row"></p>
-    <p id="day-row"></p>
   </div>
   <div class="row">
+    <p id="quarter-pie"></p>
     <p id="week-row"></p>
   </div>
   <div class="row">
@@ -264,6 +264,7 @@ var totalSpend = dc.numberDisplay("#total-spend"),
     yearRow = dc.rowChart("#year-row"),
     monthRow = dc.rowChart("#month-row"),
     dayRow = dc.rowChart("#day-row"),
+    quarterPie = dc.pieChart("#quarter-pie"),
     weekBar = dc.barChart("#week-row"),
     heatMap = dc.heatMap('#heatmap'),
     myTree = dc.mytreeChart("#my-tree"),
@@ -299,6 +300,7 @@ myInteractions
   .chart(yearRow)
   .chart(monthRow)
   .chart(dayRow)
+  .chart(quarterPie)
   .chart(weekBar)
   .on('reset', function(chart) {
     console.log('reset event!');
@@ -458,6 +460,27 @@ dayRow
   .group(dayDim.group().reduceSum(function(d) { return d.amount; }))
   .on('filtered', filterTracker.notify("Day"))
   .xAxis().ticks([5]).tickFormat(d3.format("$s"));
+  
+var quarterDim = facts.dimension(function(d) {
+    var month = d._date.getMonth();
+    if (month <= 2) {
+      return 'Q1';
+    } else if (month > 2 && month <= 5) {
+      return 'Q2';
+    } else if (month > 5 && month <= 8) {
+      return 'Q3';
+    } else {
+      return 'Q4';
+    }
+  });
+
+quarterPie
+  .innerRadius(30)
+  .title(function(d){return d.key + ": " + dollarFormat(d.value);})
+  .dimension(quarterDim)
+  .group(quarterDim.group().reduceSum(function(d) { return d.amount; }))
+  .on('filtered', filterTracker.notify("Category"));
+  
   
 var weekDim = facts.dimension(function(d) { return +wf(d._date); });
 
