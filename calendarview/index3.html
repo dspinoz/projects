@@ -485,7 +485,7 @@ myTree
   })
   .title(function(d) { 
     if (!Array.isArray(d.values)) {
-      return d.key + ": " + d.values;
+      return d.key + ": " + dollarFormat(d.values);
     }
     
     var tot = 0;
@@ -493,7 +493,19 @@ myTree
       tot += v.values;
     });
     
-    return d.key + ": " + tot; 
+    return d.key + ": " + dollarFormat(tot); 
+  })
+  .extent(function(d) { 
+    if (!Array.isArray(d.values)) {
+      return d.values;
+    }
+    
+    var tot = 0;
+    d.values.forEach(function(v) {
+      tot += v.values;
+    });
+    
+    return tot; 
   })
   //.scale(d3.scale.linear().range([5,50]).domain([1,300]))
   /*.renderNode(function(sel) {
@@ -521,10 +533,10 @@ myTree.nest()
     });
     return tot;
   });
-/*
+
 myTree.scale()
-  .range([1,30]);
-*/
+  .range([5,100]);
+
 d3.csv("/transactions.csv", 
   function(d) { 
     var d2 = {
@@ -543,10 +555,11 @@ d3.csv("/transactions.csv",
   function(error, csv) {
     facts.add(csv);
     
-    
+    /*
     myTree
       .scale()
         .domain(d3.extent(csv, function(d) { return d.amount; }));
+    */
     
     dc.renderAll();
     /*

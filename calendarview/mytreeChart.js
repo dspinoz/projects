@@ -30,6 +30,9 @@ dc.mytreeChart = function (parent, chartGroup) {
         return _scale(_value(d));
       });
   };
+  var _extent = function(d) {
+    return _value(d);
+  };
   
   var _tree = d3.layout.tree().children(_children);
   var _diagonal = d3.svg.diagonal().projection(_projection);
@@ -38,9 +41,17 @@ dc.mytreeChart = function (parent, chartGroup) {
   _chart.drawTreeNodes = function() {
     
     // new data is regenerated every refresh - not persistent!!
-    var treeData = _chart.dataRoot(_nest.entries(_chart.dimension().top(Infinity)));
+    var data = _nest.entries(_chart.dimension().top(Infinity));
     
-    var nodes = _tree.nodes(treeData);
+    _scale.domain(d3.extent(data, _extent));
+    
+    var treeData = _chart.dataRoot(data);
+    
+    // sort nodes to ensure that bigger nodes are drawn first
+    // TBD collision detection and move nodes within the tree structure
+    var nodes = _tree.nodes(treeData).sort(function(a,b) {
+      return d3.descending(_value(a), _value(b));
+    });
     
     var links = _treeG.selectAll('path.link').data(_tree.links(nodes));
     links.exit().remove();
@@ -134,6 +145,14 @@ dc.mytreeChart = function (parent, chartGroup) {
       return _scale;
     }
     _scale = scale;
+    return _chart;
+  };
+  
+  _chart.extent = function (f) {
+    if (!arguments.length) {
+      return _extent;
+    }
+    _extent = f;
     return _chart;
   };
   
