@@ -80,6 +80,17 @@
     <p id="week-row"></p>
   </div>
   <div class="row">
+    <div>
+      <select id="day-select">
+        <option value="days">Days</option>
+        <option value="weeks">Weeks</option>
+        <option value="months" selected>Months</option>
+        <option value="years">Years</option>
+      </select>
+      <p id="day-row"></p>
+    </div>
+  </div>
+  <div class="row">
     <p id="heatmap"></p>
   </div>
   <table id="data-table">
@@ -266,6 +277,7 @@ var totalSpend = dc.numberDisplay("#total-spend"),
     dayRow = dc.rowChart("#day-row"),
     quarterPie = dc.pieChart("#quarter-pie"),
     weekBar = dc.barChart("#week-row"),
+    dayBar = dc.barChart("#day-row"),
     heatMap = dc.heatMap('#heatmap'),
     myTree = dc.mytreeChart("#my-tree"),
     myInteractions = dc.myinteractionsChart('#interactions'),
@@ -302,6 +314,7 @@ myInteractions
   .chart(dayRow)
   .chart(quarterPie)
   .chart(weekBar)
+  .chart(dayBar)
   .on('reset', function(chart) {
     console.log('reset event!');
   })
@@ -323,6 +336,7 @@ var dataTimeFormat = d3.time.format('%Y/%m/%d'),
     wf = d3.time.format('%W'),
     yf = d3.time.format('%Y'),
     dyf = d3.time.format('%j'),
+    ddf = d3.time.format('%W'),
     tableFormat = d3.time.format('%Y-%m'),
     catColors = d3.scale.category20();
 
@@ -399,7 +413,7 @@ var typePieDim = facts.dimension(function(d) { return d.type; });
 typePie
   .innerRadius(30)
   .dimension(typePieDim)
-  .group(typePieDim.group().reduceCount())
+  .group(typePieDim.group().reduceSum(function(d) { return d.amount; }))
   .on('filtered', filterTracker.notify("Type"));
 
 var catPieDim = facts.dimension(function(d) { return d.category; });
@@ -494,6 +508,72 @@ weekBar
   .on('filtered', filterTracker.notify("Week"))
   .yAxis().ticks([5]).tickFormat(d3.format("$s"));
   
+
+var dayInterval = d3.time.month,
+    dayUnits = d3.time.months,
+    dayReduce = function(d) { if (d._income) return d.amount; return -1*d.amount; },
+    dayDim = facts.dimension(function(d) { return dayInterval(d._date); }),
+    dayGroup = dayDim.group().reduceSum(dayReduce);
+    
+dayBar.margins().left = dayBar.margins().left+10; //extra padding for labels
+
+dayBar
+  .width(500)
+  .elasticY(true)
+  .elasticX(true)
+  .x(d3.time.scale())
+  .xUnits(dayUnits)
+  .xAxisPadding(15) //don't cut off the first and last bars
+  .xAxisLabel("Monthly $Offset")
+  .centerBar(true)
+  .dimension(dayDim)
+  .group(dayGroup)
+  .on('filtered', filterTracker.notify("Offset"))
+  .yAxis().ticks([5]).tickFormat(d3.format("$s"));
+  
+  
+d3.select('#day-select').on('change', function() {
+  var v = d3.select(this).node().value;
+  
+  if (v == 'days') {
+    dayInterval = d3.time.day;
+    dayUnits = d3.time.days;
+    v = 'Daily';
+  }
+  else if (v == 'weeks') {
+    dayInterval = d3.time.week;
+    dayUnits = d3.time.weeks;
+    v = 'Weekly';
+  }
+  else if (v == 'months') {
+    dayInterval = d3.time.month;
+    dayUnits = d3.time.months;
+    v = 'Monthly';
+  }
+  else if (v == 'years') {
+    dayInterval = d3.time.year;
+    dayUnits = d3.time.years;
+    v = 'Yearly';
+  }
+  
+  dayDim.dispose();
+  dayGroup.dispose();
+  
+  dayDim = facts.dimension(function(d) { return dayInterval(d._date); });
+  dayGroup = dayDim.group().reduceSum(dayReduce);
+  
+  dayBar
+    .xAxisLabel(v + " $Offset")
+    .xUnits(dayUnits)
+    .dimension(dayDim)
+    .group(dayGroup)
+    .redraw();
+    
+  console.log('changed to', v, dayGroup.top(5));
+});
+  
+  
+  
 var heatMapDim = facts.dimension(function(d) { return +dyf(d._date); }),
     heatMapGroup = heatMapDim.group().reduceSum(function(d) {return d.amount; });
   
@@ -564,15 +644,30 @@ d3.csv("/transactions.csv",
   function(d) { 
     var d2 = {
       _orig: d,
-      datetime: (d.datetime*1000).toFixed(0)*1,
       amount: +d.amount,
       category: d.category,
       subcategory: d.subcategory,
-      note: d.note,
-      type: d.type == 1 ? "Income" : "Expense"
+      note: d.note
     };
   
-    d2._date = dataTimeFormat.parse(d.syear + '/' + d.smonth + '/' + d.sday);
+    if (d.type) {
+      d2.type = d.type == 1 ? "Income" : "Expense";
+      d2._income = d.type == 1;
+      d2._expense = d.type == 0;
+    }
+    else {
+      d2.type = "Expense";
+      d2._income = 0;
+      d2._expense = 1;
+    }
+    
+    if (d.datetime) {
+      var datetime = (d.datetime*1000).toFixed(0)*1;
+      d2._date = new Date(datetime);
+    }
+    else if (d.syear && d.smonth && d.sday) {
+      d2._date = dataTimeFormat.parse(d.syear + '/' + d.smonth + '/' + d.sday);
+    }
     return d2; 
   }, 
   function(error, csv) {
