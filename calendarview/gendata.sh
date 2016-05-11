@@ -2,9 +2,10 @@
 
 NOW=`date +%s`
 
-while getopts "s:m:h:d:w:m:y:" opt
+while getopts "Hs:m:h:d:w:m:y:" opt
 do
   case $opt in
+    H) echo "datetime,category,subcategory,amount"; exit 0;;
     s) NOW=$(( $NOW - $OPTARG ));;
     m) OFFSET=$(( $OPTARG * 60 )); NOW=$(( $NOW - $OFFSET ));;
     h) OFFSET=$(( $OPTARG * 3600 )); NOW=$(( $NOW - $OFFSET ));;
