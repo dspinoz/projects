@@ -661,12 +661,12 @@ d3.csv("/transactions.csv",
       d2._expense = 1;
     }
     
-    if (d.datetime) {
+    if (d.syear && d.smonth && d.sday) {
+      d2._date = dataTimeFormat.parse(d.syear + '/' + d.smonth + '/' + d.sday);
+    }
+    else if (d.datetime) {
       var datetime = (d.datetime*1000).toFixed(0)*1;
       d2._date = new Date(datetime);
-    }
-    else if (d.syear && d.smonth && d.sday) {
-      d2._date = dataTimeFormat.parse(d.syear + '/' + d.smonth + '/' + d.sday);
     }
     return d2; 
   }, 
