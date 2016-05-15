@@ -677,8 +677,15 @@ d3.csv("/transactions.csv",
     var data = [];
     csv.forEach(function(d) {
         
-      if (!d._date)
+      if (!d._date) {
         console.log('Invalid date', d._date, d);
+        return;
+      }
+                
+      if (d._orig.deleted && d._orig.deleted != 0) {
+        console.log('Entry deleted', d);
+        return;
+      }
         
       if (d._date && d._date instanceof Date && !isNaN(d._date.valueOf()))
       {
