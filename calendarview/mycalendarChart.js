@@ -6,6 +6,7 @@ dc.mycalendarChart = function (parent, chartGroup) {
   var _G, _width, _height;
   
   var _yearFormat = d3.time.format('%Y'),
+      _monthFormat = d3.time.format('%m'),
       _cellSize = 5, // TBD dynamically calculate rect.day size based on width/height
       _textHeight = 12; //TBD dynamically calculate year.text size
       
@@ -20,6 +21,8 @@ dc.mycalendarChart = function (parent, chartGroup) {
         .attr("height", _height + _chart.margins().top + _chart.margins().bottom)
       .append("g")
         .attr("transform", "translate(" + _chart.margins().left + "," + _chart.margins().top + ")");
+    
+    _chart.redraw();
     
     return _chart;
   };
@@ -73,7 +76,6 @@ dc.mycalendarChart = function (parent, chartGroup) {
     var day = year.selectAll(".day")
       .data(function(d) { 
         var days = d3.time.days(new Date(+_yearFormat(d), 0, 1), new Date(+_yearFormat(d) + 1, 0, 1)); 
-        console.log(d, days.length);//, days[days.length-1]);
         
         var data = [];
         
@@ -128,6 +130,28 @@ dc.mycalendarChart = function (parent, chartGroup) {
     */
     ;
     
+    
+    var month = year.selectAll(".month")
+      .data(function(d) {
+        var months = d3.time.months(new Date(+_yearFormat(d), +_monthFormat(d) -1, 1), 
+                                    new Date(+_yearFormat(d)+1, +_monthFormat(d)-1, 1));
+        
+        var data = [];
+        
+        months.forEach(function(d) {
+          data.push(d);
+        });
+        
+        return data;
+      })
+      .enter().append("path")
+        .attr("class", "month")
+        .style("fill", "none")
+        .style("stroke", "#555")
+        .style("stroke-width", "1px")
+        .attr("d", monthPath);
+    
+    
     /*
         
     var years = d3.range(_range[0].getFullYear(), _range[1].getFullYear()+1);
@@ -139,19 +163,22 @@ dc.mycalendarChart = function (parent, chartGroup) {
     _day.append("title")
         .text(function(d) { return _titleFormat(_format.parse(d)); });
 
-    var month = year.selectAll(".month")
-        .data(function(d) { return d3.time.months(new Date(d, 0, 1), new Date(d + 1, 0, 1)); })
-      .enter().append("path")
-        .attr("class", "month")
-        .style("fill", "none")
-        .style("stroke", "#555")
-        .style("stroke-width", "1px")
-        .attr("d", monthPath);
     */
     
   
     return _chart;
   };
+  
+  function monthPath(t0) {
+    var t1 = new Date(t0.getFullYear(), t0.getMonth() + 1, 0),
+        d0 = t0.getDay(), w0 = d3.time.weekOfYear(t0),
+        d1 = t1.getDay(), w1 = d3.time.weekOfYear(t1);
+    return "M" + (w0 + 1) * _cellSize + "," + d0 * _cellSize 
+        + "H" + w0 * _cellSize + "V" + 7 * _cellSize
+        + "H" + w1 * _cellSize + "V" + (d1 + 1) * _cellSize
+        + "H" + (w1 + 1) * _cellSize + "V" + 0
+        + "H" + (w0 + 1) * _cellSize + "Z";
+  }
 
   return _chart.anchor(parent, chartGroup);
 };
