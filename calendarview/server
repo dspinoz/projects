@@ -43,7 +43,11 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
           
           curr.execute('SELECT * FROM transactions')
           data = curr.fetchall()
-          out.writerows(data)
+          for d in data:
+			for e in list(d):
+				s.wfile.write(e)
+				s.wfile.write(',')
+			s.wfile.write('\n')
             
           conn.close()
         except sqlite3.Error:
