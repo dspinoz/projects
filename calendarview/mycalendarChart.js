@@ -3,7 +3,7 @@ dc.mycalendarChart = function (parent, chartGroup) {
   
   _chart._mandatoryAttributes(['dimension', 'group']);
   
-  var _G, _years, _months, _days;
+  var _G;
   var _width, _height;
   
   var _yearFormat = d3.time.format('%Y'),
@@ -22,12 +22,6 @@ dc.mycalendarChart = function (parent, chartGroup) {
         .attr("height", _height + _chart.margins().top + _chart.margins().bottom)
       .append("g")
         .attr("transform", "translate(" + _chart.margins().left + "," + _chart.margins().top + ")");
-    
-    // ensure that items are painted in the correct order
-    // months is last to give correct outline
-    _years = _G.append('g').attr('class', 'years');
-    _days = _G.append('g').attr('class', 'days');
-    _months = _G.append('g').attr('class', 'months');
     
     _chart.redraw();
     
@@ -67,8 +61,12 @@ dc.mycalendarChart = function (parent, chartGroup) {
     
     year.exit().remove();
     
-    year.enter().append("g").attr('class', 'year');
-    
+	 // group svg element types and keep months on top 
+    var yEnter = year.enter().append("g")
+		.attr('class', 'year');
+	yEnter.append('g').attr('class', 'days');
+	yEnter.append('g').attr('class', 'months');
+				
     year
       .attr("transform", function(d,i) { 
         return "translate(0," + (((_cellSize*7)+_textHeight)*i) + ")";
@@ -84,7 +82,7 @@ dc.mycalendarChart = function (parent, chartGroup) {
         
     yearText.text(function(d) { return _yearFormat(d); });
     
-    var day = year.selectAll(".day")
+    var day = year.select('g.days').selectAll(".day")
       .data(function(d) { 
         var days = d3.time.days(new Date(+_yearFormat(d), 0, 1), new Date(+_yearFormat(d) + 1, 0, 1)); 
         
@@ -142,7 +140,7 @@ dc.mycalendarChart = function (parent, chartGroup) {
     day.attr("x", function(d) { return d3.time.weekOfYear(d._date) * d.width; })
       .attr("y", function(d) { return d._date.getDay() * d.width; });
     
-    var month = year.selectAll(".month")
+    var month = year.select('g.months').selectAll(".month")
       .data(function(d) {
         var months = d3.time.months(new Date(+_yearFormat(d), +_monthFormat(d) -1, 1), 
                                     new Date(+_yearFormat(d)+1, +_monthFormat(d)-1, 1));
