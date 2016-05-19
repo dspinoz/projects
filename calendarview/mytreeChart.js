@@ -43,15 +43,19 @@ dc.mytreeChart = function (parent, chartGroup) {
     // new data is regenerated every refresh - not persistent!!
     var data = _nest.entries(_chart.dimension().top(Infinity));
     
-    _scale.domain(d3.extent(data, _extent));
-    
     var treeData = _chart.dataRoot(data);
     
+    
+    // flattens the hierarchial data structure
     // sort nodes to ensure that bigger nodes are drawn first
     // TBD collision detection and move nodes within the tree structure
+    
     var nodes = _tree.nodes(treeData).sort(function(a,b) {
       return d3.descending(_value(a), _value(b));
     });
+    
+    _scale.domain(d3.extent(nodes, _extent));
+    
     
     var links = _treeG.selectAll('path.link').data(_tree.links(nodes));
     links.exit().remove();
