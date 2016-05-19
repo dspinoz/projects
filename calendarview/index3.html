@@ -646,7 +646,7 @@ myTree.nest()
 myTree.scale()
   .range([5,50]);
 
-var calDim = facts.dimension(function(d) { return d._date; });
+var calDim = facts.dimension(function(d) { return d3.time.day(d._date); });
   
 myCalendar
   .width(800)
