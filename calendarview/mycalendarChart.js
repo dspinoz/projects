@@ -3,17 +3,21 @@ dc.mycalendarChart = function (parent, chartGroup) {
   
   _chart._mandatoryAttributes(['dimension', 'group']);
   
-  var _G;
+  var _G, _width, _height;
   
+  var _yearFormat = d3.time.format('%Y'),
+      _cellSize = 5, // TBD dynamically calculate rect.day size based on width/height
+      _textHeight = 12; //TBD dynamically calculate year.text size
+      
   _chart._doRender = function () {
     _chart.resetSvg();
     
-    var width = _chart.width() - _chart.margins().right - _chart.margins().left,
-        height = _chart.height() - _chart.margins().top - _chart.margins().bottom;
+    _width = _chart.width() - _chart.margins().right - _chart.margins().left;
+    _height = _chart.height() - _chart.margins().top - _chart.margins().bottom;
 
     _G = _chart.svg()
-        .attr("width", width + _chart.margins().right + _chart.margins().left)
-        .attr("height", height + _chart.margins().top + _chart.margins().bottom)
+        .attr("width", _width + _chart.margins().right + _chart.margins().left)
+        .attr("height", _height + _chart.margins().top + _chart.margins().bottom)
       .append("g")
         .attr("transform", "translate(" + _chart.margins().left + "," + _chart.margins().top + ")");
     
@@ -21,6 +25,131 @@ dc.mycalendarChart = function (parent, chartGroup) {
   };
 
   _chart._doRedraw = function () {
+  
+    var data = _chart.dimension().top(Infinity);
+  
+    var p = _chart.selectAll('p').data(['a']);
+    p.exit().remove();
+    p.enter().append('p');
+    p.text(function(d) { return JSON.stringify(d); });
+    
+    
+    var extent = d3.extent(data, function(d) { return d._date; });
+    
+    var begin = d3.time.year(extent[0]), 
+        end = d3.time.year(extent[1]);
+    
+    // TBD is this correct for all data?
+    // modify extent so that time range shows all data
+    var ybegin = new Date(begin), yend = new Date(end);
+    yend.setFullYear(yend.getFullYear()+1);
+    var dbegin = new Date(begin), dend = new Date(end);
+    dbegin.setDate(dbegin.getDate()+1);
+    dend.setDate(dend.getDate()+1);
+    
+    p.append('p').text(JSON.stringify(d3.time.days(dbegin,dend)));
+    
+    var years = d3.time.years(ybegin,yend),
+        days = d3.time.days(dbegin,dend);
+    
+    var year = _G.selectAll("g.year").data(years);
+    
+    year.exit().remove();
+    
+    year.enter().append("g").attr('class', 'year');
+    
+    year
+      .attr("transform", function(d,i) { 
+        return "translate(0," + (((_cellSize*7)+_textHeight)*i) + ")";
+      });
+    
+    year.append("text")
+        //.attr("transform", "translate(-6," + _cellSize * 3.5 + ")rotate(-90)")
+        .style("text-anchor", "middle")
+        .text(function(d) { return _yearFormat(d); });
+    
+    
+      
+    var day = year.selectAll(".day")
+      .data(function(d) { 
+        var days = d3.time.days(new Date(+_yearFormat(d), 0, 1), new Date(+_yearFormat(d) + 1, 0, 1)); 
+        console.log(d, days.length);//, days[days.length-1]);
+        
+        var data = [];
+        
+        days.forEach(function(d) {
+          data.push({_date: d, width: _cellSize});
+        });
+        
+        return data;
+      })
+    .enter().append("rect")
+      .attr("class", "day")
+      .style("stroke", "#ccc")
+      .style("stroke-width", "1px")
+      .attr("width", function(d) { return d.width; })
+      .attr("height", function(d) { return d.width; })
+      .attr("x", function(d) { return d3.time.weekOfYear(d._date) * d.width; })
+      .attr("y", function(d) { return d._date.getDay() * d.width; })
+      /*
+      .style("fill", "#fff")
+      .on('click', function(d) {
+        console.log('heatmap click', d, _map[d], d._clicked);
+      
+        if (d in _selected) {
+          d3.select(this)
+            .style("stroke", "#ccc")
+            .style("stroke-width", "1px")
+            .style("fill", "#fff");
+          delete _selected[d];
+        } 
+        else {
+          d3.select(this)
+            .style("stroke", "#000")
+            .style("stroke-width", "3px")
+            .style("fill", "blue");
+          _selected[d] = true;
+        }
+        
+        _chart.onClick({key: d, value: _map[d]});
+        
+      })
+      */
+      .on('mouseover',function(d) {
+        d._selected = !d._selected;
+        d3.select(this).style('fill', 'red');
+        console.log('day', d);
+      })
+      .on('mouseout',function (d) {
+        d._selected = !d._selected;
+        d3.select(this).style('fill', null);
+      })/*
+      .datum(function(d) { return _format(d); })
+    */
+    ;
+    
+    /*
+        
+    var years = d3.range(_range[0].getFullYear(), _range[1].getFullYear()+1);
+    var yearHeight = _chart.height() / years.length;
+        
+
+
+
+    _day.append("title")
+        .text(function(d) { return _titleFormat(_format.parse(d)); });
+
+    var month = year.selectAll(".month")
+        .data(function(d) { return d3.time.months(new Date(d, 0, 1), new Date(d + 1, 0, 1)); })
+      .enter().append("path")
+        .attr("class", "month")
+        .style("fill", "none")
+        .style("stroke", "#555")
+        .style("stroke-width", "1px")
+        .attr("d", monthPath);
+    */
+    
+  
     return _chart;
   };
 
