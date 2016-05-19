@@ -50,6 +50,15 @@
     #interactions div.saved li.selected {
       color: blue;
     }
+    
+    #my-calendar svg g g.year rect.day {
+      fill: #ccc;
+    }
+    
+    #my-calendar svg g g.year path.month {
+    
+    }
+    
   </style>
 </head>
 <body>
@@ -650,6 +659,8 @@ var calDim = facts.dimension(function(d) { return d._date; });
 myCalendar
   .dimension(calDim)
   .group(calDim.group().reduceSum(dayReduce));
+  
+myCalendar.margins().top = myCalendar.margins().top + 10;
   
 d3.csv("/transactions.csv", 
   function(d) { 

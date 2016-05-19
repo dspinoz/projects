@@ -3,7 +3,8 @@ dc.mycalendarChart = function (parent, chartGroup) {
   
   _chart._mandatoryAttributes(['dimension', 'group']);
   
-  var _G, _width, _height;
+  var _G, _years, _months, _days;
+  var _width, _height;
   
   var _yearFormat = d3.time.format('%Y'),
       _monthFormat = d3.time.format('%m'),
@@ -22,6 +23,12 @@ dc.mycalendarChart = function (parent, chartGroup) {
       .append("g")
         .attr("transform", "translate(" + _chart.margins().left + "," + _chart.margins().top + ")");
     
+    // ensure that items are painted in the correct order
+    // months is last to give correct outline
+    _years = _G.append('g').attr('class', 'years');
+    _days = _G.append('g').attr('class', 'days');
+    _months = _G.append('g').attr('class', 'months');
+    
     _chart.redraw();
     
     return _chart;
@@ -31,11 +38,12 @@ dc.mycalendarChart = function (parent, chartGroup) {
   
     var data = _chart.dimension().top(Infinity);
   
+  /*
     var p = _chart.selectAll('p').data(['a']);
     p.exit().remove();
     p.enter().append('p');
     p.text(function(d) { return JSON.stringify(d); });
-    
+    */
     
     var extent = d3.extent(data, function(d) { return d._date; });
     
@@ -50,7 +58,7 @@ dc.mycalendarChart = function (parent, chartGroup) {
     dbegin.setDate(dbegin.getDate()+1);
     dend.setDate(dend.getDate()+1);
     
-    p.append('p').text(JSON.stringify(d3.time.days(dbegin,dend)));
+    //p.append('p').text(JSON.stringify(d3.time.days(dbegin,dend)));
     
     var years = d3.time.years(ybegin,yend),
         days = d3.time.days(dbegin,dend);
@@ -66,13 +74,16 @@ dc.mycalendarChart = function (parent, chartGroup) {
         return "translate(0," + (((_cellSize*7)+_textHeight)*i) + ")";
       });
     
-    year.append("text")
-        //.attr("transform", "translate(-6," + _cellSize * 3.5 + ")rotate(-90)")
-        .style("text-anchor", "middle")
-        .text(function(d) { return _yearFormat(d); });
+    var yearText = year.selectAll('text').data(function(d) { console.log('year', d); return [d]; });
     
+    yearText.exit().remove();
     
-      
+    yearText.enter().append('text')
+        .attr("transform", "translate(-6," + _cellSize * 3.5 + ")rotate(-90)")
+        .style("text-anchor", "middle");
+        
+    yearText.text(function(d) { return _yearFormat(d); });
+    
     var day = year.selectAll(".day")
       .data(function(d) { 
         var days = d3.time.days(new Date(+_yearFormat(d), 0, 1), new Date(+_yearFormat(d) + 1, 0, 1)); 
@@ -84,15 +95,16 @@ dc.mycalendarChart = function (parent, chartGroup) {
         });
         
         return data;
-      })
-    .enter().append("rect")
+      });
+      
+    day.exit().remove();
+      
+    day.enter().append("rect")
       .attr("class", "day")
-      .style("stroke", "#ccc")
-      .style("stroke-width", "1px")
+      //.style("stroke", "#fff")
+      //.style("stroke-width", "1px")
       .attr("width", function(d) { return d.width; })
       .attr("height", function(d) { return d.width; })
-      .attr("x", function(d) { return d3.time.weekOfYear(d._date) * d.width; })
-      .attr("y", function(d) { return d._date.getDay() * d.width; })
       /*
       .style("fill", "#fff")
       .on('click', function(d) {
@@ -125,11 +137,10 @@ dc.mycalendarChart = function (parent, chartGroup) {
       .on('mouseout',function (d) {
         d._selected = !d._selected;
         d3.select(this).style('fill', null);
-      })/*
-      .datum(function(d) { return _format(d); })
-    */
-    ;
+      });
     
+    day.attr("x", function(d) { return d3.time.weekOfYear(d._date) * d.width; })
+      .attr("y", function(d) { return d._date.getDay() * d.width; });
     
     var month = year.selectAll(".month")
       .data(function(d) {
@@ -143,26 +154,22 @@ dc.mycalendarChart = function (parent, chartGroup) {
         });
         
         return data;
-      })
-      .enter().append("path")
-        .attr("class", "month")
-        .style("fill", "none")
-        .style("stroke", "#555")
-        .style("stroke-width", "1px")
-        .attr("d", monthPath);
+      });
+      
+    month.exit().remove();
+    
+    month.enter().append("path")
+      .attr("class", "month")
+      .style("fill", "none")
+      .style("stroke", "#555")
+      .style("stroke-width", "1px");
+      
+    month.attr("d", monthPath);
     
     
     /*
-        
-    var years = d3.range(_range[0].getFullYear(), _range[1].getFullYear()+1);
-    var yearHeight = _chart.height() / years.length;
-        
-
-
-
     _day.append("title")
         .text(function(d) { return _titleFormat(_format.parse(d)); });
-
     */
     
   
