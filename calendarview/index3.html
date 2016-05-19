@@ -51,14 +51,27 @@
       color: blue;
     }
     
-    #my-calendar svg g g.year rect.day {
-      fill: #ccc;
+    #my-calendar svg g g.year g.days rect.day {
+      fill: #fff;
+      stroke: #ccc;
     }
     
-    #my-calendar svg g g.year path.month {
     
+    #my-calendar svg g g.year g.days rect.day.selected {
+      fill: red;
     }
     
+    #my-calendar svg g g.year g.days.RdYlGn rect.day.q0-11{fill:rgb(165,0,38)}
+    #my-calendar svg g g.year g.days.RdYlGn rect.day.q1-11{fill:rgb(215,48,39)}
+    #my-calendar svg g g.year g.days.RdYlGn rect.day.q2-11{fill:rgb(244,109,67)}
+    #my-calendar svg g g.year g.days.RdYlGn rect.day.q3-11{fill:rgb(253,174,97)}
+    #my-calendar svg g g.year g.days.RdYlGn rect.day.q4-11{fill:rgb(254,224,139)}
+    #my-calendar svg g g.year g.days.RdYlGn rect.day.q5-11{fill:rgb(255,255,191)}
+    #my-calendar svg g g.year g.days.RdYlGn rect.day.q6-11{fill:rgb(217,239,139)}
+    #my-calendar svg g g.year g.days.RdYlGn rect.day.q7-11{fill:rgb(166,217,106)}
+    #my-calendar svg g g.year g.days.RdYlGn rect.day.q8-11{fill:rgb(102,189,99)}
+    #my-calendar svg g g.year g.days.RdYlGn rect.day.q9-11{fill:rgb(26,152,80)}
+    #my-calendar svg g g.year g.days.RdYlGn rect.day.q10-11{fill:rgb(0,104,55)}
   </style>
 </head>
 <body>
@@ -658,7 +671,7 @@ var calDim = facts.dimension(function(d) { return d._date; });
   
 myCalendar
   .dimension(calDim)
-  .group(calDim.group().reduceSum(dayReduce));
+  .group(calDim.group().reduceSum(function(d) { if (d._income) return d.amount; return -1*d.amount; }));
   
 myCalendar.margins().top = myCalendar.margins().top + 10;
   
