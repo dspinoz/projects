@@ -5,9 +5,7 @@ dc.mycalendarChart = function (parent, chartGroup) {
   
   // TBD move color styles to here
   // based on "d3 Calendar View" by mbostock
-  _chart.colors(d3.scale.quantize()
-    .domain([-.05, .05])
-    .range(d3.range(11).map(function(d) { return "q" + d + "-11"; })));
+  _chart.linearColors(["#FFEAEA", "#FF0000"]);
     
   _chart.colorAccessor(function(d) { return d.value; });
   
@@ -16,12 +14,15 @@ dc.mycalendarChart = function (parent, chartGroup) {
   
   var _yearFormat = d3.time.format('%Y'),
       _monthFormat = d3.time.format('%m'),
-      _cellSize = 5, // TBD dynamically calculate rect.day size based on width/height
+      _cellWidth = 0, 
+      _cellHeight = 0, 
       _textHeight = 12; //TBD dynamically calculate year.text size
       
-      
   var _title = function(d) { return d.key + ": " + d.value; };
-      
+  var _key = function(d) { return d.key; };
+  var _value = function(d) { return d.value; };
+  var _valueFilter = function(d) { return d.value.toFixed(1) > 0; };
+  
   _chart._doRender = function () {
     _chart.resetSvg();
     
@@ -43,15 +44,8 @@ dc.mycalendarChart = function (parent, chartGroup) {
   
     var data = _chart.group().all();
   
-    /*
-    var p = _chart.selectAll('p').data(['a']);
-    p.exit().remove();
-    p.enter().append('p');
-    p.text(function(d) { return JSON.stringify(d); });
-    */
-    
-    var keyExtent = d3.extent(data, function(d) { return d.key; });
-    _chart.colors().domain(d3.extent(data, function(d) { return d.value; }));
+    var keyExtent = d3.extent(data, _chart.key());
+    _chart.colors().domain(d3.extent(data, _chart.value()));
     
     var begin = d3.time.year(keyExtent[0]), 
         end = d3.time.year(keyExtent[1]);
@@ -60,13 +54,18 @@ dc.mycalendarChart = function (parent, chartGroup) {
     // modify extent so that time range shows all data
     var ybegin = new Date(begin), yend = new Date(end);
     yend.setFullYear(yend.getFullYear()+1);
-    var dbegin = new Date(begin), dend = new Date(end);
-    dbegin.setDate(dbegin.getDate()+1);
-    dend.setDate(dend.getDate()+1);
     
-    //p.append('p').text(JSON.stringify(d3.time.days(dbegin,dend)));
     
     var years = d3.time.years(ybegin,yend);
+    
+    if (!_cellWidth) {
+      _cellWidth = _width / 53; //53 is max weeks in year
+    }
+    
+    if (!_cellHeight) {
+      _cellHeight = _height / 7 / years.length; // 7 is max days in week
+    }
+    
     
     var year = _G.selectAll("g.year").data(years);
     
@@ -80,7 +79,7 @@ dc.mycalendarChart = function (parent, chartGroup) {
 				
     year
       .attr("transform", function(d,i) { 
-        return "translate(0," + (((_cellSize*7)+_textHeight)*i) + ")";
+        return "translate(0," + (((_cellHeight*7)+_textHeight)*i) + ")";
       });
     
     var yearText = year.selectAll('text').data(function(d) { return [d]; });
@@ -88,7 +87,7 @@ dc.mycalendarChart = function (parent, chartGroup) {
     yearText.exit().remove();
     
     yearText.enter().append('text')
-        .attr("transform", "translate(-6," + _cellSize * 3.5 + ")rotate(-90)")
+        .attr("transform", "translate(-6," + _cellHeight * 3.5 + ")rotate(-90)")
         .style("text-anchor", "middle");
         
     yearText.text(function(d) { return _yearFormat(d); });
@@ -126,7 +125,7 @@ dc.mycalendarChart = function (parent, chartGroup) {
         var data = [];
         
         days.forEach(function(d) {
-          data.push({_date: d, width: _cellSize});
+          data.push({_date: d, height: _cellHeight, width: _cellWidth});
         });
         
         return data;
@@ -137,59 +136,45 @@ dc.mycalendarChart = function (parent, chartGroup) {
     day.enter().append("rect")
       .attr("class", "day")
       .attr("width", function(d) { return d.width; })
-      .attr("height", function(d) { return d.width; })
+      .attr("height", function(d) { return d.height; })
       .on('click', function() {
         var d = d3.select(this).datum();
         _chart.onClick(d);
       })
-      /*
-      .on('mouseover',function(d) {
-        // TBD darker color
-        d3.select(this).classed('selected', d._selected = !d._selected);
-        console.log('day', d);
-      })
-      .on('mouseout',function (d) {
-        d._selected = !d._selected;
-        
-        d3.select(this)
-          .attr("class", function(d,i) {
-            return 'day ' + _chart.getColor(d,i); 
-          });
-      })
-      */
+      // TBD highlight day if selected
       .append('title');
     
     day.attr("x", function(d) { return d3.time.weekOfYear(d._date) * d.width; })
-      .attr("y", function(d) { return d._date.getDay() * d.width; });
+      .attr("y", function(d) { return d._date.getDay() * d.height; })
+      .style('stroke', '#ccc')
+      .style('fill', '#fff'); //reset as days changes below based on filter
     
-
+    day.select('title').text(function(d,i) {
+      var tmp = {key: d._date, value: undefined};
+      return _chart.title()(tmp);
+    });
     
-    var map = d3.map(data, function(d) { return d.key; });
+    
+    var map = d3.map(data, _chart.key());
     
     var dataDays = day
       .filter(function(d) { 
         if (map.has(d._date)) {
+          
           d.key = d._date;
           d.value = map.get(d._date).value;
-          return true;
+          
+          if (_chart.valueFilter()(d))
+            return true;
         }
         
         return false;
       });
       
-    dataDays.attr("class", function(d,i) {
-      return 'day ' + _chart.getColor(d,i);
-    });
+    dataDays.style("fill", _chart.getColor);
     
     dataDays.select('title').text(_chart.title());
     
-    
-    /*
-    _day.append("title")
-        .text(function(d) { return _titleFormat(_format.parse(d)); });
-    */
-    
-  
     return _chart;
   };
   
@@ -197,13 +182,46 @@ dc.mycalendarChart = function (parent, chartGroup) {
     var t1 = new Date(t0.getFullYear(), t0.getMonth() + 1, 0),
         d0 = t0.getDay(), w0 = d3.time.weekOfYear(t0),
         d1 = t1.getDay(), w1 = d3.time.weekOfYear(t1);
-    return "M" + (w0 + 1) * _cellSize + "," + d0 * _cellSize 
-        + "H" + w0 * _cellSize + "V" + 7 * _cellSize
-        + "H" + w1 * _cellSize + "V" + (d1 + 1) * _cellSize
-        + "H" + (w1 + 1) * _cellSize + "V" + 0
-        + "H" + (w0 + 1) * _cellSize + "Z";
+    return "M" + (w0 + 1) * _cellWidth + "," + d0 * _cellHeight 
+        + "H" + w0 * _cellWidth + "V" + 7 * _cellHeight
+        + "H" + w1 * _cellWidth + "V" + (d1 + 1) * _cellHeight
+        + "H" + (w1 + 1) * _cellWidth + "V" + 0
+        + "H" + (w0 + 1) * _cellWidth + "Z";
   }
 
+  
+  _chart.cellSize = function (f) {
+    if (!arguments.length) {
+      return _cellSize;
+    }
+    _cellWidth = f;
+    _cellHeight = f;
+    return _chart;
+  };
+  
+  _chart.key = function (f) {
+    if (!arguments.length) {
+      return _key;
+    }
+    _key = f;
+    return _chart;
+  };
+  
+  _chart.value = function (f) {
+    if (!arguments.length) {
+      return _value;
+    }
+    _value = f;
+    return _chart;
+  };
+  
+  _chart.valueFilter = function (f) {
+    if (!arguments.length) {
+      return _valueFilter;
+    }
+    _valueFilter = f;
+    return _chart;
+  };
   
   _chart.title = function (f) {
     if (!arguments.length) {
