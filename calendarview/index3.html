@@ -650,7 +650,11 @@ var calDim = facts.dimension(function(d) { return d3.time.day(d._date); });
   
 myCalendar
   .width(800)
-  .title(function(d){return tf(d.key) + ": " + dollarFormat(d.value);})
+  .title(function(d){
+    if (d.value)
+      return tf(d.key) + ": " + dollarFormat(d.value);
+    return tf(d.key);
+  })
   .dimension(calDim)
   .group(calDim.group().reduceSum(function(d) { return d.amount; }));
   
