@@ -74,7 +74,7 @@ dc.mycalendarChart = function (parent, chartGroup) {
 	 // group svg element types and keep months on top 
     var yEnter = year.enter().append("g")
 		.attr('class', 'year');
-    yEnter.append('g').attr('class', 'days RdYlGn '); //TBD move style to here
+    yEnter.append('g').attr('class', 'days');
     yEnter.append('g').attr('class', 'months');
 				
     year
@@ -139,15 +139,40 @@ dc.mycalendarChart = function (parent, chartGroup) {
       .attr("height", function(d) { return d.height; })
       .on('click', function() {
         var d = d3.select(this).datum();
-        _chart.onClick(d);
+        
+        if (_chart.value()(d) != undefined) {        
+          _chart.onClick(d);
+          _chart.redraw();
+        }
       })
-      // TBD highlight day if selected
+      .on('mouseover', function() {
+        var d = d3.select(this).datum();
+        
+        d3.select(this).call(dayStyle, 
+          // check for bound data, and verify value filter as other chart filters can affect the value
+          (_chart.value()(d) != undefined &&  _chart.valueFilter()(d)), 
+          // always highlight the current day
+          true);
+      })
+      .on('mouseout', function() {
+        var d = d3.select(this).datum();
+        
+        d3.select(this).call(dayStyle, 
+          // check for bound data, and verify value filter as other chart filters can affect the value
+          (_chart.value()(d) != undefined &&  _chart.valueFilter()(d)), 
+          // see if the day is filtered to retain style
+          _chart.filters().filter(function(f) {
+            if (_chart.value()(d) == undefined) return false;
+            return f.getTime() == _chart.key()(d).getTime();
+          }).length != 0);
+      })
       .append('title');
     
     day.attr("x", function(d) { return d3.time.weekOfYear(d._date) * d.width; })
-      .attr("y", function(d) { return d._date.getDay() * d.height; })
-      .style('stroke', '#ccc')
-      .style('fill', '#fff'); //reset as days changes below based on filter
+      .attr("y", function(d) { return d._date.getDay() * d.height; });
+      
+    // no data attached and not filtered
+    day.call(dayStyle, false, false);
     
     day.select('title').text(function(d,i) {
       var tmp = {key: d._date, value: undefined};
@@ -171,12 +196,72 @@ dc.mycalendarChart = function (parent, chartGroup) {
         return false;
       });
       
-    dataDays.style("fill", _chart.getColor);
+    // data attached, not filtered
+    dataDays.call(dayStyle, true, false);
     
     dataDays.select('title').text(_chart.title());
     
+    
+    var set = d3.set(_chart.filters());
+    
+    var filteredDays = day
+      .filter(function(d) { 
+        if (set.has(d._date)) {
+          
+          d.key = d._date;
+          d.value = map.get(d._date).value;
+          
+          if (_chart.valueFilter()(d))
+            return true;
+        }
+        
+        return false;
+      });
+    
+    // data attached, filtered
+    filteredDays.call(dayStyle, true, true);
+    
     return _chart;
   };
+  
+  function dayStyle(selection, hasData, isFiltered) {
+    
+    if (!hasData) {
+      //reset style as no data is attached
+      selection
+        .style('stroke-width', 1)
+        .style('stroke', '#ccc')
+        .style('fill', '#fff')
+        .classed('highlight', false);
+      return;
+    }
+    
+    if (hasData && isFiltered) {
+      selection
+        .style('fill', _chart.getColor)
+        .style("stroke-width", 3)
+        .style("stroke", function(d,i) {
+          var color = d3.rgb(_chart.getColor(d,i));
+          return color.darker();
+        })
+        .classed('deselected', false);
+      return;
+    }
+    
+    if (_chart.filters().length == 0) {
+      selection
+        .style('fill', _chart.getColor)
+        .style('stroke-width', 1)
+        .style('stroke', '#ccc');
+    }
+    else {
+      selection
+        .style('fill', null)
+        .style('stroke-width', null)
+        .style('stroke', null)
+        .classed('deselected', true);
+    }
+  }
   
   function monthPath(t0) {
     var t1 = new Date(t0.getFullYear(), t0.getMonth() + 1, 0),
