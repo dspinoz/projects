@@ -20,6 +20,10 @@ GetOptions('help|?' => \$help,
 pod2usage(1) if $help;
 pod2usage(-exitval => 0, -verbose => 2) if $man;
 
+if (scalar(@files) == 0) {
+  die "Please provide some files";
+}
+
 foreach my $f (@files) {
   print "INFO: Processing rsync log $f\n";
 }
@@ -40,6 +44,8 @@ for my $i (0 .. $#files) {
   open(my $fh, '<:encoding(UTF-8)', $f)
     or die "Could not open file '$f' $!";
   
+  my $fileok = 0;
+  
   while (my $row = <$fh>) {
     chomp $row;
     
@@ -51,12 +57,14 @@ for my $i (0 .. $#files) {
           die "File $1 detected twice! hiding $f";
         }
         $allfilehash{$1} = $f;
+        $fileok = 1;
       }
       if ($row =~ m/showing file (.*) because of pattern (.*)/) {
         if ($allfilehash{$1}) {
           die "File $1 detected twice! showing $f";
         }
         $allfilehash{$1} = $f;
+        $fileok = 1;
       }
     }
     
@@ -69,8 +77,13 @@ for my $i (0 .. $#files) {
       }
       
       $backupfilehash{$1} = $f;
+      $fileok = 1;
       #print "$1 $2\n";
     }
+  }
+  
+  if (!$fileok) {
+    die "File $f looks like an invalid rsync.log file. Ensure running with minimal required options";
   }
 }
 
@@ -118,7 +131,7 @@ foreach my $e (sort {$extensions{$b} <=> $extensions{$a}} keys %extensions) {
     next;
   }
   
-  print "ERROR: Files with .$e not in backup ($extensions{$e} matches)\n";
+  print "WARNING: Files with .$e not in backup ($extensions{$e} matches)\n";
   $haserr = 1;
   
   if ($show_skipped) {
@@ -144,7 +157,7 @@ rsync-check-skipped
 
 =head1 SYNOPSIS
 
-rsync-check-skipped.pl [options] [file ...]
+rsync-check-skipped.pl [options] -f file -f file ...
 
  Options:
    --help                     Brief help message
@@ -156,5 +169,12 @@ rsync-check-skipped.pl [options] [file ...]
 
 Read multiple rsync log files to determine those files that have not 
 been transferred.
+
+rsync(1) must be run with at least with the following options:
+
+    --verbose --verbose 
+    
+    Verbosity level 2 allows the "hiding", "showing" and "risking" traces
+    to be output to a log file with --log-file=<logfile>
 
 =cut
