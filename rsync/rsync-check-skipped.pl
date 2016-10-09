@@ -3,8 +3,31 @@
 use strict;
 use warnings;
 use File::Basename;
+use Getopt::Long;
+use Pod::Usage;
 
-my @files = ("/tmp/rsync-photos.log", "/tmp/rsync-videos.log");
+my $man = 0;
+my $help = 0;
+my @files = ();
+my @opt_ignore_ext = ();
+my $show_skipped = 0;
+
+GetOptions('help|?' => \$help, 
+           man => \$man, 
+           'i|ignore-extension=s' => \@opt_ignore_ext,
+           's|show-skipped' => \$show_skipped,
+           'f|file=s' => \@files) or pod2usage(2);
+pod2usage(1) if $help;
+pod2usage(-exitval => 0, -verbose => 2) if $man;
+
+foreach my $f (@files) {
+  print "INFO: Processing rsync log $f\n";
+}
+if (scalar(@opt_ignore_ext)) {
+	foreach my $ig (@opt_ignore_ext) {
+    print "INFO: Ignoring extension $ig\n";
+  }
+}
 
 my %allfilehash = ();
 my %backupfilehash = ();
@@ -12,7 +35,7 @@ my %deletedhash = ();
 
 for my $i (0 .. $#files) {
   my $f = $files[$i];
-  print STDERR "$files[$i]\n";
+  print "INFO: Processing file $f\n";
   
   open(my $fh, '<:encoding(UTF-8)', $f)
     or die "Could not open file '$f' $!";
@@ -69,7 +92,7 @@ my %extensions = ();
 
 foreach my $f (sort keys %allfilehash) {
   my $fn = basename($f);
-  if ($fn =~ m/^.*(\..*)$/) {
+  if ($fn =~ m/^.*\.(.*)$/) {
     if (!exists($extensions{$1})) {
       $extensions{$1} = 1;
     } else {
@@ -78,6 +101,60 @@ foreach my $f (sort keys %allfilehash) {
   }
 }
 
+my $haserr = 0;
+
 foreach my $e (sort {$extensions{$b} <=> $extensions{$a}} keys %extensions) {
-  print "$extensions{$e} $e\n";
+  
+  my $ignored = 0;
+  
+  foreach my $ignore (@opt_ignore_ext) {
+    if ($e =~ m/$ignore/) {
+      $ignored = 1;
+    }
+  }
+  
+  if ($ignored) {
+    print "DEBUG: Ignored extension: $e ($extensions{$e} matches)\n";
+    next;
+  }
+  
+  print "ERROR: Files with .$e not in backup ($extensions{$e} matches)\n";
+  $haserr = 1;
+  
+  if ($show_skipped) {
+    foreach my $f (sort keys %allfilehash) {
+      my $fn = basename($f);
+      if ($fn =~ m/^.*\.(.*)$/) {
+        
+        if ($1 =~ m/$e/) {
+          print "INFO: $f\n";
+        }
+      }
+    }
+  }
 }
+
+exit $haserr;
+
+__END__
+
+=head1 NAME
+
+rsync-check-skipped
+
+=head1 SYNOPSIS
+
+rsync-check-skipped.pl [options] [file ...]
+
+ Options:
+   --help                     Brief help message
+   -s, --show-skipped         Show files that have been skipped in backups
+   -i, --ignore-extension=ext Ignore files with extension ext that have 
+                              been skipped
+
+=head1 DESCRIPTION
+
+Read multiple rsync log files to determine those files that have not 
+been transferred.
+
+=cut
