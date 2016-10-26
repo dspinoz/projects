@@ -1,0 +1,17 @@
+{
+  "name": "calendarview",
+  "version": "0.0.1",
+  "homepage": "https://github.com/dspinoz/projects/calendarview",
+  "authors": [
+    "dspinoz <dspinoz@gmail.com>"
+  ],
+  "description": "view data from spending",
+  "main": "index3.html",
+  "keywords": [
+    "spending",
+    "dashboard"
+  ],
+  "license": "MIT",
+  "dependencies": {
+  }
+}
