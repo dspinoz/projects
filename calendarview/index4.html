@@ -18,7 +18,6 @@
     <style>
     body {
       padding-top: 60px;
-      text-align: center;
     }
     
     </style>
@@ -27,6 +26,16 @@
     ================================================== -->
     <script src="/bower_components/jquery/dist/jquery.js"></script>
     <script src="/bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+    
+    <!-- Charting JavaScript -->
+    <script src='/bower_components/colorbrewer/colorbrewer.js' type='text/javascript'></script>
+    <script src='/bower_components/d3/d3.js' type='text/javascript'></script>
+    <script src='/bower_components/crossfilter2/crossfilter.js' type='text/javascript'></script>
+    <script src='/bower_components/dc.js/dc.js' type='text/javascript'></script>
+    <link href='/bower_components/dc.js/dc.css' rel='stylesheet' type='text/css'>
+    <script src='/mytreeChart.js' type='text/javascript'></script>
+    <script src='/mycalendarChart.js' type='text/javascript'></script>
+    <script src='/myDimensions.js' type='text/javascript'></script>
     
   </head>
 
@@ -51,12 +60,19 @@
     <div class="container" role="main">
       
       <div class="row">
+        <div id="my-calendar" class="col-sm-12">
+        </div>
+      </div>
+      
+      <div class="row">
         <div class="col-sm-4">
           <div class="panel panel-default">
             <div class="panel-heading">
               <h3 class="panel-title">Type</h3>
             </div>
-            <div id="type-pie" class="panel-body"></div>
+            <div class="panel-body">
+              <div id="type-pie"></div>
+            </div>
           </div>
         </div>
         <div class="col-sm-4">
@@ -64,7 +80,9 @@
             <div class="panel-heading">
               <h3 class="panel-title">Category</h3>
             </div>
-            <div id="category-pie" class="panel-body"></div>
+            <div class="panel-body">
+              <div id="category-pie"></div>
+            </div>
           </div>
         </div>
         <div class="col-sm-4">
@@ -72,12 +90,134 @@
             <div class="panel-heading">
               <h3 class="panel-title">Subcategory</h3>
             </div>
-            <div id="subcategory-pie" class="panel-body"></div>
+            <div class="panel-body">
+              <div id="subcategory-pie"></div>
+            </div>
           </div>
         </div>
       </div>
 
     </div><!-- /.container -->
+
+    <script>
+    
+var facts = crossfilter();
+
+var dollarFormat = d3.format("$,.4r"),
+    dataTimeFormat = d3.time.format('%Y/%m/%d'),
+    /*tf = d3.time.format('%A %b %e'),
+    df = d3.time.format('%w.%a'),
+    mf = d3.time.format('%m.%b'),
+    hf = d3.time.format('%H'),
+    wf = d3.time.format('%W'),
+    yf = d3.time.format('%Y'),
+    dyf = d3.time.format('%j'),
+    ddf = d3.time.format('%W'),
+    tableFormat = d3.time.format('%Y-%m'),*/
+    catColors = d3.scale.category20();
+
+
+
+var typePie = dc.pieChart("#type-pie"),
+    catPie = dc.pieChart("#category-pie"),
+    subcatPie = dc.pieChart("#subcategory-pie"),
+    myCalendar = dc.mycalendarChart("#my-calendar");
+    
+var typePieDim = facts.dimension(function(d) { return d.type; });
+
+typePie
+  .innerRadius(30)
+  .dimension(typePieDim)
+  .group(typePieDim.group().reduceSum(function(d) { return d.amount; }))
+  ;//.on('filtered', filterTracker.notify("Type"));
+
+var catPieDim = facts.dimension(function(d) { return d.category; });
+
+catPie
+  .colors(catColors)
+  .innerRadius(30)
+  .title(function(d){return d.key + ": " + dollarFormat(d.value);})
+  .dimension(catPieDim)
+  .group(catPieDim.group().reduceSum(function(d) { return d.amount; }))
+  ;//.on('filtered', filterTracker.notify("Category"));
+  
+var subcatPieDim = facts.dimension(function(d) { return d.subcategory; });
+
+subcatPie
+  .colors(catColors)
+  .innerRadius(30)
+  .title(function(d){return d.key + ": " + dollarFormat(d.value);})
+  .dimension(subcatPieDim)
+  .group(subcatPieDim.group().reduceSum(function(d) { return d.amount; }))
+  ;//.on('filtered', filterTracker.notify("Sub Category"));
+  
+    
+
+d3.csv("/transactions.csv", 
+  function(d) { 
+    var d2 = {
+      _orig: d,
+      amount: +d.amount,
+      category: d.category,
+      subcategory: d.subcategory,
+      note: d.note
+    };
+  
+    if (d.type) {
+      d2.type = d.type == 1 ? "Income" : "Expense";
+      d2._income = d.type == 1;
+      d2._expense = d.type == 0;
+    }
+    else {
+      d2.type = "Expense";
+      d2._income = 0;
+      d2._expense = 1;
+    }
+    
+    if (d.syear && d.smonth && d.sday) {
+      d2._date = dataTimeFormat.parse(d.syear + '/' + d.smonth + '/' + d.sday);
+    }
+    else if (d.datetime) {
+      var datetime = (d.datetime*1000).toFixed(0)*1;
+      d2._date = new Date(datetime);
+    }
+    
+    return d2;
+  }, 
+  function(error, csv) {
+    
+    if (error) {
+      console.log(error);
+      return;
+    }
+    
+    //only put valid data though
+    var data = [];
+    csv.forEach(function(d) {
+        
+      if (!d._date) {
+        console.log('Invalid date', d._date, d);
+        return;
+      }
+                
+      if (d._orig.deleted && d._orig.deleted != 0) {
+        console.log('Entry deleted', d);
+        return;
+      }
+        
+      if (d._date && d._date instanceof Date && !isNaN(d._date.valueOf()))
+      {
+        data.push(d);
+      }
+    });
+    
+    facts.add(data);
+    
+    dc.renderAll();
+  }
+);
+    
+    </script>
 
   </body>
 </html>
