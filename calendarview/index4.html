@@ -17,10 +17,7 @@
     <!-- Custom styles -->
     <style>
     body {
-      padding-top: 50px;
-    }
-    .starter-template {
-      padding: 40px 15px;
+      padding-top: 60px;
       text-align: center;
     }
     
@@ -51,15 +48,36 @@
       </div>
     </nav>
 
-    <div class="container">
-
-      <div class="starter-template">
-        <h1>Bootstrap starter template</h1>
-        <p class="lead">Use this document as a way to quickly start any new project.<br> All you get is this text and a mostly barebones HTML document.</p>
+    <div class="container" role="main">
+      
+      <div class="row">
+        <div class="col-sm-4">
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              <h3 class="panel-title">Type</h3>
+            </div>
+            <div id="type-pie" class="panel-body"></div>
+          </div>
+        </div>
+        <div class="col-sm-4">
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              <h3 class="panel-title">Category</h3>
+            </div>
+            <div id="category-pie" class="panel-body"></div>
+          </div>
+        </div>
+        <div class="col-sm-4">
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              <h3 class="panel-title">Subcategory</h3>
+            </div>
+            <div id="subcategory-pie" class="panel-body"></div>
+          </div>
+        </div>
       </div>
 
     </div><!-- /.container -->
-
 
   </body>
 </html>
