@@ -33,6 +33,10 @@
     <script src='/bower_components/crossfilter2/crossfilter.js' type='text/javascript'></script>
     <script src='/bower_components/dc.js/dc.js' type='text/javascript'></script>
     <link href='/bower_components/dc.js/dc.css' rel='stylesheet' type='text/css'>
+    <script src='/bower_components/datatables/media/js/jquery.dataTables.js' type='text/javascript'></script>
+    <script src='/bower_components/datatables/media/js/dataTables.bootstrap.js' type='text/javascript'></script>
+    <link href='/bower_components/datatables/media/css/dataTables.bootstrap.css' rel='stylesheet' type='text/css'>
+    
     <script src='/mytreeChart.js' type='text/javascript'></script>
     <script src='/mycalendarChart.js' type='text/javascript'></script>
     <script src='/myDimensions.js' type='text/javascript'></script>
@@ -132,6 +136,21 @@
           </div>
         </div>
       </div>
+      
+      <div class="row">
+        <div class="col-sm-12">
+          <table class="table table-bordered table-hover" id="data-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Amount</th>
+                <th>Note</th>
+              </tr>
+            </thead>
+          </table>
+        </div>
+      </div>
 
     </div><!-- /.container -->
 
@@ -149,12 +168,13 @@ var dollarFormat = d3.format("$,.4r"),
     yf = d3.time.format('%Y'),
     //dyf = d3.time.format('%j'),
     //ddf = d3.time.format('%W'),
-    //tableFormat = d3.time.format('%Y-%m'),*/
+    tableFormat = d3.time.format('%Y-%m'),
     catColors = d3.scale.category20();
 
 
 
 var totalSpend = dc.numberDisplay("#total-spend"),
+    dataTable = dc.dataTable("#data-table"),
     typePie = dc.pieChart("#type-pie"),
     catPie = dc.pieChart("#category-pie"),
     subcatPie = dc.pieChart("#subcategory-pie"),
@@ -170,7 +190,40 @@ totalSpend
     return d;
   })
   .formatNumber(dollarFormat);
+   
+dataTable
+  .width(960)
+  .height(800)
+  .order(d3.descending)
+  .sortBy(function(d) { return d._date; })
+  .group(function(d) { return tableFormat(d._date); })
+  .dimension(facts.dimension(function (d) {
+    return d.eid;
+  }))
+  .columns([
+    function(d) { return tf(d._date); },
+    function(d) { return '<b>'+ d.category + '</b> ' + d.subcategory; },
+    function(d) { return d.amount ? d.amount : ''; },
+    function(d) { return d.note ? d.node : ''; }
+  ])
+  .on('renderlet', function (table) {
+      console.log('renderlet', table);
+
+/*
+      // Clear jQuery DataTable if already created
+     if ( $.fn.dataTable.isDataTable('#data-table') ) {
+        $('#data-table').dataTable().fnDestroy();
+     }
     
+    
+    // create jQuery DataTable
+    var jqtable = $('#data-table').dataTable();
+  */   
+  });
+  
+$(function () {
+  console.log('iniiiitttt');
+}); 
     
 var typePieDim = facts.dimension(function(d) { return d.type; });
 
@@ -318,7 +371,22 @@ d3.csv("/transactions.csv",
     
     facts.add(data);
     
+    console.log('renderall');
+    
     dc.renderAll();
+    
+    console.log('renderall done');
+    
+    
+  $('#data-table').DataTable({
+    "paging": true,
+    "lengthChange": true,
+    "searching": true,
+    "ordering": true,
+    "info": true,
+    "autoWidth": false
+  });
+    
   }
 );
     
