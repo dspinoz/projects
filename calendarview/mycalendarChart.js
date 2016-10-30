@@ -77,7 +77,7 @@ dc.mycalendarChart = function (parent, chartGroup) {
     yEnter.append('g').attr('class', 'days');
     yEnter.append('g').attr('class', 'months');
 				
-    year
+    year.transition()
       .attr("transform", function(d,i) { 
         return "translate(0," + (((_cellHeight*7)+_textHeight)*i) + ")";
       });
@@ -90,7 +90,8 @@ dc.mycalendarChart = function (parent, chartGroup) {
         .attr("transform", "translate(-6," + _cellHeight * 3.5 + ")rotate(-90)")
         .style("text-anchor", "middle");
         
-    yearText.text(function(d) { return _yearFormat(d); });
+    yearText.transition()
+      .text(function(d) { return _yearFormat(d); });
     
     
     var month = year.select('g.months').selectAll(".month")
@@ -115,7 +116,8 @@ dc.mycalendarChart = function (parent, chartGroup) {
       .style("stroke", "#555")
       .style("stroke-width", "1px");
       
-    month.attr("d", monthPath);
+    month.transition()
+      .attr("d", monthPath);
     
     
     var day = year.select('g.days').selectAll(".day")
@@ -168,16 +170,18 @@ dc.mycalendarChart = function (parent, chartGroup) {
       })
       .append('title');
     
-    day.attr("x", function(d) { return d3.time.weekOfYear(d._date) * d.width; })
+    day.transition()
+      .attr("x", function(d) { return d3.time.weekOfYear(d._date) * d.width; })
       .attr("y", function(d) { return d._date.getDay() * d.height; });
       
     // no data attached and not filtered
     day.call(dayStyle, false, false);
     
-    day.select('title').text(function(d,i) {
-      var tmp = {key: d._date, value: undefined};
-      return _chart.title()(tmp);
-    });
+    day.select('title')
+      .text(function(d,i) {
+        var tmp = {key: d._date, value: undefined};
+        return _chart.title()(tmp);
+      });
     
     
     var map = d3.map(data, _chart.key());
