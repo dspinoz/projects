@@ -160,7 +160,7 @@ var facts = crossfilter();
 
 var dollarFormat = d3.format("$,.4r"),
     dataTimeFormat = d3.time.format('%Y/%m/%d'),
-    tf = d3.time.format('%A %b %e'),
+    tf = d3.time.format('%A %b %e %Y'),
     //df = d3.time.format('%w.%a'),
     mf = d3.time.format('%m.%b'),
     //hf = d3.time.format('%H'),
@@ -171,10 +171,39 @@ var dollarFormat = d3.format("$,.4r"),
     tableFormat = d3.time.format('%Y-%m'),
     catColors = d3.scale.category20();
 
+var dataTableOptions = {
+  "lengthMenu": [ [10, 25, 50, -1], [10, 25, 50, "All"] ],
+  "footerCallback": function ( row, data, start, end, display ) {
+    var api = this.api(), data ;
+  },
+  "order": [[0, 'desc']],
+  "dom": 'T<"clear-l"l><"clear-l"i><"clear-r"f><"clear-r"p>t',
+  "tableTools": {
+    "sSwfPath": "copy_csv_xls_pdf.swf"
+  },
+  columnDefs: [
+    {
+      targets: 0,
+      data: function(d) { return tf(d._date); }
+    }, 
+    {
+      targets: 1,
+      data: function(d) { return '<b>'+ d.category + '</b> ' + d.subcategory; }
+    }, 
+    {
+      targets: 2,
+      data: function(d) { return d.amount ? d.amount : ''; }
+    }, 
+    {
+      targets: 3,
+      data: function(d) { return d.note ? d.note : ''; }
+    }
+  ]
+} ;
 
 
 var totalSpend = dc.numberDisplay("#total-spend"),
-    dataTable = dc.dataTable("#data-table"),
+    dataTable = $("#data-table").dataTable(dataTableOptions),
     typePie = dc.pieChart("#type-pie"),
     catPie = dc.pieChart("#category-pie"),
     subcatPie = dc.pieChart("#subcategory-pie"),
@@ -183,6 +212,21 @@ var totalSpend = dc.numberDisplay("#total-spend"),
     quarterPie = dc.pieChart("#quarter-pie"),
     myCalendar = dc.mycalendarChart("#my-calendar");
     
+function RefreshTable() {
+  dc.events.trigger(function () {
+    dataTable.api()
+      .clear()
+      .rows.add(facts.dimension(function (d) {
+                  return d.eid;
+                }).top(Infinity))
+      .draw() ;
+  });
+}
+
+for (var i = 0; i < dc.chartRegistry.list().length; i++) {
+  var chartI = dc.chartRegistry.list()[i];
+  chartI.on("filtered", RefreshTable);
+}
 
 totalSpend
   .group(facts.groupAll().reduceSum(function(d) { return d.amount; }))
@@ -191,6 +235,7 @@ totalSpend
   })
   .formatNumber(dollarFormat);
    
+   /*
 dataTable
   .width(960)
   .height(800)
@@ -205,25 +250,8 @@ dataTable
     function(d) { return '<b>'+ d.category + '</b> ' + d.subcategory; },
     function(d) { return d.amount ? d.amount : ''; },
     function(d) { return d.note ? d.node : ''; }
-  ])
-  .on('renderlet', function (table) {
-      console.log('renderlet', table);
-
-/*
-      // Clear jQuery DataTable if already created
-     if ( $.fn.dataTable.isDataTable('#data-table') ) {
-        $('#data-table').dataTable().fnDestroy();
-     }
-    
-    
-    // create jQuery DataTable
-    var jqtable = $('#data-table').dataTable();
-  */   
-  });
-  
-$(function () {
-  console.log('iniiiitttt');
-}); 
+  ]);
+  */
     
 var typePieDim = facts.dimension(function(d) { return d.type; });
 
@@ -373,19 +401,13 @@ d3.csv("/transactions.csv",
     
     console.log('renderall');
     
+    RefreshTable();
+    
     dc.renderAll();
     
     console.log('renderall done');
     
     
-  $('#data-table').DataTable({
-    "paging": true,
-    "lengthChange": true,
-    "searching": true,
-    "ordering": true,
-    "info": true,
-    "autoWidth": false
-  });
     
   }
 );
