@@ -20,6 +20,107 @@
       padding-top: 60px;
     }
     
+    
+#comparison {
+  margin: auto auto;
+  width: 800px;
+  position: relative;
+}
+
+.axis {
+  font: 10px sans-serif;
+  position: fixed;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.axis text {
+  -webkit-transition: fill-opacity 250ms linear;
+}
+
+.axis path {
+  display: none;
+}
+
+.axis line {
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.axis.top {
+  background-image: linear-gradient(top, #fff 0%, rgba(255,255,255,0) 100%);
+  background-image: -o-linear-gradient(top, #fff 0%, rgba(255,255,255,0) 100%);
+  background-image: -moz-linear-gradient(top, #fff 0%, rgba(255,255,255,0) 100%);
+  background-image: -webkit-linear-gradient(top, #fff 0%, rgba(255,255,255,0) 100%);
+  background-image: -ms-linear-gradient(top, #fff 0%, rgba(255,255,255,0) 100%);
+  top: 0px;
+  padding: 0 0 24px 0;
+}
+
+.axis.bottom {
+  background-image: linear-gradient(bottom, #fff 0%, rgba(255,255,255,0) 100%);
+  background-image: -o-linear-gradient(bottom, #fff 0%, rgba(255,255,255,0) 100%);
+  background-image: -moz-linear-gradient(bottom, #fff 0%, rgba(255,255,255,0) 100%);
+  background-image: -webkit-linear-gradient(bottom, #fff 0%, rgba(255,255,255,0) 100%);
+  background-image: -ms-linear-gradient(bottom, #fff 0%, rgba(255,255,255,0) 100%);
+  bottom: 0px;
+  padding: 24px 0 0 0;
+}
+
+.horizon {
+  border-bottom: solid 1px #000;
+  overflow: hidden;
+  position: relative;
+}
+
+:not(.horizon) + .horizon {
+  border-top: solid 1px #000;
+}
+
+.horizon canvas {
+  display: block;
+}
+
+.horizon .title,
+.horizon .value {
+  bottom: 0;
+  line-height: 30px;
+  margin: 0 6px;
+  position: absolute;
+  text-shadow: 0 1px 0 rgba(255,255,255,.5);
+  white-space: nowrap;
+}
+
+.horizon .title {
+  left: 0;
+}
+
+.horizon .value {
+  right: 0;
+}
+
+.line {
+  background: #000;
+  z-index: 1;
+  margin-left: 15px;
+}
+
+#step {
+  position: fixed;
+  bottom: 6px;
+  z-index: 3;
+}
+
+@media all and (max-width: 1439px) {
+  body { margin: 0px auto; }
+  .axis { position: static; }
+  .axis.top, .axis.bottom { padding: 0; }
+}
+    
+    
+    
+    
+    
     </style>
     
     <!-- Bootstrap core JavaScript
@@ -36,6 +137,7 @@
     <script src='/bower_components/datatables/media/js/jquery.dataTables.js' type='text/javascript'></script>
     <script src='/bower_components/datatables/media/js/dataTables.bootstrap.js' type='text/javascript'></script>
     <link href='/bower_components/datatables/media/css/dataTables.bootstrap.css' rel='stylesheet' type='text/css'>
+    <script src='/bower_components/cubism/cubism.v1.js' type='text/javascript'></script>
     
     <script src='/mytreeChart.js' type='text/javascript'></script>
     <script src='/mycalendarChart.js' type='text/javascript'></script>
@@ -69,6 +171,10 @@
         <div class="col-sm-2 jumbotron">
           <span id="total-spend" class="h2"></span>
         </div>
+      </div>
+      
+      <div class="row">
+        <div id="comparison" class="col-sm-12"></div>
       </div>
       
       <div class="row">
@@ -258,6 +364,52 @@ dataTable
     function(d) { return d.note ? d.node : ''; }
   ]);
   */
+
+var spending = function(ctx) {
+  var source = {},
+      context = ctx;
+
+  source.metric = function() {
+    return context.metric(function(start, stop, step, callback) {
+      
+      var dim = facts.dimension(function(d) { return d3.time.day(d._date); });
+      
+      console.log('horizon', start, stop, step);
+      
+      var all = d3.range(d3.time.day(start).valueOf(),d3.time.day(stop).valueOf(),step);
+      
+      var data = dim.filterRange([start,stop])
+        .group()
+        .reduceSum(function(d) { return d._expense ? -1*d.amount : d.amount; })
+        .all();
+      
+      var map = d3.map(data, function(d) { return d.key.valueOf(); });
+      
+      all = all.map(function(d) {
+        
+        if (map.has(d.valueOf())) {
+          return map.get(d).value;
+        }
+        
+        return 0;
+      });
+      
+      callback(null,all);
+      
+      //dim.dispose();
+      
+    }, "");
+  };
+
+  return source;
+};
+
+var cubism_context = cubism.context()
+	.step(1000 * 60 * 60 * 24)
+	.size(800)
+	.stop();
+
+var cubism_spending = spending(cubism_context);
     
 var typePieDim = facts.dimension(function(d) { return d.type; });
 
@@ -446,6 +598,21 @@ d3.csv("/transactions.csv",
     
     console.log('renderall done');
     
+    
+    
+    d3.select("#comparison").selectAll(".axis")
+        .data(["top"])
+      .enter().append("div")
+        .attr("class", function(d) { return d + " axis"; })
+        .each(function(d) { d3.select(this).call(cubism_context.axis().ticks(12).orient(d)); });
+    
+    d3.select("#comparison").append("div")
+        .attr("class", "rule")
+        .call(cubism_context.rule());
+    
+    d3.select('#comparison').append("div")
+      .attr("class", "horizon")
+      .call(cubism_context.horizon().metric(cubism_spending.metric()).height(50).mode('offset'));
     
     
   }
