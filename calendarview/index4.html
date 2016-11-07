@@ -72,6 +72,11 @@
       </div>
       
       <div class="row">
+        <div id="spending-line" class="col-sm-12">
+        </div>
+      </div>
+      
+      <div class="row">
         <div class="col-sm-4">
           <div class="panel panel-default">
             <div class="panel-heading">
@@ -209,6 +214,7 @@ var totalSpend = dc.numberDisplay("#total-spend"),
     subcatPie = dc.pieChart("#subcategory-pie"),
     yearRow = dc.rowChart("#year-row"),
     monthRow = dc.rowChart("#month-row"),
+    spendingLine = dc.lineChart("#spending-line"),
     quarterPie = dc.pieChart("#quarter-pie"),
     myCalendar = dc.mycalendarChart("#my-calendar");
     
@@ -296,7 +302,40 @@ myCalendar
 myCalendar.margins().top = myCalendar.margins().top + 10;
     
     
-    
+var lineDim = facts.dimension(function(d) { return d3.time.month(d._date); });
+
+spendingLine.renderArea(true)
+        .width(990)
+        .height(200)
+		.margins({top: 30, right: 50, bottom: 25, left: 40})
+        .dimension(lineDim)
+        .group(lineDim.group().reduce(
+          function (p, v) {
+              ++p.days;
+              p.total += (v._expense ? -1*v.amount : v.amount);
+              p.avg = Math.round(p.total / p.days);
+              return p;
+          },
+          function (p, v) {
+              --p.days;
+              p.total -= (v._expense ? -1*v.amount : v.amount);
+              p.avg = p.days ? Math.round(p.total / p.days) : 0;
+              return p;
+          },
+          function () {
+              return {days: 0, total: 0, avg: 0};
+          }
+        ))
+        .elasticY(true)
+        .elasticX(true)
+        .renderHorizontalGridLines(true)
+        .valueAccessor(function (d) {
+            return d.value.total;
+        })
+        .x(d3.time.scale().domain([new Date(2016, 0, 1), new Date(2017, 12, 31)]));
+
+
+
 var yearDim = facts.dimension(function(d) { return yf(d._date); });
 
 yearRow
