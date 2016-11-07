@@ -367,16 +367,17 @@ dataTable
 
 var spending = function(ctx) {
   var source = {},
-      context = ctx;
+      context = ctx,
+      interval = d3.time.day.utc;
 
   source.metric = function() {
     return context.metric(function(start, stop, step, callback) {
       
-      var dim = facts.dimension(function(d) { return d3.time.day(d._date); });
+      var dim = facts.dimension(function(d) { return interval(d._date); });
       
       console.log('horizon', start, stop, step);
       
-      var all = d3.range(d3.time.day(start).valueOf(),d3.time.day(stop).valueOf(),step);
+      var all = d3.range(interval(start).valueOf(),interval(stop).valueOf(),step);
       
       var data = dim.filterRange([start,stop])
         .group()
@@ -385,9 +386,12 @@ var spending = function(ctx) {
       
       var map = d3.map(data, function(d) { return d.key.valueOf(); });
       
+      var count = 0;
+      
       all = all.map(function(d) {
         
-        if (map.has(d.valueOf())) {
+        if (map.has(new Date(d).valueOf())) {
+          count++;
           return map.get(d).value;
         }
         
@@ -396,7 +400,7 @@ var spending = function(ctx) {
       
       callback(null,all);
       
-      //dim.dispose();
+      dim.dispose();
       
     }, "");
   };
