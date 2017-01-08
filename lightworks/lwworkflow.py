@@ -7,19 +7,20 @@ import subprocess
 import shutil
 from optparse import OptionParser
 
-def get_files(search='raw', ext='.MOV'):
+def find_media(search='raw', exts=['.MOV']):
 	ret = []
 	for root,dirs,files in os.walk(search):
 		
 		for f in files:
 			if f.startswith("."):
 				continue
-			if f.endswith(ext):
-				p = os.path.join(root,f)
-				if p.startswith(search+"/"):
-					ret.append(p[len(search)+1:])
-				elif p.startswith(search):
-					ret.append(p[len(search):])
+			for ext in exts:
+				if f.endswith(ext):
+					p = os.path.join(root,f)
+					if p.startswith(search+"/"):
+						ret.append(p[len(search)+1:])
+					elif p.startswith(search):
+						ret.append(p[len(search):])
 	return ret
 
 class LWHelperBase:
@@ -162,7 +163,7 @@ class ProjectMode(LWHelperBase):
 		
 	def main(self, options, args):
 		print "project main", options.project_clear, options.raw_dir
-		paths = get_files(options.project_dir)
+		paths = find_media(options.project_dir)
 		print "paths", paths
 		for r in paths:
 			f = LWHelperFile(options, r)
@@ -180,7 +181,7 @@ class ProxyMode(LWHelperBase):
 		
 	def main(self, options, args):
 		print "proxy main"
-		paths = get_files(options.raw_dir)
+		paths = find_media(options.raw_dir)
 		for r in paths:
 			f = LWHelperFile(options, r)
 			
@@ -204,7 +205,7 @@ class RawMode(LWHelperBase):
 		
 	def main(self, options, args):
 		print "raw main"
-		paths = get_files(options.raw_dir)
+		paths = find_media(options.raw_dir)
 		for r in paths:
 			f = LWHelperFile(options, r)
 			
@@ -285,7 +286,7 @@ def main():
 		sys.exit(0)
 
 	if options.searchdir:
-		for f in get_files(options.searchdir):
+		for f in find_media(options.searchdir):
 			print f
 		sys.exit(0)
 		
