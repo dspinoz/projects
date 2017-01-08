@@ -212,7 +212,7 @@ class RawMode(LWHelperBase):
 				files = find_media(i)
 				for f in files:
 					# file path
-					fp = os.path.join(i,f)
+					fp = os.path.join(os.path.realpath(i),f)
 					# project path
 					pp = options.raw_dir + os.sep + os.path.join(fp)
 					
@@ -239,7 +239,9 @@ class RawMode(LWHelperBase):
 				else:
 					print "file",i
 					
-				fp = i
+				# file path
+				fp = os.path.realpath(i)
+				# project path
 				pp = options.raw_dir + os.sep + i
 				
 				print "creating",pp,"from",fp
