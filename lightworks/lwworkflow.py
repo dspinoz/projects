@@ -207,7 +207,10 @@ class RawMode(LWHelperBase):
 		print "raw main"
 		
 		if options.imports:
-			print "raw importing", options.imports, options.raw_dir
+			print "raw importing", options.imports.split(',')
+			
+			return
+			
 			for i in options.imports:
 				print "  ",os.path.realpath(i)
 				i = os.path.realpath(i)
@@ -289,7 +292,9 @@ The project directory is a dynamic area, which will be managed by this script.
 
 To get started:
 
-1. Copy raw video into raw/
+1. Import raw files into the raw directory
+
+   ./conv.py --mode=raw --import=FILE --import=DIR
 
 2. Create the project directory and proxy files for editing
 
