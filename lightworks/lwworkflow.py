@@ -205,6 +205,64 @@ class RawMode(LWHelperBase):
 		
 	def main(self, options, args):
 		print "raw main"
+		
+		if options.imports:
+			print "raw importing", options.imports, options.raw_dir
+			for i in options.imports:
+				print "  ",os.path.realpath(i)
+				i = os.path.realpath(i)
+				if os.path.isdir(i):
+					print "dir",i
+					files = find_media(i)
+					for f in files:
+						# file path
+						fp = os.path.join(i,f)
+						# project path
+						pp = options.raw_dir + os.sep + os.path.join(fp)
+						
+						print "creating",pp,"from",fp
+						
+						try:
+							os.makedirs(os.path.dirname(pp))
+						except OSError as e:
+							if e.errno == errno.EEXIST:
+								pass
+						
+						if not os.path.isfile(pp) and not os.path.islink(pp):
+							os.symlink(fp,pp)
+						else:
+							print "ERROR file already exits", pp
+				elif os.path.isfile(i):
+					
+					if not os.path.isfile(i) and not os.path.islink(i):
+						print "ERROR cannot find",i
+						return
+					
+					if os.path.islink(i):
+						print "link",i
+					else:
+						print "file",i
+						
+					fp = i
+					pp = options.raw_dir + os.sep + i
+					
+					print "creating",pp,"from",fp
+					
+					try:
+						os.makedirs(os.path.dirname(pp))
+					except OSError as e:
+						if e.errno == errno.EEXIST:
+							pass
+					
+					if not os.path.isfile(pp) and not os.path.islink(pp):
+						os.symlink(fp,pp)
+					else:
+						print "ERROR file already exits", pp
+					
+				else:
+					print "ERROR Unsupported file type", i
+			return
+		
 		paths = find_media(options.raw_dir)
 		for r in paths:
 			f = LWHelperFile(options, r)
@@ -272,6 +330,7 @@ def main():
 	parser.add_option("-U", "--unset", dest="action_set", action="store_false", default=True, help="Unset the project file as per mode [default: Set]")
 	parser.add_option("-S", "--scale", dest="scale", default=4, help="Set the scale factor for proxy files [default: %default]")
 	parser.add_option("-C", "--clear", dest="project_clear", action="store_true", default=False, help="Clear all project files")
+	parser.add_option("-i", "--import", dest="imports", action="append", help="Import raw files to the project")
 	
 	(options,args) = parser.parse_args()
 
