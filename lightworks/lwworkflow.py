@@ -203,51 +203,18 @@ class RawMode(LWHelperBase):
 	def add_options(self,parser):
 		LWHelperBase.add_options(self,parser)
 		
-	def main(self, options, args):
-		print "raw main"
-		
-		if options.imports:
-			print "raw importing", options.imports.split(',')
-			
-			return
-			
-			for i in options.imports:
-				print "  ",os.path.realpath(i)
-				i = os.path.realpath(i)
-				if os.path.isdir(i):
-					print "dir",i
-					files = find_media(i)
-					for f in files:
-						# file path
-						fp = os.path.join(i,f)
-						# project path
-						pp = options.raw_dir + os.sep + os.path.join(fp)
-						
-						print "creating",pp,"from",fp
-						
-						try:
-							os.makedirs(os.path.dirname(pp))
-						except OSError as e:
-							if e.errno == errno.EEXIST:
-								pass
-						
-						if not os.path.isfile(pp) and not os.path.islink(pp):
-							os.symlink(fp,pp)
-						else:
-							print "ERROR file already exits", pp
-				elif os.path.isfile(i):
-					
-					if not os.path.isfile(i) and not os.path.islink(i):
-						print "ERROR cannot find",i
-						return
-					
-					if os.path.islink(i):
-						print "link",i
-					else:
-						print "file",i
-						
-					fp = i
-					pp = options.raw_dir + os.sep + i
+	def do_import(self,options,args):
+		for i in options.imports:
+			print "  ",os.path.realpath(i)
+			i = os.path.realpath(i)
+			if os.path.isdir(i):
+				print "dir",i
+				files = find_media(i)
+				for f in files:
+					# file path
+					fp = os.path.join(i,f)
+					# project path
+					pp = options.raw_dir + os.sep + os.path.join(fp)
 					
 					print "creating",pp,"from",fp
 					
@@ -261,11 +228,45 @@ class RawMode(LWHelperBase):
 						os.symlink(fp,pp)
 					else:
 						print "ERROR file already exits", pp
-					
+			elif os.path.isfile(i):
+				
+				if not os.path.isfile(i) and not os.path.islink(i):
+					print "ERROR cannot find",i
+					return
+				
+				if os.path.islink(i):
+					print "link",i
 				else:
-					print "ERROR Unsupported file type", i
-			return
+					print "file",i
+					
+				fp = i
+				pp = options.raw_dir + os.sep + i
+				
+				print "creating",pp,"from",fp
+				
+				try:
+					os.makedirs(os.path.dirname(pp))
+				except OSError as e:
+					if e.errno == errno.EEXIST:
+						pass
+				
+				if not os.path.isfile(pp) and not os.path.islink(pp):
+					os.symlink(fp,pp)
+				else:
+					print "ERROR file already exits", pp
+				
+			else:
+				print "ERROR Unsupported file type", i
+	
 		
+	def main(self, options, args):
+		print "raw main"
+		
+		if options.imports:
+			print "raw importing", options.imports
+			self.do_import(options, args)
+			return
+			
 		paths = find_media(options.raw_dir)
 		for r in paths:
 			f = LWHelperFile(options, r)
@@ -295,12 +296,15 @@ To get started:
 1. Import raw files into the raw directory
 
    ./conv.py --mode=raw --import=FILE --import=DIR
+   
+   - Raw directory created
 
 2. Create the project directory and proxy files for editing
 
-   ./conv.py 
+   ./conv.py --mode=proxy
    
-   Proxy files will also be generated (using ffmpeg)
+   - Creates proxy files (if necessary, using ffmpeg)
+   - Sets up project
 
 3. Open video editor and make your video...
 
