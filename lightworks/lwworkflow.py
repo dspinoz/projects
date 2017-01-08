@@ -38,7 +38,12 @@ class LWHelperBase:
 
 class LWHelperFile:
 	def __init__(self, options, path):
-		self.path = path
+		
+		# all paths are relative within the project
+		if path[0] == "/":
+			path = path[1:]
+			
+		self.path = path	
 		self.options = options
 		
 		self.raw = os.path.join(options.raw_dir, path)
@@ -149,7 +154,31 @@ class LWHelperFile:
 		else:
 			print "Unknown project mode for %s" %(self.path)
 
-
+	def importraw(self,importpath):
+		
+		print "creating",self.raw,"from",importpath
+		if os.path.islink(importpath):
+			print "link",importpath
+		else:
+			print "file",importpath
+		
+		if not os.path.isfile(importpath) and not os.path.islink(importpath):
+			print "ERROR cannot find",importpath
+			return
+		
+		
+		try:
+			os.makedirs(os.path.dirname(self.raw))
+		except OSError as e:
+			if e.errno == errno.EEXIST:
+				pass
+		
+		importpath = os.path.realpath(importpath)
+		
+		if not os.path.isfile(self.raw) and not os.path.islink(self.raw):
+			os.symlink(importpath,self.raw)
+		else:
+			print "ERROR file already exists", importpath
 
 	
 
@@ -211,54 +240,19 @@ class RawMode(LWHelperBase):
 				print "dir",i
 				files = find_media(i)
 				for f in files:
-					# file path
-					fp = os.path.join(os.path.realpath(i),f)
-					# project path
-					pp = options.raw_dir + os.sep + os.path.join(fp)
 					
-					print "creating",pp,"from",fp
+					lwf = LWHelperFile(options, f)
 					
-					try:
-						os.makedirs(os.path.dirname(pp))
-					except OSError as e:
-						if e.errno == errno.EEXIST:
-							pass
+					lwf.importraw(os.path.join(i,f))
 					
-					if not os.path.isfile(pp) and not os.path.islink(pp):
-						os.symlink(fp,pp)
-					else:
-						print "ERROR file already exits", pp
 			elif os.path.isfile(i):
 				
-				if not os.path.isfile(i) and not os.path.islink(i):
-					print "ERROR cannot find",i
-					return
+				lwf = LWHelperFile(options, i)
 				
-				if os.path.islink(i):
-					print "link",i
-				else:
-					print "file",i
-					
-				# file path
-				fp = os.path.realpath(i)
-				# project path
-				pp = options.raw_dir + os.sep + i
-				
-				print "creating",pp,"from",fp
-				
-				try:
-					os.makedirs(os.path.dirname(pp))
-				except OSError as e:
-					if e.errno == errno.EEXIST:
-						pass
-				
-				if not os.path.isfile(pp) and not os.path.islink(pp):
-					os.symlink(fp,pp)
-				else:
-					print "ERROR file already exits", pp
+				lwf.importraw(i)
 				
 			else:
-				print "ERROR Unsupported file type", i
+				print "ERROR Unsupported import file", i
 	
 		
 	def main(self, options, args):
