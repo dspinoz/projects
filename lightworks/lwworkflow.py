@@ -4,8 +4,20 @@ import os
 import sys
 import errno
 import subprocess
+import threading
+from Queue import Queue, Empty
 import shutil
 from optparse import OptionParser
+
+def progress(count, total, status=''):
+    bar_len = 60
+    filled_len = int(round(bar_len * count / float(total)))
+
+    percents = round(100.0 * count / float(total), 1)
+    bar = '=' * filled_len + '-' * (bar_len - filled_len)
+
+    sys.stdout.write('[%s] %s%s ...%s\r' % (bar, percents, '%', status))
+    sys.stdout.flush()
 
 def find_media(search='raw', exts=['.MOV']):
 	ret = []
@@ -36,6 +48,25 @@ class LWHelperBase:
 	def main(self, options, args):
 		print "base main"
 
+def stream_watcher(queue, identifier, stream):
+	while not stream.closed:
+		line = stream.readline()
+		if not line:
+			break
+		queue.put((identifier, line))
+
+def ffmpeg_print_output(queue,proc):
+
+	while True:
+		try:
+			it = queue.get(True,1)
+		except Empty:
+			if proc.poll() is not None:
+				break
+		else:
+			identifier,line = it
+			print identifier + ':', line
+				
 class LWHelperFile:
 	def __init__(self, options, path):
 		
@@ -69,6 +100,7 @@ class LWHelperFile:
 
 	def is_raw(self):
 		return os.path.isfile(self.project_raw)
+
 		
 	def ensure_proxy(self):
 		if self.has_proxy():
@@ -85,8 +117,48 @@ class LWHelperFile:
 			if e.errno == errno.EEXIST:
 				pass
 
-		subprocess.check_output(["ffmpeg", "-i", self.raw, "-c:a", "copy", "-filter:v", "scale=iw/%d:-1" %(self.options.scale), self.proxy], stderr=subprocess.STDOUT)
+		# retrieve metadata to stdout
+		# ffmpeg -loglevel error -y -i {} -f ffmetadata /dev/stdout
+		# get duration in seconds
+		# ffprobe  -i {} -show_entries format=duration -v quiet -of csv="p=0"
+		
+		try:
+			len_sec = subprocess.check_output(["ffprobe", "-i", self.raw, "-show_entries", "format=duration", "-v", "quiet", "-of", "csv='p=0'"], stderr=subprocess.STDOUT)
+		
+			print "********",self.raw,":",len_sec,"seconds"
+		except subprocess.CalledProcessError as e:
+			print e.returncode
+		
+		return
+		
+		io_q = Queue()
+		
+		proc = subprocess.Popen(["ffmpeg", "-stats", "-progress", "/dev/stdout", "-i", self.raw, "-c:a", "copy", "-filter:v", "scale=iw/%d:-1" %(self.options.scale), self.proxy], 
+			stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+							
+		outt = threading.Thread(target=stream_watcher, name='stdout-watcher',
+				args=(io_q, 'STDOUT', proc.stdout))
+				
+		errt = threading.Thread(target=stream_watcher, name='stderr-watcher',
+				args=(io_q, 'STDERR', proc.stderr))
 
+		printt = threading.Thread(target=ffmpeg_print_output, name='printer',
+				args=(io_q, proc))
+
+		outt.start()
+		errt.start()
+		printt.start()
+
+		print "FFMPEG THREADS STARTED"
+
+		proc.wait()
+
+		outt.join()
+		errt.join()
+		printt.join()
+		
+		print "FFMPEG DONE", proc.returncode
+		
 
 	def set_proxy(self):
 		if os.path.isfile(self.project_proxy):
