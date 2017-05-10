@@ -8,7 +8,7 @@ if __name__ == '__main__':
   parser = OptionParser(add_help_option=False)
   parser.add_option('-h', "--help", dest="help", action="store_true", help="Show help message and exit")
   parser.add_option("-c", "--config-print", dest="config", action="store_true", help="Print current configuration options")
-  parser.add_option("-C", "--config-key", dest="config_key", help="Show value for config option")
+  parser.add_option("", "--config-key", dest="config_key", help="Show value for config option")
   parser.add_option("", "--config-value", dest="config_value", help="Set value for config-key")
 
   (options,args) = parser.parse_args()
