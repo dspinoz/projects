@@ -11,7 +11,6 @@ if __name__ == '__main__':
   parser.add_option("-c", "--config-print", dest="config", action="store_true", help="Print current configuration options")
   parser.add_option("", "--config-key", dest="config_key", help="Show value for config option")
   parser.add_option("", "--config-value", dest="config_value", help="Set value for config-key")
-  parser.add_option("-m", "--mode", dest="mode", default=None, help="Mode to run")
 
   (options,args) = parser.parse_args()
 
@@ -37,15 +36,15 @@ if __name__ == '__main__':
       print "{} = {}".format(k,v)
       sys.exit(0)
       
-  if options.mode is None:
+  if len(args) is 0:
     print parser.format_help()
     sys.exit(0)
 
   mode = None
   try:
-    mode = import_module("mode.{}".format(options.mode))
+    mode = import_module("mode.{}".format(args[0]))
   except ImportError as e:
-    print "Invalid mode, {}: {}".format(options.mode, e)
+    print "Invalid mode, {}: {}".format(args[0], e)
     sys.exit(1)
 
   print mode
