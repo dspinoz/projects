@@ -33,6 +33,30 @@ def add(path):
     print('file::add',path,e)
     return None
 
+def list_by_size():
+  data = []
+  try:
+    conn = lwdb.init()
+    curr = conn.cursor()
+    
+    curr.execute('''
+      SELECT file_id,path
+      FROM file,file_metadata
+      WHERE file.rowid == file_metadata.file_id
+            AND key == 'size'
+      ORDER BY CAST(value as INTEGER) DESC
+    ''')
+      
+    file_data = curr.fetchall()
+    for d in file_data:
+        data.append(File(d[0], d[1]))
+    
+    conn.close()
+  except sqlite3.Error as e:
+    print('file::list()',filter,e)
+  return data
+    
+    
 def list(filter=None,id=None):
   data = []
   try:
