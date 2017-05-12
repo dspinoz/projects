@@ -12,6 +12,8 @@ This workflow helps to ensure the "best possible" performance while editing vide
 
 Available commands:
   help
+  config
+  file
 """
 
 from optparse import HelpFormatter as fmt
