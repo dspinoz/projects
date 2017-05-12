@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import sys
 import sqlite3
 
 import lwdb
@@ -19,24 +20,31 @@ def add(path):
     curr = conn.cursor()
     
     curr.execute('INSERT INTO file (path) VALUES (?)', (path,))
-      
     conn.commit()
+    
+    curr.execute('SELECT last_insert_rowid()')
+    
+    id = curr.fetchone()
+    f = list(id=id[0])
+    
     conn.close()
-    return True
+    return f
   except sqlite3.Error as e:
     print('file::add',path,e)
-    return False
+    return None
 
-def list(filter=None):
+def list(filter=None,id=None):
   data = []
   try:
     conn = lwdb.init()
     curr = conn.cursor()
     
-    if filter is None:
+    if filter is None and id is None:
       curr.execute('SELECT rowid, path FROM file')
-    else:
+    elif filter is not None:
       curr.execute('SELECT rowid, path FROM file WHERE path LIKE ?', (filter,))
+    elif id is not None:
+      curr.execute('SELECT rowid, path FROM file WHERE rowid = ?', (id,))
       
     file_data = curr.fetchall()
     for d in file_data:
@@ -46,16 +54,27 @@ def list(filter=None):
   except sqlite3.Error as e:
     print('file::list()',filter,e)
   return data
-
-def get(path,key=None):
+  
+def get(path,key=None,id=None):
   data = []
   try:
     conn = lwdb.init()
     curr = conn.cursor()
     
-    curr.execute('SELECT rowid, path FROM file WHERE path = ?', (path,))
+    if id is not None:
+      curr.execute('SELECT rowid, path FROM file WHERE rowid = ?', (id,))
+    else:
+      curr.execute('SELECT rowid, path FROM file WHERE path = ?', (path,))
       
     file_data = curr.fetchone()
+    
+    if file_data is None:
+      conn.close()
+      if id is not None:
+        print "No file with id",id
+      else:
+        print "No file at path",path
+      sys.exit(1)
     
     f = File(file_data[0], file_data[1])
     
