@@ -1,24 +1,12 @@
 #!/usr/bin/env python
 import sqlite3
 
-def config_init():
-  conn = sqlite3.connect('lw.db', detect_types=sqlite3.PARSE_DECLTYPES)
-  
-  c = conn.cursor()
-
-  c.execute('''
-            CREATE TABLE IF NOT EXISTS config (
-              key TEXT PRIMARY KEY NOT NULL, 
-              value TEXT)''')
-
-  conn.commit()
-  
-  return conn
+import lwdb
 
 def set(key=None,value=None):
   
   try:
-    conn = config_init()
+    conn = lwdb.init()
     curr = conn.cursor()
     
     try:
@@ -36,7 +24,7 @@ def set(key=None,value=None):
 def get(key=None):
   ret = (None,None)
   try:
-    conn = config_init()
+    conn = lwdb.init()
     curr = conn.cursor()
     
     curr.execute('SELECT * FROM config WHERE key IN (?)', [(key)])
@@ -52,16 +40,16 @@ def get(key=None):
 
 def list():
   data = []
-  try:
-    conn = config_init()
-    curr = conn.cursor()
-    
-    curr.execute('SELECT * FROM config')
-    config_data = curr.fetchall()
-    for d in config_data:
-        data.append((d[0], d[1]))
-    
-    conn.close()
-  except sqlite3.Error as e:
-    print('config::list()',e)
+  #try:
+  conn = lwdb.init()
+  curr = conn.cursor()
+  
+  curr.execute('SELECT * FROM config')
+  config_data = curr.fetchall()
+  for d in config_data:
+      data.append((d[0], d[1]))
+  
+  conn.close()
+  #except sqlite3.Error as e:
+  #  print('config::list()',e)
   return data

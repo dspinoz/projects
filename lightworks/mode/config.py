@@ -1,7 +1,7 @@
 import sys
 import optparse
 
-import lib.config
+import lib.lwdb_config as db
 
 desc="""
 Configuration mode.
@@ -22,16 +22,16 @@ def parser_hook(parser,options,args):
     sys.exit(0)
     
   if options.list:
-    for c in lib.config.list():
+    for c in db.list():
       print "{} = {}".format(c[0],c[1])
     sys.exit(0)
   
   if options.value and options.key:
-    lib.config.set(options.key, options.value)
+    db.set(options.key, options.value)
     # continue to show key
     
   if options.key:
-    (k,v) = lib.config.get(options.key)
+    (k,v) = db.get(options.key)
     if k is None:
       print "Invalid option, {}".format(options.key)
       sys.exit(1)
