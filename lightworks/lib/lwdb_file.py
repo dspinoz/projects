@@ -4,6 +4,12 @@ import sqlite3
 
 import lwdb
 
+class FileMode:
+  RAW = 0
+  PROXY = 1
+  SCALED = 2
+  
+
 class File:
   def __init__(self,id,path):
     self.id = id
@@ -39,6 +45,31 @@ def add(path):
     print('file::add',path,e)
     return None
 
+def list_by_mode(mode=0):
+  data = []
+  try:
+    conn = lwdb.init()
+    curr = conn.cursor()
+    
+    curr.execute('''
+      SELECT file_id, path, key, value
+      FROM file,file_metadata
+      WHERE file.rowid == file_metadata.file_id
+            AND key == 'mode' AND CAST(value as INTEGER) = ?
+      ORDER BY CAST(value as INTEGER) DESC
+    ''', (mode,))
+      
+    file_data = curr.fetchall()
+    for d in file_data:
+      f = File(d[0], d[1])
+      f.set(d[2],d[3])
+      data.append(f)
+    
+    conn.close()
+  except sqlite3.Error as e:
+    print('file::list()',filter,e)
+  return data
+    
 def list_by_size():
   data = []
   try:

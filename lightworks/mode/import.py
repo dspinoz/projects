@@ -51,6 +51,7 @@ def import_file(path):
   stats = []
   stats.append(('size',st.st_size))
   stats.append(('mtime',st.st_mtime))
+  stats.append(('mode',db.FileMode.RAW))
 
   list = db.add(path)
   if list is not None and len(list) is 1:
