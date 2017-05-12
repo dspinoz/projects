@@ -22,8 +22,11 @@ def get_parser():
   parser = optparse.OptionParser(add_help_option=False, description=desc, usage=optparse.SUPPRESS_USAGE)
   parser.add_option('-h', "--help", dest="help", action="store_true", help="Show file options")
   parser.add_option("-l", "--list", dest="list", action="store_true", help="List known files")
-  parser.add_option("-a", "--add", dest="path", help="Add file at path")
+  parser.add_option("-a", "--add", dest="add", help="Add file at path")
   parser.add_option("-f", "--filter", dest="filter", default=None, help="Filter list of files")
+  parser.add_option("-p", "--path", dest="path", default=None, help="File path to modify")
+  parser.add_option("-k", "--key", dest="key", default=None, help="Show/Set metadata value for file")
+  parser.add_option("-v", "--value", dest="value", help="Set value for file metadata")
   return parser
   
 def parser_hook(parser,options,args):
@@ -31,15 +34,25 @@ def parser_hook(parser,options,args):
     print parser.format_help()
     sys.exit(0)
     
-  if options.list:
+  if options.list and not options.path:
     for c in db.list(options.filter):
-      print "{}".format(c[0])
+      print "{:<4} {}".format(c.id, c.path)
     sys.exit(0)
     
-  if options.path:
-    if db.add(options.path):
+  if options.add:
+    if db.add(options.add):
       sys.exit(0)  
     sys.exit(1)
+    
+  if options.path and options.value and options.key:
+    db.set(options.path, options.key, options.value)
+    # continue to show key
+    
+  if options.path:
+    print options.path
+    for a in db.get(options.path, options.key):
+      print "{} = {}".format(a[0],a[1])
+    sys.exit(0)
       
   print parser.format_help()
   sys.exit(0)

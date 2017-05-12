@@ -12,7 +12,7 @@ def get_parser():
   parser = optparse.OptionParser(add_help_option=False, description=desc, usage=optparse.SUPPRESS_USAGE)
   parser.add_option('-h', "--help", dest="help", action="store_true", help="Show config options")
   parser.add_option("-l", "--list", dest="list", action="store_true", help="List current configuration options")
-  parser.add_option("-k", "--key", dest="key", help="Show value for config key")
+  parser.add_option("-k", "--key", dest="key", help="Show/Set value for config key")
   parser.add_option("-v", "--value", dest="value", help="Set value for config key")
   return parser
   
