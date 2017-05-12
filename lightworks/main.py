@@ -14,6 +14,7 @@ Available commands:
   help
   config
   file
+  import
 """
 
 from optparse import HelpFormatter as fmt
