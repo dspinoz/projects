@@ -1,10 +1,24 @@
 #!/usr/bin/env python
 import sqlite3
 
+def config_init():
+  conn = sqlite3.connect('lw.db', detect_types=sqlite3.PARSE_DECLTYPES)
+  
+  c = conn.cursor()
+
+  c.execute('''
+            CREATE TABLE IF NOT EXISTS config (
+              key TEXT PRIMARY KEY NOT NULL, 
+              value TEXT)''')
+
+  conn.commit()
+  
+  return conn
+
 def set(key=None,value=None):
   
   try:
-    conn = sqlite3.connect('lw.db', detect_types=sqlite3.PARSE_DECLTYPES)
+    conn = config_init()
     curr = conn.cursor()
     
     try:
@@ -22,7 +36,7 @@ def set(key=None,value=None):
 def get(key=None):
   ret = (None,None)
   try:
-    conn = sqlite3.connect('lw.db', detect_types=sqlite3.PARSE_DECLTYPES)
+    conn = config_init()
     curr = conn.cursor()
     
     curr.execute('SELECT * FROM config WHERE key IN (?)', [(key)])
@@ -39,7 +53,7 @@ def get(key=None):
 def list():
   data = []
   try:
-    conn = sqlite3.connect('lw.db', detect_types=sqlite3.PARSE_DECLTYPES)
+    conn = config_init()
     curr = conn.cursor()
     
     curr.execute('SELECT * FROM config')

@@ -1,54 +1,55 @@
 #!/usr/bin/env python
 import sys
-from optparse import OptionParser
+import optparse
 from importlib import import_module
+import re
 
-import config
+desc="""lwworkflow
 
+Lightworks Workflow Helper script to aid video editing.
+
+This workflow helps to ensure the "best possible" performance while editing video, even on low-end machines.
+
+Available commands:
+  help
+"""
+
+from optparse import HelpFormatter as fmt
+def decorate(fn):
+  def wrapped(self=None, desc=""):
+    return '\n'.join( [ fn(self, s).rstrip() for s in desc.split('\n') ] )
+  return wrapped
+fmt.format_description = decorate(fmt.format_description)
+	
+  
+class IgnoreUnknownOptionParser(optparse.OptionParser):
+  def error(self,msg):
+    if re.match("no such option:", msg) is None:
+      optparse.OptionParser.error(self,msg)
+  
 if __name__ == '__main__':
-  parser = OptionParser(add_help_option=False)
+  parser = IgnoreUnknownOptionParser(add_help_option=False, description=desc, usage="%prog [options] command [command-options]")
   parser.add_option('-h', "--help", dest="help", action="store_true", help="Show help message and exit")
-  parser.add_option("-c", "--config-print", dest="config", action="store_true", help="Print current configuration options")
-  parser.add_option("", "--config-key", dest="config_key", help="Show value for config option")
-  parser.add_option("", "--config-value", dest="config_value", help="Set value for config-key")
-
+  
   (options,args) = parser.parse_args()
 
-  if options.help:
-    print parser.format_help()
-    sys.exit(0)
-
-  if options.config:
-    for c in config.list():
-      print "{} = {}".format(c[0],c[1])
-    sys.exit(0)
-
-  if options.config_value and options.config_key:
-    config.set(options.config_key, options.config_value)
-    sys.exit(0)
-
-  if options.config_key:
-    (k,v) = config.get(options.config_key)
-    if k is None:
-      print "Invalid option, {}".format(options.config_key)
-      sys.exit(1)
-    else:
-      print "{} = {}".format(k,v)
-      sys.exit(0)
-      
   if len(args) is 0:
     print parser.format_help()
     sys.exit(0)
-
+      
   mode = None
   try:
     mode = import_module("mode.{}".format(args[0]))
+    
+    p = mode.get_parser()
+    
+    (options,args) = p.parse_args()
+    
+    mode.parser_hook(p, options, args)
+    
+    sys.exit(0)
+    
   except ImportError as e:
     print "Invalid mode, {}: {}".format(args[0], e)
     sys.exit(1)
-
-  print mode
-
-
-
-
+    
