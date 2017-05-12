@@ -28,6 +28,7 @@ def get_parser():
   parser.add_option('-h', "--help", dest="help", action="store_true", help="Show file options")
   parser.add_option("-l", "--list", dest="list", action="store_true", help="List known files")
   parser.add_option("", "--sort-size", dest="list_sorted_size", action="store_true", help="List known files sorted by file size")
+  parser.add_option("", "--sort-mtime", dest="list_sorted_mtime", action="store_true", help="List known files sorted by last modified time")
   parser.add_option("-a", "--add", dest="add", help="Add file at path")
   parser.add_option("-f", "--filter", dest="filter", default=None, help="Filter list of files")
   parser.add_option("-p", "--path", dest="path", default=None, help="File path to modify")
@@ -40,15 +41,21 @@ def parser_hook(parser,options,args):
     print parser.format_help()
     sys.exit(0)
     
-  if (options.list or options.list_sorted_size) and not options.path:
+  if (options.list or options.list_sorted_size or options.list_sorted_mtime) and not options.path:
     list = []
     if options.list_sorted_size:
       list = db.list_by_size()
+      for c in list:
+        print "{:<4} {:<10} {}".format(c.id, c.get("size"), c.path)
+    elif options.list_sorted_mtime:
+      list = db.list_by_mtime()
+      for c in list:
+        print "{:<4} {:<10} {}".format(c.id, c.get("mtime"), c.path)
     else:
       list = db.list(options.filter)
-      
-    for c in list:
-      print "{:<4} {}".format(c.id, c.path)
+      for c in list:
+        print "{:<4} {}".format(c.id, c.path)
+        
     sys.exit(0)
     
   if options.add:

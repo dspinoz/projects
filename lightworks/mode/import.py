@@ -45,6 +45,7 @@ def parser_hook(parser,options,args):
   
 def import_file(path):
 
+  os.stat_float_times(False)
   st = os.stat(path)
   
   stats = []

@@ -9,9 +9,15 @@ class File:
     self.id = id
     self.path = path
     self.metadata = {}
+  
+  def get(self,key):
+    return self.metadata[key]
     
   def set(self, key, value):
     self.metadata[key] = value
+  
+  
+    
 
 def add(path):
   
@@ -40,7 +46,7 @@ def list_by_size():
     curr = conn.cursor()
     
     curr.execute('''
-      SELECT file_id,path
+      SELECT file_id, path, key, value
       FROM file,file_metadata
       WHERE file.rowid == file_metadata.file_id
             AND key == 'size'
@@ -49,13 +55,39 @@ def list_by_size():
       
     file_data = curr.fetchall()
     for d in file_data:
-        data.append(File(d[0], d[1]))
+      f = File(d[0], d[1])
+      f.set(d[2],d[3])
+      data.append(f)
     
     conn.close()
   except sqlite3.Error as e:
     print('file::list()',filter,e)
   return data
     
+def list_by_mtime():
+  data = []
+  try:
+    conn = lwdb.init()
+    curr = conn.cursor()
+    
+    curr.execute('''
+      SELECT file_id, path, key, value
+      FROM file,file_metadata
+      WHERE file.rowid == file_metadata.file_id
+            AND key == 'mtime'
+      ORDER BY CAST(value as INTEGER) DESC
+    ''')
+      
+    file_data = curr.fetchall()
+    for d in file_data:
+      f = File(d[0], d[1])
+      f.set(d[2],d[3])
+      data.append(f)
+    
+    conn.close()
+  except sqlite3.Error as e:
+    print('file::list()',filter,e)
+  return data
     
 def list(filter=None,id=None):
   data = []
@@ -110,6 +142,7 @@ def get(path,key=None,id=None):
     file_metadata = curr.fetchall()
     for d in file_metadata:
       data.append((d[0], d[1]))
+      f.set(d[0], d[1])
     
     conn.close()
     
