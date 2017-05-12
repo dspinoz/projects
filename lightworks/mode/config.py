@@ -28,8 +28,8 @@ def parser_hook(parser,options,args):
   
   if options.value and options.key:
     lib.config.set(options.key, options.value)
-    sys.exit(0)
-
+    # continue to show key
+    
   if options.key:
     (k,v) = lib.config.get(options.key)
     if k is None:
