@@ -39,10 +39,21 @@ def parser_hook(parser,options,args):
   sys.exit(0)
   
 def import_file(path):
+
+  st = os.stat(path)
+  
+  stats = []
+  stats.append(('size',st.st_size))
+  stats.append(('mtime',st.st_mtime))
+
   list = db.add(path)
   if list is not None and len(list) is 1:
     f = list[0]
     print "{:<4} {}".format(f.id, f.path)
+    
+    for s in stats:
+      db.set(f.path,s[0],s[1],id=f.id)
+    
   else:
     print "ERROR importing",path
 

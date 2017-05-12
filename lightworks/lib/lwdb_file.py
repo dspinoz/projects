@@ -95,17 +95,24 @@ def get(path,key=None,id=None):
   return data
   
   
-def set(path,key,value):
+def set(path,key,value,id=None):
   data = []
   try:
     conn = lwdb.init()
     curr = conn.cursor()
+
+    f = None
     
-    curr.execute('SELECT rowid, path FROM file WHERE path = ?', (path,))
+    if id is None:
+      curr.execute('SELECT rowid, path FROM file WHERE path = ?', (path,))
+        
+      file_data = curr.fetchone()
+    
+      f = File(file_data[0], file_data[1])
       
-    file_data = curr.fetchone()
-    
-    f = File(file_data[0], file_data[1])
+    else:
+      #object is incomplete!
+      f = File(id,path) 
     
     try:
       curr.execute('INSERT INTO file_metadata (file_id,key,value) VALUES (?,?,?)',(f.id,key,value))
