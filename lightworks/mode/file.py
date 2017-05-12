@@ -22,6 +22,7 @@ def get_parser():
   parser = optparse.OptionParser(add_help_option=False, description=desc, usage=optparse.SUPPRESS_USAGE)
   parser.add_option('-h', "--help", dest="help", action="store_true", help="Show file options")
   parser.add_option("-l", "--list", dest="list", action="store_true", help="List known files")
+  parser.add_option("", "--sort-size", dest="list_sorted_size", action="store_true", help="List known files sorted by file size")
   parser.add_option("-a", "--add", dest="add", help="Add file at path")
   parser.add_option("-f", "--filter", dest="filter", default=None, help="Filter list of files")
   parser.add_option("-p", "--path", dest="path", default=None, help="File path to modify")
@@ -34,8 +35,14 @@ def parser_hook(parser,options,args):
     print parser.format_help()
     sys.exit(0)
     
-  if options.list and not options.path:
-    for c in db.list(options.filter):
+  if (options.list or options.list_sorted_size) and not options.path:
+    list = []
+    if options.list_sorted_size:
+      list = db.list_by_size()
+    else:
+      list = db.list(options.filter)
+      
+    for c in list:
       print "{:<4} {}".format(c.id, c.path)
     sys.exit(0)
     
