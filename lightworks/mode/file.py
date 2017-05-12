@@ -6,6 +6,11 @@ import lib.lwdb_file as db
 desc="""
 File mode.
 
+The following metadata fields are available:
+  
+  size      number of bytes contained in the file
+  mtime     last time file was modified
+  
 == Filtering
 Uses SQL LIKE-expressions, eg. use % as a wildcard
 

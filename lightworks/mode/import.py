@@ -9,6 +9,11 @@ Import mode.
 
 All files are imported into a Lightworks Workflow.
 
+The following metadata fields are available:
+  
+  size      number of bytes contained in the file
+  mtime     last time file was modified
+
 """
 
 def get_parser():
