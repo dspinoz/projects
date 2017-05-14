@@ -23,7 +23,7 @@ def parser_hook(parser,options,args):
     sys.exit(0)
 
   if lwf.data_dir() is not None:
-    print "Lightworks workflow already started at", os.path.relpath(lwf.data_dir())
+    print "Lightworks workflow already started at", os.path.relpath(os.path.dirname(lwf.data_dir()))
     sys.exit(1)
   
   print "Initialising Lightworks Workflow..."
