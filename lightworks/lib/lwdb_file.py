@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 import sys
 import sqlite3
+from collections import namedtuple 
 
 import lwdb
+
+FileStatus = namedtuple('FileStatus', 'diff raw proxy scaled')
 
 class FileMode:
   RAW = 0
@@ -15,6 +18,7 @@ class File:
     self.id = id
     self.path = path
     self.metadata = {}
+    self.status = FileStatus(diff = "-", raw = "R", proxy = "-", scaled = "-")
   
   def get(self,key):
     try:
@@ -27,6 +31,11 @@ class File:
   def set(self, key, value):
     self.metadata[key] = value
     
+  def status_str(self):
+    return "".join([self.status.diff, self.status.raw, self.status.proxy, self.status.scaled])
+
+
+
 
 def add(path):
   

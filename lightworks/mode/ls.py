@@ -41,7 +41,6 @@ def parser_hook(parser,options,args):
     if options.human:
       sz = util.size_human(sz)
 
-
-    print "{:<4} {:<5} {:<10} {}".format(c.id, sz, ts, c.path)
+    print "{} {:>4} {:<6} {:<10} {}".format(c.status_str(), c.id, sz, ts, c.path)
   sys.exit(0)
   
