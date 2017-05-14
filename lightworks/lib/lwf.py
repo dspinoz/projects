@@ -1,8 +1,10 @@
 import os
 
+dir_name = ".lwf"
+
 def data_dir():
 
-  searching_for = ".lwf"
+  searching_for = dir_name
   start_path = os.path.realpath(os.getcwd())
 
   last_root    = start_path
@@ -23,9 +25,4 @@ def data_dir():
     (head,tail) = os.path.split(current_root)
     current_root = head
 
-  if found_path is None:
-    print "data dir None"
-  else:
-    print "data dir",os.path.relpath(found_path)
-  
   return found_path

@@ -1,8 +1,15 @@
 #!/usr/bin/env python
 import sqlite3
+import os
+import lwf
+
+db_name = "lwf.db"
 
 def init():
-  conn = sqlite3.connect('lw.db', detect_types=sqlite3.PARSE_DECLTYPES)
+
+  path = os.path.join(lwf.data_dir(),db_name)
+
+  conn = sqlite3.connect(path, detect_types=sqlite3.PARSE_DECLTYPES)
   
   c = conn.cursor()
 
