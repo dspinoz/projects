@@ -17,12 +17,15 @@ class File:
     self.metadata = {}
   
   def get(self,key):
-    return self.metadata[key]
-    
+    try:
+      return self.metadata[key]
+    except KeyError:
+      f = get("",key,self.id)[0][1]
+      self.set(key,f)
+      return self.metadata[key]
+
   def set(self, key, value):
     self.metadata[key] = value
-  
-  
     
 
 def add(path):
