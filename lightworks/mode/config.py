@@ -23,7 +23,7 @@ def parser_hook(parser,options,args):
     
   if options.list:
     for c in db.list():
-      print "{} = {}".format(c[0],c[1])
+      print "{:<10} = {}".format(c[0],c[1])
     sys.exit(0)
   
   if options.value and options.key:
@@ -36,7 +36,7 @@ def parser_hook(parser,options,args):
       print "Invalid option, {}".format(options.key)
       sys.exit(1)
     else:
-      print "{} = {}".format(k,v)
+      print "{:<10} = {}".format(k,v)
       sys.exit(0)
       
   print parser.format_help()

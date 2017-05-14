@@ -1,9 +1,9 @@
 import sys
+from datetime import datetime
 import os
 import optparse
 
-import lib.util as util
-import lib.lwdb_file as db
+import lib.lwdb_config as cfg
 import lib.lwf as lwf
 
 desc="""
@@ -22,11 +22,20 @@ def parser_hook(parser,options,args):
     print parser.format_help()
     sys.exit(0)
 
-  if lwf.data_dir() is not None:
+  if lwf.data_dir(err=False) is not None:
     print "Lightworks workflow already started at", os.path.relpath(os.path.dirname(lwf.data_dir()))
     sys.exit(1)
   
   print "Initialising Lightworks Workflow..."
   os.makedirs(os.path.join(os.getcwd(),lwf.dir_name))
+  cfg.set("hello", datetime.now())
+  cfg.set("home", os.getcwd())
+  cfg.set("rawdir", "raw")
+  cfg.set("proxydir", "proxy")
+  cfg.set("scaleddir", "scaled")
+
+  for c in cfg.list():
+    print "{:<10} = {}".format(c[0], c[1])
+
   sys.exit(0)
   

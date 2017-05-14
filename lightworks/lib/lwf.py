@@ -2,7 +2,11 @@ import os
 
 dir_name = ".lwf"
 
-def data_dir():
+class LWFNotInitialisedError(Exception):
+  def __init__(self):
+    Exception.__init__(self)
+
+def data_dir(err=True):
 
   searching_for = dir_name
   start_path = os.path.realpath(os.getcwd())
@@ -25,4 +29,6 @@ def data_dir():
     (head,tail) = os.path.split(current_root)
     current_root = head
 
+  if found_path is None and err:
+    raise LWFNotInitialisedError
   return found_path
