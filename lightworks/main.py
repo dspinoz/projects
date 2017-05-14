@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import os
 import sys
 import optparse
 from importlib import import_module
@@ -31,6 +32,9 @@ class IgnoreUnknownOptionParser(optparse.OptionParser):
       optparse.OptionParser.error(self,msg)
   
 if __name__ == '__main__':
+
+  os.stat_float_times(False)
+
   parser = IgnoreUnknownOptionParser(add_help_option=False, description=desc, usage="%prog [options] command [command-options]")
   parser.add_option('-h', "--help", dest="help", action="store_true", help="Show help message and exit")
   
