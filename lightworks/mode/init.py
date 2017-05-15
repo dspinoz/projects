@@ -35,7 +35,7 @@ def parser_hook(parser,options,args):
       found_path = os.path.join(current_root, searching_for)
       break
 
-    if current_root == "/":
+    if os.path.dirname(current_root) == current_root:
       print "*"
       break
 
