@@ -1,8 +1,11 @@
 import os
 import sys
+import shutil
 import optparse
 
-import lib.lwdb_file as db
+import lib.lwf as lwf
+import lib.lwdb_config as cfg
+import lib.lwdb_file as fdb
 
 desc="""
 Import mode.
@@ -30,7 +33,7 @@ def parser_hook(parser,options,args):
     sys.exit(0)
 
   if options.mode:
-    options.mode = getattr(db.FileMode, options.mode)
+    options.mode = getattr(fdb.FileMode, options.mode)
     
   if options.path:
     if not os.path.exists(options.path):
@@ -52,18 +55,27 @@ def import_file(path,mode):
 
   st = os.stat(path)
   
+  rawdir = os.path.join(lwf.data_dir(),cfg.get("rawdir")[1])
+  rpath = path[1:]
+  fpath = os.path.join(rawdir,rpath)
+
   stats = []
   stats.append(('size',st.st_size))
   stats.append(('mtime',st.st_mtime))
   stats.append(('mode',mode))
 
-  list = db.add(path)
+  list = fdb.add(path)
+
   if list is not None and len(list) is 1:
     f = list[0]
     print "{:<4} {}".format(f.id, f.path)
     
     for s in stats:
-      db.set(f.path,s[0],s[1],id=f.id)
+      fdb.set(f.path,s[0],s[1],id=f.id)
+
+    if not os.path.exists(os.path.dirname(fpath)):
+      os.makedirs(os.path.dirname(fpath))
+    shutil.copy2(path,fpath)
     
   else:
     print "ERROR importing",path
