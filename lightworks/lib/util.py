@@ -1,3 +1,5 @@
+import os
+
 def size_human(num, suffix=''):
     for unit in ['','K','M','G','T','P','E','Z']:
         if abs(num) < 1024.0:
@@ -5,6 +7,36 @@ def size_human(num, suffix=''):
         num /= 1024.0
     return "%.1f%s%s" % (num, 'Y', suffix)
 
+def safe_path(str):
+  return "".join(c for c in str if c.isalnum() or c in (' ','.','_')).rstrip()
+    
+def strip_path_components(path,index=0,safe_root=False,join=True):
+  
+  directories = []
+  
+  path = os.path.realpath(path)
+  
+  while path:
+
+    if os.path.dirname(path) == path:
+      # got to the root
+      (drive,drive_path) = os.path.splitdrive(path)
+      if len(drive):
+        if safe_root:
+          directories.insert(0,safe_path(drive))
+        else:
+          directories.insert(0,drive)
+      else:
+        directories.insert(0,path)
+      break
+
+    # pop up a level
+    (path,tail) = os.path.split(path)
+    directories.insert(0,tail)
+
+  if join:
+    return os.sep.join(directories[index:])
+  return directories[index:]
 
 def stream_watcher(queue, identifier, stream):
 	while not stream.closed:

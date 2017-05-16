@@ -4,6 +4,7 @@ import shutil
 import optparse
 
 import lib.lwf as lwf
+import lib.util as util
 import lib.lwdb_config as cfg
 import lib.lwdb_file as fdb
 
@@ -55,8 +56,10 @@ def import_file(path,mode):
 
   st = os.stat(path)
   
+  path = os.path.realpath(path)
+  
   rawdir = os.path.join(lwf.data_dir(),cfg.get("rawdir")[1])
-  rpath = path[1:]
+  rpath = util.strip_path_components(path,safe_root=True)
   fpath = os.path.join(rawdir,rpath)
 
   stats = []
