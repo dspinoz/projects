@@ -10,7 +10,7 @@ The following metadata fields are available:
   
   size      number of bytes contained in the file
   mtime     last time file was modified
-  mode      0 RAW, 1 PROXY, 2 SCALED
+  mode      RAW, PROXY, SCALED
   
 == Filtering
 Uses SQL LIKE-expressions, eg. use % as a wildcard
@@ -33,7 +33,7 @@ def get_parser():
   parser.add_option("-S", "--list-scaled", dest="list_scaled", action="store_true", help="List scaled files")
   parser.add_option("", "--sort-size", dest="list_sorted_size", action="store_true", help="List known files sorted by file size")
   parser.add_option("", "--sort-mtime", dest="list_sorted_mtime", action="store_true", help="List known files sorted by last modified time")
-  parser.add_option("-a", "--add", dest="add", help="Add file at path")
+  parser.add_option("-a", "--add", dest="add", help="Add file specified")
   parser.add_option("-f", "--filter", dest="filter", default=None, help="Filter list of files")
   parser.add_option("-p", "--path", dest="path", default=None, help="File path to modify")
   parser.add_option("-k", "--key", dest="key", default=None, help="Show/Set metadata value for file")

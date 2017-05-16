@@ -16,7 +16,7 @@ The following metadata fields are available:
   
   size      number of bytes contained in the file
   mtime     last time file was modified
-  mode      0 RAW, 1 PROXY, 2 SCALED
+  mode      RAW, PROXY, SCALED
 
 """
 
@@ -24,7 +24,7 @@ def get_parser():
   parser = optparse.OptionParser(add_help_option=False, description=desc, usage=optparse.SUPPRESS_USAGE)
   parser.add_option('-h', "--help", dest="help", action="store_true", help="Show import options")
   parser.add_option("-p", "--path", dest="path", help="Path to files to import")
-  parser.add_option("-m", "--mode", dest="mode", help="Current mode of files to import", default="RAW", choices=["RAW", "PROXY", "SCALED"])
+  parser.add_option("-m", "--mode", dest="mode", help="Current mode of files to import [default: %default]", default="RAW", choices=["RAW", "PROXY", "SCALED"])
   return parser
   
 def parser_hook(parser,options,args):
