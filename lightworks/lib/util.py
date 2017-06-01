@@ -1,3 +1,8 @@
+
+def eprint(*args, **kwargs):
+  #print(*args, file=sys.stderr, **kwargs)
+  pass
+
 def size_human(num, suffix=''):
     for unit in ['','K','M','G','T','P','E','Z']:
         if abs(num) < 1024.0:
