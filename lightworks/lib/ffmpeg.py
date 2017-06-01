@@ -72,7 +72,7 @@ class FFMPEG(execute.Executer):
       sys.stderr.write("{0: <8} ".format(s['out_time'][0:8]))
       sys.stderr.write(" " * 5)
       sys.stderr.write(" " * PROGRESS_LEN)
-      sys.stderr.write("{0: >6}".format(u.size_human(int(s['total_size'])*10)))
+      sys.stderr.write("{0: >6}".format(u.size_human(int(s['total_size']))))
       sys.stderr.write("\n")
       
     u.eprint("got to the end? {} {}".format(s['out_time_ms'], self.info.duration));
@@ -101,5 +101,5 @@ class FFMPEG(execute.Executer):
       pb = pb + ("-" * (PROGRESS_LEN - cf))
       
       sys.stderr.write(pb)
-      sys.stderr.write("{0: >6}".format(u.size_human(int(s['total_size'])*10)))
+      sys.stderr.write("{0: >6}".format(u.size_human(int(s['total_size']))))
       sys.stderr.write("\r")
