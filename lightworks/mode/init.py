@@ -31,8 +31,8 @@ def parser_hook(parser,options,args):
   cfg.set("hello", datetime.now())
   cfg.set("home", os.getcwd())
   cfg.set("rawdir", "raw")
+  cfg.set("intermediatedir", "intermediate")
   cfg.set("proxydir", "proxy")
-  cfg.set("scaleddir", "scaled")
 
   for c in cfg.list():
     print "{:<10} = {}".format(c[0], c[1])

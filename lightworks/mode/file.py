@@ -10,7 +10,7 @@ The following metadata fields are available:
   
   size      number of bytes contained in the file
   mtime     last time file was modified
-  mode      RAW, PROXY, SCALED
+  mode      RAW, INTERMEDIATE, PROXY
   
 == Filtering
 Uses SQL LIKE-expressions, eg. use % as a wildcard
@@ -29,8 +29,8 @@ def get_parser():
   parser.add_option('-h', "--help", dest="help", action="store_true", help="Show file options")
   parser.add_option("-l", "--list", dest="list", action="store_true", help="List known files")
   parser.add_option("-R", "--list-raw", dest="list_raw", action="store_true", help="List raw files")
-  parser.add_option("-P", "--list-proxy", dest="list_proxy", action="store_true", help="List proxy files")
-  parser.add_option("-S", "--list-scaled", dest="list_scaled", action="store_true", help="List scaled files")
+  parser.add_option("-P", "--list-intermediate", dest="list_intermediate", action="store_true", help="List intermediate files")
+  parser.add_option("-S", "--list-proxy", dest="list_proxy", action="store_true", help="List proxy files")
   parser.add_option("", "--sort-size", dest="list_sorted_size", action="store_true", help="List known files sorted by file size")
   parser.add_option("", "--sort-mtime", dest="list_sorted_mtime", action="store_true", help="List known files sorted by last modified time")
   parser.add_option("-a", "--add", dest="add", help="Add file specified")
@@ -45,7 +45,7 @@ def parser_hook(parser,options,args):
     print parser.format_help()
     sys.exit(0)
     
-  if (options.list or options.list_sorted_size or options.list_sorted_mtime or options.list_raw or options.list_proxy or options.list_scaled) and not options.path:
+  if (options.list or options.list_sorted_size or options.list_sorted_mtime or options.list_raw or options.list_intermediate or options.list_proxy) and not options.path:
     list = []
     if options.list_sorted_size:
       list = db.list_by_size()
@@ -59,12 +59,12 @@ def parser_hook(parser,options,args):
       list = db.list_by_mode(db.FileMode.RAW)
       for c in list:
         print "{:<4} {:<10} {}".format(c.id, c.get("mode"), c.path)
-    elif options.list_proxy:
-      list = db.list_by_mode(db.FileMode.PROXY)
+    elif options.list_intermediate:
+      list = db.list_by_mode(db.FileMode.INTERMEDIATE)
       for c in list:
         print "{:<4} {:<10} {}".format(c.id, c.get("mode"), c.path)
-    elif options.list_scaled:
-      list = db.list_by_mode(db.FileMode.SCALED)
+    elif options.list_proxy:
+      list = db.list_by_mode(db.FileMode.PROXY)
       for c in list:
         print "{:<4} {:<10} {}".format(c.id, c.get("mode"), c.path)
     else:

@@ -5,12 +5,12 @@ from collections import namedtuple
 
 import lwdb
 
-FileStatus = namedtuple('FileStatus', 'diff raw proxy scaled')
+FileStatus = namedtuple('FileStatus', 'diff raw intermediate proxy')
 
 class FileMode:
   RAW = 0
-  PROXY = 1
-  SCALED = 2
+  INTERMEDIATE = 1
+  PROXY = 2
   
 
 class File:
@@ -18,7 +18,7 @@ class File:
     self.id = id
     self.path = path
     self.metadata = {}
-    self.status = FileStatus(diff = "-", raw = "R", proxy = "-", scaled = "-")
+    self.status = FileStatus(diff = "-", raw = "R", intermediate = "-", proxy = "-")
   
   def get(self,key):
     try:
@@ -32,7 +32,7 @@ class File:
     self.metadata[key] = value
     
   def status_str(self):
-    return "".join([self.status.diff, self.status.raw, self.status.proxy, self.status.scaled])
+    return "".join([self.status.diff, self.status.raw, self.status.intermediate, self.status.proxy])
 
 
 

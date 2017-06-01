@@ -19,8 +19,8 @@ def get_parser():
   parser.add_option("-h", "--human", dest="human", action="store_true", help="List size in human readable format")
   parser.add_option("-r", "--recursive", dest="recursive", action="store_true", help="Traverse directories")
   parser.add_option("-R", "--list-raw", dest="list_raw", action="store_true", help="List raw files")
-  parser.add_option("-P", "--list-proxy", dest="list_proxy", action="store_true", help="List proxy files")
-  parser.add_option("-S", "--list-scaled", dest="list_scaled", action="store_true", help="List scaled files")
+  parser.add_option("-P", "--list-intermediate", dest="list_intermediate", action="store_true", help="List intermediate files")
+  parser.add_option("-S", "--list-proxy", dest="list_proxy", action="store_true", help="List proxy files")
   return parser
   
 def parser_hook(parser,options,args):
