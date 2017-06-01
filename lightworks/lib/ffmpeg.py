@@ -33,7 +33,7 @@ class FFMPEG(execute.Executer):
 
   class Info(execute.Executer):
     def __init__(self,path):
-      execute.Executer.__init__(self, ["./info", path])
+      execute.Executer.__init__(self, ["./scripts/info", path])
       self.istream = StringIO.StringIO()
   
     def stdout(self,line):
