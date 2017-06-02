@@ -28,6 +28,10 @@ def init():
               key TEXT NOT NULL, 
               value TEXT,
               PRIMARY KEY (file_id, key) )''')
+  
+  c.execute('''
+            CREATE TABLE IF NOT EXISTS event (
+              json TEXT NOT NULL)''')
 
   conn.commit()
   
