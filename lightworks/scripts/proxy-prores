@@ -1,0 +1,2 @@
+#!/bin/sh -xe
+ffmpeg -stats -progress /dev/stdout -i ${1} -c:a copy -c:v prores_ks -profile:v 0 -filter:v scale=iw/4:-1 -y -format mp4 -vendor ap10 -pix_fmt yuv422p10le $2
