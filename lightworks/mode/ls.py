@@ -1,4 +1,4 @@
-from datetime import datetime
+import os
 import sys
 import optparse
 
@@ -26,21 +26,41 @@ def get_parser():
 def parser_hook(parser,options,args):
   if options.help:
     print parser.format_help()
-    sys.exit(0)
-
-  now = datetime.now()    
+    sys.exit(0) 
 
   list = db.list_by_mtime()
   for c in list:
-    t = datetime.fromtimestamp(float(c.get("mtime")))
-    ts = t.strftime("%b %d %H:%S")
-    if now.year != t.year:
-      ts = t.strftime("%b %d  %G")
+    color_begin = ""
+    color_end = ""
+    status_text = []
+    
+    st = os.stat(c.path)
+    mt = int(c.get("mtime"))
+    
+    if not mt == st.st_mtime:
+      color_begin = "\x1b[1;31m"
+      color_end = "\x1b[0m"
+      status_text.append("modified after {}".format(util.time_str(mt)))
+    
+    ts = util.time_str(st.st_mtime)
     
     sz = int(c.get("size"))
+    
+    if not sz == st.st_size:
+      if len(color_begin) == 0:
+        color_begin = "\x1b[1;31m"
+        color_end = "\x1b[0m"
+      status_text.append("was {} bytes".format(sz))
+      
+    sz = st.st_size
+    
     if options.human:
       sz = util.size_human(sz)
 
-    print "{} {:>4} {:<6} {:<10} {}".format(c.status_str(), c.id, sz, ts, c.path)
+    status_str = ""
+    if len(status_text) > 0:
+      status_str = " (" + ", ".join(status_text) + ")"
+      
+    print "{}{} #{:<4} {:>10} {:<10} {}{}{}".format(color_begin, c.status_str(), c.id, sz, ts, c.path, status_str, color_end)
   sys.exit(0)
   

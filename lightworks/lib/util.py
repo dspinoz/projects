@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 
 def eprint(*args, **kwargs):
   #print(*args, file=sys.stderr, **kwargs)
@@ -11,6 +12,16 @@ def size_human(num, suffix=''):
         num /= 1024.0
     return "%.1f%s%s" % (num, 'Y', suffix)
 
+def time_str(epoch):
+  t = datetime.fromtimestamp(epoch)
+  str = t.strftime("%b %d %H:%S")
+  
+  now = datetime.now()   
+  if now.year != t.year:
+    str = t.strftime("%b %d  %G")
+    
+  return str
+    
 def safe_path(str):
   return "".join(c for c in str if c.isalnum() or c in (' ','.','_')).rstrip()
     
