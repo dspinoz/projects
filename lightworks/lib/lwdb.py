@@ -33,6 +33,10 @@ def init():
             CREATE TABLE IF NOT EXISTS event (
               json TEXT NOT NULL)''')
 
+  c.execute('''
+            CREATE TABLE IF NOT EXISTS queue (
+              json TEXT NOT NULL)''')
+  
   conn.commit()
   
   return conn
