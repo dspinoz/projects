@@ -16,6 +16,7 @@ def get_parser():
   parser.add_option("", "--json", dest="json", help="Add new item to queue")
   parser.add_option("", "--file", dest="file", help="File for queued job")
   parser.add_option("", "--delete", dest="delete", help="Delete item from queue")
+  parser.add_option("", "--clear", dest="clear", action="store_true", help="Delete all items from queue")
   return parser
   
 def parser_hook(parser,options,args):
@@ -27,9 +28,12 @@ def parser_hook(parser,options,args):
     print "No file provided"
     sys.exit(1)
 
-  if options.list:
+  if options.list or options.clear:
     for c in db.list():
-      print ":{} #{} {} {} {}".format(c[0],c[1]['file'],c[1]['type'],c[1]['from'],c[1]['to'])
+      if options.clear:
+        db.delete(c[0])
+      else:
+        print ":{} #{} {} {} {}".format(c[0],c[1]['file'],c[1]['type'],c[1]['from'],c[1]['to'])
     sys.exit(0)
   
   if options.json:
