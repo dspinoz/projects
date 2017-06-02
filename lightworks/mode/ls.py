@@ -41,6 +41,7 @@ def parser_hook(parser,options,args):
       color_begin = "\x1b[1;31m"
       color_end = "\x1b[0m"
       status_text.append("modified after {}".format(util.time_str(mt)))
+      c.set_diff()
     
     ts = util.time_str(st.st_mtime)
     
@@ -51,6 +52,7 @@ def parser_hook(parser,options,args):
         color_begin = "\x1b[1;31m"
         color_end = "\x1b[0m"
       status_text.append("was {} bytes".format(sz))
+      c.set_diff()
       
     sz = st.st_size
     

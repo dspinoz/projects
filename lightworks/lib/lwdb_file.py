@@ -4,6 +4,7 @@ import sqlite3
 from collections import namedtuple 
 
 import lwdb
+import lwdb_queue as qdb
 
 FileStatus = namedtuple('FileStatus', 'diff raw intermediate proxy')
 
@@ -53,6 +54,15 @@ class File:
     props = curr.fetchall()
     for p in props:
       self.set(p[0],p[1])
+ 
+    # TODO query for id
+    for q in qdb.list():
+      q = q[1]
+      if q['type'] == 'transcode' and q['file'] == self.id:
+        if q['to'] == FileMode.INTERMEDIATE:
+          self.set_intermediate_queued()
+        if q['to'] == FileMode.PROXY:
+          self.set_proxy_queued()
   
   def set_raw(self):
     self.status = FileStatus(diff = self.status.diff, raw = "R", intermediate = self.status.intermediate, proxy = self.status.proxy)
@@ -65,7 +75,14 @@ class File:
   
   def set_diff(self):
     self.status = FileStatus(diff = "*", raw = self.status.raw, intermediate = self.status.intermediate, proxy = self.status.proxy)
+
+
+  def set_intermediate_queued(self):
+    self.status = FileStatus(diff = self.status.diff, raw = self.status.raw, intermediate = "+", proxy = self.status.proxy)
   
+  def set_proxy_queued(self):
+    self.status = FileStatus(diff = self.status.diff, raw = self.status.raw, intermediate = self.status.intermediate, proxy = "+")
+ 
 
 
 
