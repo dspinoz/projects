@@ -58,9 +58,17 @@ def import_file(path,mode):
   
   path = os.path.realpath(path)
   
-  rawdir = os.path.join(lwf.data_dir(),cfg.get("rawdir")[1])
+  cfgdir = "rawdir"
+  if mode == fdb.FileMode.RAW:
+    cfgdir = "rawdir"
+  if mode == fdb.FileMode.INTERMEDIATE:
+    cfgdir = "intermediatedir"
+  if mode == fdb.FileMode.PROXY:
+    cfgdir = "proxydir"
+  
+  datadir = os.path.join(lwf.data_dir(),cfg.get(cfgdir)[1])
   rpath = util.strip_path_components(path,safe_root=True)
-  fpath = os.path.join(rawdir,rpath)
+  fpath = os.path.join(datadir,rpath)
 
   stats = []
   stats.append(('size',st.st_size))

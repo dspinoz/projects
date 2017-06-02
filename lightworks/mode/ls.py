@@ -60,6 +60,7 @@ def parser_hook(parser,options,args):
     status_str = ""
     if len(status_text) > 0:
       status_str = " (" + ", ".join(status_text) + ")"
+      c.set_diff()
       
     print "{}{} #{:<4} {:>10} {:<10} {}{}{}".format(color_begin, c.status_str(), c.id, sz, ts, c.path, status_str, color_end)
   sys.exit(0)

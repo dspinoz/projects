@@ -18,7 +18,7 @@ class File:
     self.id = id
     self.path = path
     self.metadata = {}
-    self.status = FileStatus(diff = "-", raw = "R", intermediate = "-", proxy = "-")
+    self.status = FileStatus(diff = "-", raw = "-", intermediate = "-", proxy = "-")
   
   def get(self,key):
     try:
@@ -31,9 +31,41 @@ class File:
   def set(self, key, value):
     self.metadata[key] = value
     
+    if key == "mode":
+      value = int(value)
+      if value == FileMode.RAW:
+        self.set_raw()
+      elif value == FileMode.INTERMEDIATE:
+        self.set_intermediate()
+      elif value == FileMode.PROXY:
+        self.set_proxy()
+    
   def status_str(self):
     return "".join([self.status.diff, self.status.raw, self.status.intermediate, self.status.proxy])
 
+  def get_all_props(self,curr):
+    curr.execute('''
+      SELECT key, value
+      FROM file_metadata
+      WHERE file_metadata.file_id == ?
+    ''', (self.id,))
+      
+    props = curr.fetchall()
+    for p in props:
+      self.set(p[0],p[1])
+  
+  def set_raw(self):
+    self.status = FileStatus(diff = self.status.diff, raw = "R", intermediate = self.status.intermediate, proxy = self.status.proxy)
+  
+  def set_intermediate(self):
+    self.status = FileStatus(diff = self.status.diff, raw = self.status.raw, intermediate = "I", proxy = self.status.proxy)
+  
+  def set_proxy(self):
+    self.status = FileStatus(diff = self.status.diff, raw = self.status.raw, intermediate = self.status.intermediate, proxy = "P")
+  
+  def set_diff(self):
+    self.status = FileStatus(diff = "*", raw = self.status.raw, intermediate = self.status.intermediate, proxy = self.status.proxy)
+  
 
 
 
@@ -64,7 +96,7 @@ def list_by_mode(mode=0):
     curr = conn.cursor()
     
     curr.execute('''
-      SELECT file_id, path, key, value
+      SELECT file_id, path
       FROM file,file_metadata
       WHERE file.rowid == file_metadata.file_id
             AND key == 'mode' AND CAST(value as INTEGER) = ?
@@ -74,7 +106,7 @@ def list_by_mode(mode=0):
     file_data = curr.fetchall()
     for d in file_data:
       f = File(d[0], d[1])
-      f.set(d[2],d[3])
+      f.get_all_props(curr)
       data.append(f)
     
     conn.close()
@@ -89,7 +121,7 @@ def list_by_size():
     curr = conn.cursor()
     
     curr.execute('''
-      SELECT file_id, path, key, value
+      SELECT file_id, path
       FROM file,file_metadata
       WHERE file.rowid == file_metadata.file_id
             AND key == 'size'
@@ -99,7 +131,7 @@ def list_by_size():
     file_data = curr.fetchall()
     for d in file_data:
       f = File(d[0], d[1])
-      f.set(d[2],d[3])
+      f.get_all_props(curr)
       data.append(f)
     
     conn.close()
@@ -114,7 +146,7 @@ def list_by_mtime():
     curr = conn.cursor()
     
     curr.execute('''
-      SELECT file_id, path, key, value
+      SELECT file_id, path
       FROM file,file_metadata
       WHERE file.rowid == file_metadata.file_id
             AND key == 'mtime'
@@ -124,7 +156,7 @@ def list_by_mtime():
     file_data = curr.fetchall()
     for d in file_data:
       f = File(d[0], d[1])
-      f.set(d[2],d[3])
+      f.get_all_props(curr)
       data.append(f)
     
     conn.close()
@@ -147,7 +179,9 @@ def list(filter=None,id=None):
       
     file_data = curr.fetchall()
     for d in file_data:
-        data.append(File(d[0], d[1]))
+      f = File(d[0], d[1])
+      f.get_all_props(curr)
+      data.append(f)
     
     conn.close()
   except sqlite3.Error as e:
@@ -218,6 +252,8 @@ def set(path,key,value,id=None):
       curr.execute('INSERT INTO file_metadata (file_id,key,value) VALUES (?,?,?)',(f.id,key,value))
     except sqlite3.IntegrityError:
       curr.execute('UPDATE file_metadata SET value = ? WHERE file_id = ? AND key = ?',(value,f.id,key))
+    
+    f.get_all_props(curr)
     
     conn.commit()
     conn.close()
