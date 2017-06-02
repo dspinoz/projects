@@ -4,13 +4,13 @@ import json
 
 import lwdb
 
-def add(event):
+def add(file, event):
   
   try:
     conn = lwdb.init()
     curr = conn.cursor()
     
-    curr.execute('INSERT INTO queue VALUES (?)',(json.dumps(event),))
+    curr.execute('INSERT INTO queue VALUES (?,?)',(file,json.dumps(event),))
     conn.commit()
     
     curr.execute('SELECT last_insert_rowid()')
@@ -24,13 +24,17 @@ def add(event):
     return None
 
 
-def list():
+def list(file=None):
   data = []
   #try:
   conn = lwdb.init()
   curr = conn.cursor()
-  
-  curr.execute('SELECT rowid,json FROM queue')
+ 
+  if file is None: 
+    curr.execute('SELECT rowid,json FROM queue')
+  else:
+    curr.execute('SELECT rowid,json FROM queue WHERE file_id = ?', (file,))
+
   config_data = curr.fetchall()
   for d in config_data:
       data.append((d[0],json.loads(d[1])))

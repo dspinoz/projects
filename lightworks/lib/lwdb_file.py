@@ -55,8 +55,7 @@ class File:
     for p in props:
       self.set(p[0],p[1])
  
-    # TODO query for id
-    for q in qdb.list():
+    for q in qdb.list(self.id):
       q = q[1]
       if q['type'] == 'transcode' and q['file'] == self.id:
         if q['to'] == FileMode.INTERMEDIATE:

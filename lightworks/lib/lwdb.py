@@ -35,6 +35,7 @@ def init():
 
   c.execute('''
             CREATE TABLE IF NOT EXISTS queue (
+              file_id INTEGER NOT NULL,
               json TEXT NOT NULL)''')
   
   conn.commit()

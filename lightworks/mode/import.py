@@ -102,7 +102,7 @@ def import_file(path,mode,transcode):
         cfgdir = "proxydir"
     
       for j in jobs:
-        qdb.add(j)    
+        qdb.add(f.id, j)    
   else:
     print "ERROR importing",path
 
