@@ -16,7 +16,7 @@ class ProjectFile:
     s =  "#" + str(self.id) + " " + self.path + " (" + str(len(self.files)) + ")\n"
     for m in self.files:
       f = self.files[m]
-      s += " " + str(m) + ":" + f.path + "\n"
+      s += " " + str(m) + ": #" + str(f.id) + " " + f.path + "\n"
     return s
     
   def set(self,file):
@@ -29,7 +29,13 @@ class ProjectFile:
     files = get_files(self)
     
     for f in files:
-      
+      try:
+        if self.files[f.get("mode")] is not None:
+          e = self.files[f.get("mode")]
+          print "already has mode "+str(f.get("mode"))+" #"+ str(e.id) +" new is #"+str(f.id)
+      except KeyError:
+        # no file in map yet, all ok
+        pass
       self.files[f.get("mode")] = f
 
 
