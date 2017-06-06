@@ -37,6 +37,17 @@ def init():
             CREATE TABLE IF NOT EXISTS queue (
               file_id INTEGER NOT NULL,
               json TEXT NOT NULL)''')
+
+  c.execute('''
+            CREATE TABLE IF NOT EXISTS project_file (
+              path TEXT NOT NULL,
+              PRIMARY KEY(path) )''')
+              
+  c.execute('''
+            CREATE TABLE IF NOT EXISTS project_file_ref (
+              project_file_id INTEGER NOT NULL,
+              file_id INTEGER NOT NULL,
+              PRIMARY KEY(project_file_id,file_id) )''')
   
   conn.commit()
   

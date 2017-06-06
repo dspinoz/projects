@@ -3,7 +3,7 @@ import sys
 import optparse
 
 import lib.util as util
-import lib.lwdb_file as db
+import lib.lwdb_project_file as db
 
 desc="""
 List mode.
@@ -28,8 +28,12 @@ def parser_hook(parser,options,args):
     print parser.format_help()
     sys.exit(0) 
 
-  list = db.list_by_mtime()
+  list = db.list()
   for c in list:
+    c.fetch()
+    print c
+    continue
+    
     color_begin = ""
     color_end = ""
     status_text = []

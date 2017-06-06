@@ -23,11 +23,14 @@ class File:
   
   def get(self,key):
     try:
+		
+      if key == "mode":
+        value = int(self.metadata[key])
+        return value
+		
       return self.metadata[key]
     except KeyError:
-      f = get("",key,self.id)[0][1]
-      self.set(key,f)
-      return self.metadata[key]
+      return None
 
   def set(self, key, value):
     self.metadata[key] = value
@@ -97,7 +100,7 @@ def add(path):
     curr.execute('SELECT last_insert_rowid()')
     
     id = curr.fetchone()
-    f = list(id=id[0])
+    f = File(id[0],path)
     
     conn.close()
     return f
@@ -204,7 +207,7 @@ def list(filter=None,id=None):
     print('file::list()',filter,e)
   return data
   
-def get(path,key=None,id=None):
+def get(path,key=None,id=None,wantf=False):
   data = []
   try:
     conn = lwdb.init()
@@ -239,6 +242,8 @@ def get(path,key=None,id=None):
     
     conn.close()
     
+    if wantf:
+      return f
     return data
   except sqlite3.Error as e:
     print('file::get()',path,key,e)
