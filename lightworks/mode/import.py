@@ -106,11 +106,11 @@ def import_file(root,userel,path,mode,transcode,project_path=None):
     
 
 def save(f,stats,savepath,transcode):
-  print f
+  #print f
   
   for s in stats:
-    fdb.set(f.path,s[0],s[1])
-    f.set(s[0],s[1])
+    fdb.set(path="",id=f.id,key=s[0],value=s[1])
+    f.set(key=s[0],value=s[1])
 
   if not os.path.exists(os.path.dirname(savepath)):
     os.makedirs(os.path.dirname(savepath))
