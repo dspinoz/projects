@@ -5,6 +5,7 @@ from collections import namedtuple
 
 import init as lwdb
 import file as dbfile
+from .. import lwfexcept
 
 class ProjectFile:
   def __init__(self,id,path):
@@ -40,10 +41,10 @@ class ProjectFile:
 
 
 def add(path):
-  
+
+  conn = lwdb.init()
+  curr = conn.cursor()
   try:
-    conn = lwdb.init()
-    curr = conn.cursor()
     
     curr.execute('INSERT INTO project_file (path) VALUES (?)', (path,))
     conn.commit()
@@ -55,15 +56,18 @@ def add(path):
     
     conn.close()
     return f
+  except sqlite3.IntegrityError as e:
+    conn.close()
+    raise lwfexcept.ProjectFileAlreadyExistsError(path)
   except sqlite3.Error as e:
-    print('project_file::add',path,e)
-    return None
+    conn.close()
+    raise e
 
 def add_file(projectid,fileid,fileid_mode):
   
+  conn = lwdb.init()
+  curr = conn.cursor()
   try:
-    conn = lwdb.init()
-    curr = conn.cursor()
     
     curr.execute('INSERT INTO project_file_ref (project_file_id,file_id,mode) VALUES (?,?,?)', (projectid,fileid,fileid_mode))
     conn.commit()
@@ -71,71 +75,66 @@ def add_file(projectid,fileid,fileid_mode):
     conn.close()
     return True
   except sqlite3.Error as e:
-    print('project_file::add',e)
-    return None
+    conn.close()
+    raise e
     
-def list(filter=None,id=None):
-  data = []
+def list(filter=None,id=None,path=None):
+  conn = lwdb.init()
+  curr = conn.cursor()
   try:
-    conn = lwdb.init()
-    curr = conn.cursor()
     
-    if filter is None and id is None:
+    if filter is None and id is None and path is None:
       curr.execute('SELECT rowid, path FROM project_file')
-    elif filter is not None:
+    elif filter is not None and id is None and path is None:
       curr.execute('SELECT rowid, path FROM project_file WHERE path LIKE ?', (filter,))
+    elif path is not None and id is None:
+      curr.execute('SELECT rowid, path FROM project_file WHERE path = ?', (path,))
     elif id is not None:
       curr.execute('SELECT rowid, path FROM project_file WHERE rowid = ?', (id,))
       
     file_data = curr.fetchall()
+    
+    if len(file_data) is 0:
+      raise lwfexcept.ProjectFileNotFoundError
+    
+    data = []
     for d in file_data:
       f = ProjectFile(d[0], d[1])
       data.append(f)
     
     conn.close()
-  except sqlite3.Error as e:
-    print('project_file::list()',e)
-  return data
-  
-def get(path,key=None,id=None):
-  data = []
-  try:
-    conn = lwdb.init()
-    curr = conn.cursor()
-    
-    if id is not None:
-      curr.execute('SELECT rowid, path FROM project_file WHERE rowid = ?', (id,))
-    else:
-      curr.execute('SELECT rowid, path FROM project_file WHERE path = ?', (path,))
-      
-    file_data = curr.fetchall()
-    for d in file_data:
-      f = ProjectFile(d[0], d[1])
-      data.append(f)
-    
-    conn.close()
-    
     return data
   except sqlite3.Error as e:
-    print('project_file::get()',path,key,e)
-  return data
+    conn.close()
+    raise e
+  
+def get(path=None,id=None):
+  if path is None and id is None:
+    raise lwfexcept.ProjectFileNotFoundError(None)
+  
+  coll = list(path=path,id=id)
+  
+  if len(coll) is 1:
+    return coll[0]
+  raise lwfexcept.ProjectFileNotFoundError(path)
+	
   
 def get_files(pf):
   data = []
+  conn = lwdb.init()
+  curr = conn.cursor()
   try:
-    conn = lwdb.init()
-    curr = conn.cursor()
     
     curr.execute('SELECT file_id FROM project_file_ref WHERE project_file_id = ?', (pf.id,))
       
     file_data = curr.fetchall()
     for d in file_data:
-      f = dbfile.get(None,id=d[0],wantf=True)
+      f = dbfile.get(id=d[0])
       data.append(f)
     
     conn.close()
     
     return data
   except sqlite3.Error as e:
-    print('project_file::get_files()',pf,e)
-  return data
+    conn.close()
+    raise e

@@ -4,15 +4,45 @@ class LWFNotInitialisedError(Exception):
   def __init__(self):
     Exception.__init__(self)
 
+# project file has not been added
+class ProjectFileNotFoundError(Exception):
+  def __init__(self,path):
+    Exception.__init__(self)
+    self.path = path
+  def __str__(self):
+    return Exception.__str__(self) + self.path
+    
 # project file has already been defined
 class ProjectFileAlreadyExistsError(Exception):
-  def __init__(self):
+  def __init__(self,path):
     Exception.__init__(self)
+    self.path = path
+  def __str__(self):
+    return Exception.__str__(self) + self.path
 
+# project_file could not be found
+class ProjectFileNotFoundError(Exception):
+  def __init__(self,path):
+    Exception.__init__(self)
+    self.path = path
+  def __str__(self):
+    return Exception.__str__(self) + self.path
+    
+# file could not be found
+class FileNotFoundError(Exception):
+  def __init__(self,path):
+    Exception.__init__(self)
+    self.path = path
+  def __str__(self):
+    return Exception.__str__(self) + self.path
+    
 # file has already been imported
 class FileAlreadyImportedError(Exception):
-  def __init__(self):
+  def __init__(self,path):
     Exception.__init__(self)
+    self.path = path
+  def __str__(self):
+    return Exception.__str__(self) + self.path
 
 # file has already been imported and is stored on another project_file
 class ProjectFileDuplicateFileError(Exception):

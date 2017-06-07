@@ -5,6 +5,7 @@ from collections import namedtuple
 
 import init as lwdb
 import queue as qdb
+from .. import lwfexcept
 
 FileStatus = namedtuple('FileStatus', 'diff raw intermediate proxy')
 
@@ -20,6 +21,9 @@ class File:
     self.path = path
     self.metadata = {}
     self.status = FileStatus(diff = "-", raw = "-", intermediate = "-", proxy = "-")
+  
+  def __str__(self):
+    return "#" + str(self.id) + " " + self.path
   
   def get(self,key):
     try:
@@ -89,10 +93,9 @@ class File:
 
 
 def add(path):
-  
+  conn = lwdb.init()
+  curr = conn.cursor()
   try:
-    conn = lwdb.init()
-    curr = conn.cursor()
     
     curr.execute('INSERT INTO file (path) VALUES (?)', (path,))
     conn.commit()
@@ -104,150 +107,120 @@ def add(path):
     
     conn.close()
     return f
+  except sqlite3.IntegrityError as e:
+    conn.close()
+    raise lwfexcept.FileAlreadyImportedError(path)
   except sqlite3.Error as e:
-    print('file::add',path,e)
-    return None
-
-def list_by_mode(mode=0):
-  data = []
-  try:
-    conn = lwdb.init()
-    curr = conn.cursor()
+    conn.close()
+    raise e
     
-    curr.execute('''
-      SELECT file_id, path
-      FROM file,file_metadata
-      WHERE file.rowid == file_metadata.file_id
-            AND key == 'mode' AND CAST(value as INTEGER) = ?
-      ORDER BY CAST(value as INTEGER) DESC
-    ''', (mode,))
+    
+def list_from_metadata(key,filter=None,id=None,path=None):
+  conn = lwdb.init()
+  curr = conn.cursor()
+  try:
+    
+    if filter is None and id is None and path is None:
+      
+      curr.execute('''
+        SELECT file.rowid, path
+        FROM file,file_metadata
+        WHERE file.rowid == file_metadata.file_id
+              AND key == ?
+        ORDER BY CAST(value as INTEGER) DESC
+      ''', (key,))
+      
+    elif filter is not None and id is None and path is None:
+      
+      curr.execute('''
+        SELECT file.rowid, path
+        FROM file,file_metadata
+        WHERE file.rowid == file_metadata.file_id
+              AND key == ?
+              AND file.path LIKE ?
+        ORDER BY CAST(value as INTEGER) DESC
+      ''', (key,filter,))
+      
+    elif path is not None and id is None:
+      
+      curr.execute('''
+        SELECT file.rowid, path
+        FROM file,file_metadata
+        WHERE file.rowid == file_metadata.file_id
+              AND key == ?
+              AND file.path = ?
+        ORDER BY CAST(value as INTEGER) DESC
+      ''', (key,path,))
+      
+    elif id is not None:
+      curr.execute('''
+        SELECT file.rowid, path
+        FROM file,file_metadata
+        WHERE file.rowid == file_metadata.file_id
+              AND key == ?
+              AND file.rowid = ?
+        ORDER BY CAST(value as INTEGER) DESC
+      ''', (key,id,))
       
     file_data = curr.fetchall()
+    
+    if len(file_data) is 0:
+      raise lwfexcept.FileNotFoundError
+    
+    data = []
     for d in file_data:
       f = File(d[0], d[1])
       f.get_all_props(curr)
       data.append(f)
     
     conn.close()
+    return data
   except sqlite3.Error as e:
-    print('file::list_by_mode()',filter,e)
-  return data
-    
-def list_by_size():
-  data = []
-  try:
-    conn = lwdb.init()
-    curr = conn.cursor()
-    
-    curr.execute('''
-      SELECT file_id, path
-      FROM file,file_metadata
-      WHERE file.rowid == file_metadata.file_id
-            AND key == 'size'
-      ORDER BY CAST(value as INTEGER) DESC
-    ''')
-      
-    file_data = curr.fetchall()
-    for d in file_data:
-      f = File(d[0], d[1])
-      f.get_all_props(curr)
-      data.append(f)
-    
     conn.close()
-  except sqlite3.Error as e:
-    print('file::list_by_size()',filter,e)
-  return data
-    
-def list_by_mtime():
-  data = []
+    raise e
+  
+  
+def list(filter=None,id=None,path=None):
+  conn = lwdb.init()
+  curr = conn.cursor()
   try:
-    conn = lwdb.init()
-    curr = conn.cursor()
     
-    curr.execute('''
-      SELECT file_id, path
-      FROM file,file_metadata
-      WHERE file.rowid == file_metadata.file_id
-            AND key == 'mtime'
-      ORDER BY CAST(value as INTEGER) DESC
-    ''')
-      
-    file_data = curr.fetchall()
-    for d in file_data:
-      f = File(d[0], d[1])
-      f.get_all_props(curr)
-      data.append(f)
-    
-    conn.close()
-  except sqlite3.Error as e:
-    print('file::list_by_mtime()',filter,e)
-  return data
-    
-def list(filter=None,id=None):
-  data = []
-  try:
-    conn = lwdb.init()
-    curr = conn.cursor()
-    
-    if filter is None and id is None:
+    if filter is None and id is None and path is None:
       curr.execute('SELECT rowid, path FROM file')
-    elif filter is not None:
+    elif filter is not None and id is None and path is None:
       curr.execute('SELECT rowid, path FROM file WHERE path LIKE ?', (filter,))
+    elif path is not None and id is None:
+      curr.execute('SELECT rowid, path FROM file WHERE path = ?', (path,))
     elif id is not None:
       curr.execute('SELECT rowid, path FROM file WHERE rowid = ?', (id,))
       
     file_data = curr.fetchall()
+    
+    if len(file_data) is 0:
+      raise lwfexcept.FileNotFoundError
+    
+    data = []
     for d in file_data:
       f = File(d[0], d[1])
       f.get_all_props(curr)
       data.append(f)
     
     conn.close()
-  except sqlite3.Error as e:
-    print('file::list()',filter,e)
-  return data
-  
-def get(path,key=None,id=None,wantf=False):
-  data = []
-  try:
-    conn = lwdb.init()
-    curr = conn.cursor()
-    
-    if id is not None:
-      curr.execute('SELECT rowid, path FROM file WHERE rowid = ?', (id,))
-    else:
-      curr.execute('SELECT rowid, path FROM file WHERE path = ?', (path,))
-      
-    file_data = curr.fetchone()
-    
-    if file_data is None:
-      conn.close()
-      if id is not None:
-        print "No file with id",id
-      else:
-        print "No file at path",path
-      sys.exit(1)
-    
-    f = File(file_data[0], file_data[1])
-    
-    if key is None:
-      curr.execute("SELECT key,value FROM file_metadata WHERE file_id = ?", (f.id,))
-    else:
-      curr.execute("SELECT key,value FROM file_metadata WHERE file_id = ? AND key = ?", (f.id,key))
-    
-    file_metadata = curr.fetchall()
-    for d in file_metadata:
-      data.append((d[0], d[1]))
-      f.set(d[0], d[1])
-    
-    conn.close()
-    
-    if wantf:
-      return f
     return data
   except sqlite3.Error as e:
-    print('file::get()',path,key,e)
-  return data
+    conn.close()
+    raise e
+  
+def get(path=None,id=None):
+  if path is None and id is None:
+    raise lwfexcept.FileNotFoundError(None)
+  
+  coll = list(path=path,id=id)
+  
+  if len(coll) is 1:
+    return coll[0]
+  raise lwfexcept.FileNotFoundError(path)
+  
   
   
 def set(path,key,value,id=None):

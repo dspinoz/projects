@@ -4,11 +4,13 @@ import shutil
 import optparse
 
 import lib.lwf as lwf
+import lib.lwfexcept
 import lib.util as util
 import lib.db.config as cfg
 import lib.db.file as fdb
 import lib.db.project_file as pfdb
 import lib.db.queue as qdb
+
 
 desc="""
 Import mode.
@@ -71,9 +73,11 @@ def import_file(root,userel,path,mode,transcode,project_path=None):
       project_path = os.sep.join([os.curdir, project_path])
       project_path = os.path.relpath(project_path,os.curdir)
   
-  pf = pfdb.add(project_path)
-  if pf is None:
-    pf = pfdb.get(project_path)[0]
+  pf = None
+  try:
+    pf = pfdb.add(project_path)
+  except lib.lwfexcept.ProjectFileAlreadyExistsError:
+    pf = pfdb.get(path=project_path)
 
   cfgdir = "rawdir"
   if mode == fdb.FileMode.RAW:
