@@ -75,6 +75,9 @@ def add_file(projectid,fileid,fileid_mode):
     
     conn.close()
     return True
+  except sqlite3.IntegrityError as e:
+    conn.close()
+    raise lwfexcept.ProjectFileModeAlreadyTakenError()
   except sqlite3.Error as e:
     conn.close()
     raise e
