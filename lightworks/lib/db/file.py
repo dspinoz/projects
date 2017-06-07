@@ -23,7 +23,7 @@ class File:
     self.status = FileStatus(diff = "-", raw = "-", intermediate = "-", proxy = "-")
   
   def __str__(self):
-    return "#" + str(self.id) + " " + self.path
+    return "F#{:<4} {}".format(self.id, self.path)
   
   def get(self,key):
     try:

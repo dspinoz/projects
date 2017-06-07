@@ -14,10 +14,11 @@ class ProjectFile:
     self.files = {}
   
   def __str__(self):
-    s =  "#" + str(self.id) + " " + self.path + " (" + str(len(self.files)) + ")\n"
+    
+    s = "P#{:<4} {} ({})\n".format(self.id, self.path, len(self.files))
     for m in self.files:
       f = self.files[m]
-      s += " " + str(m) + ": #" + str(f.id) + " " + f.path + "\n"
+      s += "  {}: {}\n".format(m, f)
     return s
     
   def set(self,file):

@@ -106,7 +106,7 @@ def import_file(root,userel,path,mode,transcode,project_path=None):
     
 
 def save(f,stats,savepath,transcode):
-  print "{:<4} {}".format(f.id, f.path)
+  print f
   
   for s in stats:
     fdb.set(f.path,s[0],s[1])
