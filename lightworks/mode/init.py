@@ -3,7 +3,7 @@ from datetime import datetime
 import os
 import optparse
 
-import lib.lwdb_config as cfg
+import lib.db.config as cfg
 import lib.lwf as lwf
 
 desc="""

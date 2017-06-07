@@ -3,7 +3,7 @@ import optparse
 import json
 import signal
 
-import lib.lwdb_queue as db
+import lib.db.queue as db
 import lib.worker as worker
 
 desc="""

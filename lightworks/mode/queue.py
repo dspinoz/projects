@@ -2,7 +2,7 @@ import sys
 import optparse
 import json
 
-import lib.lwdb_queue as db
+import lib.db.queue as db
 
 desc="""
 Queue mode.

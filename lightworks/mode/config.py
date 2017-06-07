@@ -1,7 +1,7 @@
 import sys
 import optparse
 
-import lib.lwdb_config as db
+import lib.db.config as db
 
 desc="""
 Configuration mode.

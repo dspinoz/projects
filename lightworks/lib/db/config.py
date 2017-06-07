@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import sqlite3
 
-import lwdb
+import init as lwdb
 
 def set(key=None,value=None):
   

@@ -1,7 +1,7 @@
 import sys
 import optparse
 
-import lib.lwdb_file as db
+import lib.db.file as db
 
 desc="""
 File mode.

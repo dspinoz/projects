@@ -3,7 +3,7 @@ import sys
 import optparse
 
 import lib.util as util
-import lib.lwdb_project_file as db
+import lib.db.project_file as db
 
 desc="""
 List mode.

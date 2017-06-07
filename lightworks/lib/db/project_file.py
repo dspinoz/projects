@@ -3,8 +3,8 @@ import sys
 import sqlite3
 from collections import namedtuple 
 
-import lwdb
-import lwdb_file as dbfile
+import init as lwdb
+import file as dbfile
 
 class ProjectFile:
   def __init__(self,id,path):

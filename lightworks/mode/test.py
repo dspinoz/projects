@@ -4,7 +4,7 @@ import os
 import optparse
 
 import lib.util as util
-import lib.lwdb_file as db
+import lib.db.file as db
 
 desc="""
 Test mode.

@@ -2,7 +2,7 @@
 import sqlite3
 import json
 
-import lwdb
+import init as lwdb
 
 def add(event):
   

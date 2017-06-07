@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import sqlite3
 import os
-import lwf
+from .. import lwf
 
 db_name = "lwf.db"
 

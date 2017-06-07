@@ -3,8 +3,8 @@ import sys
 import sqlite3
 from collections import namedtuple 
 
-import lwdb
-import lwdb_queue as qdb
+import init as lwdb
+import queue as qdb
 
 FileStatus = namedtuple('FileStatus', 'diff raw intermediate proxy')
 

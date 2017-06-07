@@ -5,10 +5,10 @@ import optparse
 
 import lib.lwf as lwf
 import lib.util as util
-import lib.lwdb_config as cfg
-import lib.lwdb_file as fdb
-import lib.lwdb_project_file as pfdb
-import lib.lwdb_queue as qdb
+import lib.db.config as cfg
+import lib.db.file as fdb
+import lib.db.project_file as pfdb
+import lib.db.queue as qdb
 
 desc="""
 Import mode.

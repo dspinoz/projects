@@ -2,7 +2,7 @@ import sys
 import optparse
 import json
 
-import lib.lwdb_event as db
+import lib.db.event as db
 
 desc="""
 Event mode.
