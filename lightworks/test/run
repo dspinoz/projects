@@ -1,14 +1,20 @@
 #!/bin/sh
 
+START=`date +%s`
+echo "Test Started: `date`" | tee test.log
+
 for f in test/test-*
 do
-  $f
+  echo "Running $f" | tee -a test.log > /dev/null
+  sh -xe $f 2>&1 | tee -a test.log > /dev/null
   ret=$?
-  msg=ERROR
+  msg=FAIL
   if [ $ret -eq 0 ]
   then
     msg=SUCCESS
   fi
-  echo $msg $f
+  echo $msg $f | tee -a run.log
 done
 
+END=`date +%s`
+echo "Test Completed: `date` (`expr $END - $START` seconds)" | tee -a test.log

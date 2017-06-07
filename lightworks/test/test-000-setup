@@ -1,0 +1,4 @@
+#!/bin/sh
+rm -rf .lwf
+./main.py init
+
