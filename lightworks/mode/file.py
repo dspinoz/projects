@@ -33,7 +33,7 @@ def get_parser():
   parser.add_option("-S", "--list-proxy", dest="list_proxy", action="store_true", help="List proxy files")
   parser.add_option("", "--list-size", dest="list_metadata", action="store_const", const="size", help="List known files sorted by file size")
   parser.add_option("", "--list-mtime", dest="list_metadata", action="store_const", const="mtime", help="List known files sorted by file size")
-  parser.add_option("-a", "--add", dest="add", help="Add file specified")
+  parser.add_option("-a", "--add", dest="add", action="store_true", help="Add file specified")
   parser.add_option("-f", "--filter", dest="filter", default=None, help="Filter list of files")
   parser.add_option("-p", "--path", dest="path", default=None, help="File path to modify")
   parser.add_option("-k", "--key", dest="key", default=None, help="Show/Set metadata value for file")
@@ -56,7 +56,10 @@ def parser_hook(parser,options,args):
     sys.exit(0)
     
   if options.add:
-    if db.add(options.add):
+    if not options.path:
+      print "No path provided"
+      sys.exit(1)
+    if db.add(options.path):
       sys.exit(0)  
     sys.exit(1)
     
