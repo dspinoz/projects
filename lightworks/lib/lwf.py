@@ -1,10 +1,8 @@
 import os
 
-dir_name = ".lwf"
+import lwfexcept
 
-class LWFNotInitialisedError(Exception):
-  def __init__(self):
-    Exception.__init__(self)
+dir_name = ".lwf"
 
 def data_dir(err=True):
 
@@ -30,5 +28,5 @@ def data_dir(err=True):
     current_root = head
 
   if found_path is None and err:
-    raise LWFNotInitialisedError
+    raise lwfexcept.LWFNotInitialisedError
   return found_path
