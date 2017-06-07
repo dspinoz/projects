@@ -21,7 +21,7 @@ class ProjectFile:
     
   def set(self,file):
     
-    add_file(self.id, file.id)
+    add_file(self.id, file.id, file.get("mode"))
     self.files[file.get("mode")] = file
     
   def fetch(self):
@@ -59,19 +59,19 @@ def add(path):
     print('file::add',path,e)
     return None
 
-def add_file(projectid,fileid):
+def add_file(projectid,fileid,fileid_mode):
   
   try:
     conn = lwdb.init()
     curr = conn.cursor()
     
-    curr.execute('INSERT INTO project_file_ref (project_file_id,file_id) VALUES (?,?)', (projectid,fileid,))
+    curr.execute('INSERT INTO project_file_ref (project_file_id,file_id,mode) VALUES (?,?,?)', (projectid,fileid,fileid_mode))
     conn.commit()
     
     conn.close()
     return True
   except sqlite3.Error as e:
-    print('file::add',path,e)
+    print('project_file::add',e)
     return None
     
 def list(filter=None,id=None):
@@ -94,7 +94,7 @@ def list(filter=None,id=None):
     
     conn.close()
   except sqlite3.Error as e:
-    print('file::list()',filter,e)
+    print('project_file::list()',e)
   return data
   
 def get(path,key=None,id=None):
@@ -117,7 +117,7 @@ def get(path,key=None,id=None):
     
     return data
   except sqlite3.Error as e:
-    print('file::get()',path,key,e)
+    print('project_file::get()',path,key,e)
   return data
   
 def get_files(pf):
@@ -137,5 +137,5 @@ def get_files(pf):
     
     return data
   except sqlite3.Error as e:
-    print('file::get_files()',pf,e)
+    print('project_file::get_files()',pf,e)
   return data

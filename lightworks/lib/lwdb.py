@@ -47,7 +47,8 @@ def init():
             CREATE TABLE IF NOT EXISTS project_file_ref (
               project_file_id INTEGER NOT NULL,
               file_id INTEGER NOT NULL,
-              PRIMARY KEY(project_file_id,file_id) )''')
+              mode INTEGER NOT NULL,
+              PRIMARY KEY(project_file_id,mode) )''')
   
   conn.commit()
   
