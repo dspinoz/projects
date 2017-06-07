@@ -32,7 +32,7 @@ class ProjectFile:
     
     for f in files:
       try:
-        if self.files[f.get("mode")] is not None:
+        if self.files[f.get("mode")] is not None and self.files[f.get("mode")].id != f.id:
           e = self.files[f.get("mode")]
           print "already has mode "+str(f.get("mode"))+" #"+ str(e.id) +" new is #"+str(f.id)
       except KeyError:

@@ -102,6 +102,8 @@ def import_file(root,userel,path,mode,transcode,project_path=None):
   
   pf.set(added)
   
+  pf.fetch()
+  
   print pf
     
 
