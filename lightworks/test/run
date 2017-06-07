@@ -1,0 +1,14 @@
+#!/bin/sh
+
+for f in test/test-*
+do
+  $f
+  ret=$?
+  msg=ERROR
+  if [ $ret -eq 0 ]
+  then
+    msg=SUCCESS
+  fi
+  echo $msg $f
+done
+

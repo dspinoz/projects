@@ -1,0 +1,20 @@
+#!/bin/sh -x
+rm -rf .lwf
+./main.py init
+
+./main.py import -p /tmp/a.mov
+
+./main.py import -p /tmp/b.mov
+./main.py import -p /tmp/c.mov
+
+./main.py import -p /tmp/a/b
+#./main.py import -p /tmp/a/b/c/d.mov
+#./main.py import -p /tmp/a/b/c/e.mov
+#./main.py import -p /tmp/a/b/c/f.mov
+
+./main.py import --as c/z.mov -p /tmp/a/g.mov --mode=RAW
+./main.py import --as c/z.mov -p /tmp/a/h.mov --mode=PROXY
+./main.py import --as c/z.mov -p /tmp/a/i.mov --mode=INTERMEDIATE
+
+
+./main.py ls
