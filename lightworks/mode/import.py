@@ -49,14 +49,14 @@ def parser_hook(parser,options,args):
       import_directory(options.path, options.mode, options.transcode)
     else:
       print "Importing file", options.path
-      import_file(os.curdir, options.path, options.mode, options.transcode,options.project_path)
+      import_file(os.curdir, False, options.path, options.mode, options.transcode,options.project_path)
     
     sys.exit(0)
       
   print parser.format_help()
   sys.exit(0)
   
-def import_file(root,path,mode,transcode,project_path):
+def import_file(root,userel,path,mode,transcode,project_path=None):
 
   st = os.stat(path)
   
@@ -64,7 +64,12 @@ def import_file(root,path,mode,transcode,project_path):
   path = os.path.realpath(path)
   
   if project_path is None:
-    project_path = os.path.relpath(path,root)
+    if userel:
+      project_path = os.path.relpath(path,root)
+    else:
+      project_path = util.strip_path_components(path,safe_root=True)
+      project_path = os.sep.join([os.curdir, project_path])
+      project_path = os.path.relpath(project_path,os.curdir)
   
   pf = pfdb.add(project_path)
   if pf is None:
@@ -133,5 +138,6 @@ def import_directory(path,mode,transcode):
         continue
       
       p = os.path.join(root,f)
-      import_file(root, p, mode, transcode)
+      
+      import_file(root, True, p, mode, transcode, os.path.relpath(p,path))
     
