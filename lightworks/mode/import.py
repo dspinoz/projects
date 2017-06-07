@@ -98,15 +98,12 @@ def import_file(root,userel,path,mode,transcode,project_path=None):
 
   added = fdb.add(path)
   
-  if added is not None :
-    save(added,stats,fpath,transcode)
+  save(added,stats,fpath,transcode)
+  
+  pf.set(added)
+  
+  print pf
     
-    pf.set(added)
-    
-    print pf
-    
-  else:
-    print "ERROR importing",path
 
 def save(f,stats,savepath,transcode):
   print "{:<4} {}".format(f.id, f.path)
