@@ -1,2 +1,5 @@
 #!/bin/sh 
+set +e
 ./main.py file --list
+test $? -eq 1
+exit $?

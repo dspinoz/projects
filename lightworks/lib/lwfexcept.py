@@ -30,11 +30,8 @@ class ProjectFileNotFoundError(Exception):
     
 # file could not be found
 class FileNotFoundError(Exception):
-  def __init__(self,path):
+  def __init__(self):
     Exception.__init__(self)
-    self.path = path
-  def __str__(self):
-    return Exception.__str__(self) + self.path
     
 # file has already been imported
 class FileAlreadyImportedError(Exception):

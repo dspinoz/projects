@@ -1,6 +1,7 @@
 import sys
 import optparse
 
+import lib.lwfexcept
 import lib.db.file as db
 
 desc="""
@@ -46,8 +47,12 @@ def parser_hook(parser,options,args):
     sys.exit(0)
     
   if options.list:
-    for f in db.list(filter=options.filter,path=options.path):
-      print f
+    try:
+      for f in db.list(filter=options.filter,path=options.path):
+        print f
+    except lib.lwfexcept.FileNotFoundError:
+      print "Could not find any files matching"
+      sys.exit(1)
     sys.exit(0)
     
   if options.list_metadata:

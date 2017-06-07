@@ -13,7 +13,13 @@ do
   then
     msg=SUCCESS
   fi
-  echo $msg $f | tee -a run.log
+  echo $msg $f | tee -a test.log
+  grep -q Traceback test.log
+  if [ $? -eq 0 ]
+  then
+    echo "Traceback detected!"
+    break
+  fi
 done
 
 END=`date +%s`
