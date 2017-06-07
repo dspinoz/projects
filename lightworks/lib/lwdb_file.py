@@ -130,7 +130,7 @@ def list_by_mode(mode=0):
     
     conn.close()
   except sqlite3.Error as e:
-    print('file::list()',filter,e)
+    print('file::list_by_mode()',filter,e)
   return data
     
 def list_by_size():
@@ -155,7 +155,7 @@ def list_by_size():
     
     conn.close()
   except sqlite3.Error as e:
-    print('file::list()',filter,e)
+    print('file::list_by_size()',filter,e)
   return data
     
 def list_by_mtime():
@@ -180,7 +180,7 @@ def list_by_mtime():
     
     conn.close()
   except sqlite3.Error as e:
-    print('file::list()',filter,e)
+    print('file::list_by_mtime()',filter,e)
   return data
     
 def list(filter=None,id=None):

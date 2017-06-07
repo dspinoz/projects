@@ -56,7 +56,7 @@ def add(path):
     conn.close()
     return f
   except sqlite3.Error as e:
-    print('file::add',path,e)
+    print('project_file::add',path,e)
     return None
 
 def add_file(projectid,fileid,fileid_mode):

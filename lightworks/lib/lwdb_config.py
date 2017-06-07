@@ -40,16 +40,16 @@ def get(key=None):
 
 def list():
   data = []
-  #try:
-  conn = lwdb.init()
-  curr = conn.cursor()
-  
-  curr.execute('SELECT * FROM config')
-  config_data = curr.fetchall()
-  for d in config_data:
-      data.append((d[0], d[1]))
-  
-  conn.close()
-  #except sqlite3.Error as e:
-  #  print('config::list()',e)
+  try:
+    conn = lwdb.init()
+    curr = conn.cursor()
+    
+    curr.execute('SELECT * FROM config')
+    config_data = curr.fetchall()
+    for d in config_data:
+        data.append((d[0], d[1]))
+    
+    conn.close()
+  except sqlite3.Error as e:
+    print('config::list()',e)
   return data
