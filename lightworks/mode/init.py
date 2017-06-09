@@ -33,6 +33,9 @@ def parser_hook(parser,options,args):
   cfg.set("rawdir", "raw")
   cfg.set("intermediatedir", "intermediate")
   cfg.set("proxydir", "proxy")
+  cfg.set("rawcopy", "yes")
+  cfg.set("intermediatecopy", "yes")
+  cfg.set("proxycopy", "yes")
 
   for c in cfg.list():
     print "{:<10} = {}".format(c[0], c[1])

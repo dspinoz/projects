@@ -2,6 +2,7 @@
 import sqlite3
 
 import init as lwdb
+from .. import lwfexcept 
 
 def set(key=None,value=None):
   
@@ -21,7 +22,7 @@ def set(key=None,value=None):
     print('config::set',e)
     return False
 
-def get(key=None):
+def get(key):
   ret = (None,None)
   try:
     conn = lwdb.init()
@@ -32,6 +33,8 @@ def get(key=None):
 
     if data is not None:
       ret = data
+    else:
+      raise lwfexcept.ConfigValueNotFoundError(key)
     
     conn.close()
   except sqlite3.Error as e:

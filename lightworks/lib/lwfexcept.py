@@ -4,6 +4,14 @@ class LWFNotInitialisedError(Exception):
   def __init__(self):
     Exception.__init__(self)
 
+# LWF project could not determine config value 
+class ConfigValueNotFoundError(Exception):
+  def __init__(self,cfg):
+    Exception.__init__(self)
+    self.cfg = cfg
+  def __str__(self):
+    return Exception.__str__(self) + self.cfg
+
 # project file has not been added
 class ProjectFileNotFoundError(Exception):
   def __init__(self,path):

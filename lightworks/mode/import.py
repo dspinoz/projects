@@ -80,12 +80,18 @@ def import_file(root,userel,path,mode,transcode,project_path=None):
     pf = pfdb.get(path=project_path)
 
   cfgdir = "rawdir"
+  copyfile = "rawcopy"
   if mode == fdb.FileMode.RAW:
     cfgdir = "rawdir"
+    copyfile = "rawcopy"
   if mode == fdb.FileMode.INTERMEDIATE:
     cfgdir = "intermediatedir"
+    copyfile = "intermediatecopy"
   if mode == fdb.FileMode.PROXY:
     cfgdir = "proxydir"
+    copyfile = "proxycopy"
+
+  copyfile = util.str2bool(cfg.get(copyfile)[1])
   
   datadir = os.path.join(lwf.data_dir(),cfg.get(cfgdir)[1])
   rpath = util.strip_path_components(path,safe_root=True)
@@ -96,9 +102,15 @@ def import_file(root,userel,path,mode,transcode,project_path=None):
   stats.append(('mtime',st.st_mtime))
   stats.append(('mode',mode))
 
-  added = fdb.add(path)
+  added = None
   
-  save(added,stats,fpath,transcode)
+  try:
+    added = fdb.add(path)
+  except lib.lwfexcept.FileAlreadyImportedError:
+    added = fdb.get(path=path)
+    print "ref existing file {}".format(added)
+
+  save(added,stats,fpath,transcode,copyfile)
   
   pf.set(added)
   
@@ -107,17 +119,18 @@ def import_file(root,userel,path,mode,transcode,project_path=None):
   print pf
     
 
-def save(f,stats,savepath,transcode):
+def save(f,stats,savepath,transcode,copy):
   #print f
   
   for s in stats:
     fdb.set(path="",id=f.id,key=s[0],value=s[1])
     f.set(key=s[0],value=s[1])
 
-  if not os.path.exists(os.path.dirname(savepath)):
-    os.makedirs(os.path.dirname(savepath))
+  if copy:
+    if not os.path.exists(os.path.dirname(savepath)):
+      os.makedirs(os.path.dirname(savepath))
 
-  shutil.copy2(f.path,savepath)
+    shutil.copy2(f.path,savepath)
   
   if transcode:
     jobs = []
