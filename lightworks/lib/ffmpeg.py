@@ -5,7 +5,7 @@ import StringIO
 import lib.util as u
 import lib.execute as execute
 
-PROGRESS_LEN = 20
+PROGRESS_LEN = 10
 
 class FFMPEG(execute.Executer):
   
