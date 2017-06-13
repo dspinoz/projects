@@ -1,6 +1,8 @@
 import threading
 import time
 
+import lib.db.queue as db
+
 class Thread(threading.Thread):
 
   def __init__(self,num):
@@ -13,7 +15,13 @@ class Thread(threading.Thread):
     print "worker thread {} run".format(self.num)
     while not self.stopped():
       print "go {} ".format(self.num)
-      time.sleep(1)
+      try:
+        c = db.pop()
+        print "{} :{} #{} {} {} {}".format(self.num, c[0],c[1]['file'],c[1]['type'],c[1]['from'],c[1]['to'])
+      except IndexError:
+        for i in range(5):
+          if not self.stopped():
+            time.sleep(1)
     print "worker {} done".format(self.num)
 
   def kill(self):

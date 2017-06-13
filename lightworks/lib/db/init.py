@@ -36,7 +36,8 @@ def init():
   c.execute('''
             CREATE TABLE IF NOT EXISTS queue (
               file_id INTEGER NOT NULL,
-              json TEXT NOT NULL)''')
+              json TEXT NOT NULL,
+              complete INTEGER NOT NULL DEFAULT 0)''')
 
   c.execute('''
             CREATE TABLE IF NOT EXISTS project_file (
