@@ -14,8 +14,10 @@ class Executer:
     self.threads = []
     
     self.threads.append(threading.Thread(target=self.print_output, name='printer'))
+    self.proc = None
     
   def start(self):
+    u.eprint("Executer starting {}".format(self.args))
     self.proc = subprocess.Popen(self.args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1, preexec_fn=os.setsid)
 
     self.threads.append(threading.Thread(target=self.stream_watcher, name='stdout-watcher', args=(self.io_q, 'STDOUT', self.proc.stdout)))
@@ -25,15 +27,18 @@ class Executer:
       u.eprint("t start {}".format(t.name))
       t.start();
 
-  def wait(self, timeout=0):
+  def wait(self, timeout=None):
     
     if self.proc:
-      u.eprint ("Waiting...")
+      u.eprint ("Waiting for proc to finish {} ... {}".format(timeout,self.args))
       self.proc.wait()
+    
+    u.eprint("Waiting for proc to finish YEP")
     
     for t in self.threads:
       t.join(timeout);
       if t.isAlive():
+        u.eprint("** STILL ALIVE***")
         return False
       
     u.eprint ("wait. all Done!")
@@ -60,31 +65,31 @@ class Executer:
     #    break
     #  queue.put((identifier, line))
     while not stream.closed and self.poll():
-      u.eprint("Stream {} not closed".format(identifier))
+      #u.eprint("Stream {} not closed".format(identifier))
       for line in iter(stream.readline, b''):
         #queue.put((identifier, line))
         if identifier == "STDOUT":
           self.stdout(line)
-    u.eprint("t done {}".format(identifier))
+    #u.eprint("t done {}".format(identifier))
 
   def print_output(self):
     while not self.io_q.empty() or self.poll():
       try:
-        u.eprint("print_output poll");
+        #u.eprint("print_output poll");
         it = self.io_q.get(timeout=1)
         #it = self.io_q.get_nowait()
         identifier,line = it
-        u.eprint("{}:{}".format(identifier,line))
+        #u.eprint("{}:{}".format(identifier,line))
       except Queue.Empty as e:
-        u.eprint("q empty")
+        #u.eprint("q empty")
         pass
-    u.eprint("t done print")
+    #u.eprint("t done print")
 
   def stdout(self,line):
     pass
         
   def kill(self):
     if self.proc:
-      u.eprint("Killing...")
-      os.killpg(os.getpgid(self.proc.pid), signal.SIGTERM)
+      u.eprint("Killing... {}".format(self.proc.pid))
+      os.kill(self.proc.pid, signal.SIGINT)
 	
