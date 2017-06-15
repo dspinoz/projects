@@ -1,8 +1,10 @@
 import os
+import sys
 from datetime import datetime
 
 def eprint(*args, **kwargs):
-  #print(*args, file=sys.stderr, **kwargs)
+  #sys.stdout.write(*args, **kwargs)
+  #sys.stdout.write("\n")
   pass
 
 def str2bool(v):
