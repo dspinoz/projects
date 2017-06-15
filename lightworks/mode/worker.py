@@ -20,11 +20,10 @@ def get_parser():
   return parser
 
 def shandler(signal,frame):
-  print "SIG!"
+  sys.stderr.write("SIG!\n {}".format(signal))
   global threads
   for t in threads:
     t.kill()
-    t.join()
   
 def parser_hook(parser,options,args):
   if options.help:
@@ -42,13 +41,17 @@ def parser_hook(parser,options,args):
   for i in range(0,options.num):
     t = worker.Thread(i)
     t.start()
+    sys.stderr.write("worker {} started\n".format(i))
     threads.append(t)
 
+  sys.stderr.write("sig pause\n")
   signal.signal(signal.SIGINT, shandler)
   signal.pause()
+  sys.stderr.write("sig pause done\n")
   
   for t in threads:
     t.join()
+  sys.stderr.write("main done\n")
       
   sys.exit(0)
   
