@@ -12,11 +12,11 @@ def signal_handler(sig,frame):
   
   if sig == signal.SIGINT:
     u.eprint("SIGINT!")
+    stop_event.set()
     t.killsleep()
     
   if sig == signal.SIGCHLD:
     u.eprint("SIGCHLD!")
-    signal.pause()
 
 
 class T(threading.Thread):
@@ -33,16 +33,19 @@ class T(threading.Thread):
     u.eprint("T run sleep")
     self.sleep.start()
     u.eprint("T wait sleep")
-    self.sleep.wait()
+    if self.sleep.wait():
+      self.sleep = None
     u.eprint("T done sleep")
     
     u.eprint("T run info")
     self.info.start()
     u.eprint("T wait info")
-    self.info.wait()
+    if self.info.wait():
+      self.info = None
     u.eprint("T done info")
     
     u.eprint("T done")
+    stop_event.set()
     
   def killsleep(self):
     u.eprint("T kill sleep")
@@ -56,6 +59,8 @@ class T(threading.Thread):
 
 if __name__ == '__main__':
 	
+  stop_event = threading.Event()
+    
   t = T()
   t.start()
   
@@ -64,9 +69,19 @@ if __name__ == '__main__':
   signal.signal(signal.SIGINT, signal_handler)
   signal.signal(signal.SIGCHLD, signal_handler)
   
-  u.eprint("SIGNAL PAUSE")
-  signal.pause()
+  u.eprint("MAIN PAUSE")
+#  while not stop_event.is_set() and t.is_alive():
+#    signal.pause()
   
-  u.eprint("SIGNAL DONE")
+
+  try:
+    while t.is_alive():
+      t.join(timeout=1.0)
+  except (KeyboardInterrupt, SystemExit):
+    stop_event.set()
+
+
+ 
+  u.eprint("MAIN DONE")
   sys.exit(0)
   
