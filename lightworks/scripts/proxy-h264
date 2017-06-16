@@ -1,2 +1,2 @@
 #!/bin/sh -xe
-ffmpeg -y -stats -progress /dev/stdout -nostdin -i $1 -c:a copy -c:v libx264 -profile:v main -filter:v scale=iw/4:-1 -bf 0 -g 1 -crf 20 -f mov $2
+exec ffmpeg -y -stats -progress /dev/stdout -nostdin -i $1 -c:a copy -c:v libx264 -profile:v main -filter:v scale=iw/4:-1 -bf 0 -g 1 -crf 20 -f mov $2
