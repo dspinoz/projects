@@ -19,6 +19,7 @@ class Executer:
   def start(self):
     u.eprint("Executer starting {}".format(self.args))
     self.proc = subprocess.Popen(self.args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1, preexec_fn=os.setsid)
+    u.eprint("popen {}".format(self.proc.pid))
 
     self.threads.append(threading.Thread(target=self.stream_watcher, name='stdout-watcher', args=(self.io_q, 'STDOUT', self.proc.stdout)))
     self.threads.append(threading.Thread(target=self.stream_watcher, name='stderr-watcher', args=(self.io_q, 'STDERR', self.proc.stderr)))
@@ -33,14 +34,15 @@ class Executer:
       u.eprint ("Waiting for proc to finish {} ... {}".format(timeout,self.args))
       self.proc.wait()
     
-    u.eprint("Waiting for proc to finish YEP")
+    u.eprint("Waiting for proc to finish YEP {}".format(len(self.threads)))
     
     for t in self.threads:
+      u.eprint("execute t wait {}".format(t.name))
       t.join(timeout);
       if t.isAlive():
         u.eprint("** STILL ALIVE***")
         return False
-      
+     
     u.eprint ("wait. all Done!")
     return True
     
@@ -91,9 +93,5 @@ class Executer:
   def kill(self,timeout=None):
     if self.proc:
       u.eprint("Killing... {}".format(self.proc.pid))
-      try:
-        os.kill(self.proc.pid, signal.SIGINT)
-        self.wait(timeout)
-      except OSError:
-        pass
+      self.proc.terminate()
 

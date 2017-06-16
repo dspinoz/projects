@@ -43,12 +43,12 @@ class FFMPEG(execute.Executer):
     def wait(self):
       execute.Executer.wait(self)
       i = self.istream.getvalue()
-      u.eprint(i)
+      #u.eprint(str(i))
       j = json.loads(i)
       self.duration = int(float(j['format']['duration']) * 1000000)
 
   def __init__(self,script,path):
-    execute.Executer.__init__(self, ["./{}".format(script), path, "/tmp/a.mov"])
+    execute.Executer.__init__(self, ["./{}".format(script), path, "/tmp/z.mov"])
     self.path = path
     self.info = FFMPEG.Info(path)
     self.progress = FFMPEG.Progress()
@@ -56,10 +56,11 @@ class FFMPEG(execute.Executer):
   def start(self):
     self.info.start()
     self.info.wait()
+    u.eprint("ffmpeg start - after info")
     execute.Executer.start(self)
   
   def wait(self):
-    execute.Executer.wait(self)
+    ret = execute.Executer.wait(self)
     s = self.progress.getstatus()
 
     # todo ffmpeg return code error print(self.returncode())
@@ -76,12 +77,13 @@ class FFMPEG(execute.Executer):
       sys.stderr.write("\n")
       
     u.eprint("got to the end? {} {}".format(s['out_time_ms'], self.info.duration));
-  
+    return ret
+
   def stdout(self,line):
     self.progress.write(line)
     if self.progress.isvalid() and self.info.duration:
       s = self.progress.getstatus()
-      u.eprint(s)
+      u.eprint(str(s))
       
       speed = s['speed'].split('x')[0]
       

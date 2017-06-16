@@ -2,6 +2,7 @@ import sys
 import optparse
 import json
 import signal
+import threading
 
 import lib.db.queue as db
 import lib.worker as worker
@@ -19,8 +20,11 @@ def get_parser():
   parser.add_option("", "--num", dest="num", type=int, default=2, help="Number of threads for processing")
   return parser
 
-def shandler(signal,frame):
-  sys.stderr.write("SIG!\n {}".format(signal))
+def shandler(sig,frame):
+  sys.stderr.write("SIG!\n {}".format(sig))
+  if sig == signal.SIGCHLD:
+    return
+
   global threads
   for t in threads:
     t.kill()
@@ -38,19 +42,24 @@ def parser_hook(parser,options,args):
   global threads
   threads = []
 
+  shutdown_event = threading.Event()
+
   for i in range(0,options.num):
-    t = worker.Thread(i)
+    t = worker.Thread(i, shutdown_event)
     t.start()
     sys.stderr.write("worker {} started\n".format(i))
     threads.append(t)
 
   sys.stderr.write("sig pause\n")
   signal.signal(signal.SIGINT, shandler)
-  signal.pause()
-  sys.stderr.write("sig pause done\n")
-  
-  for t in threads:
-    t.join()
+  signal.signal(signal.SIGCHLD, shandler)
+  try:
+    for t in threads:
+      while t.is_alive():
+        t.join(timeout=1.0)
+  except (KeyboardInterrupt, SystemExit):
+    shutdown_event.set()
+
   sys.stderr.write("main done\n")
       
   sys.exit(0)
