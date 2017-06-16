@@ -88,8 +88,12 @@ class Executer:
   def stdout(self,line):
     pass
         
-  def kill(self):
+  def kill(self,timeout=None):
     if self.proc:
       u.eprint("Killing... {}".format(self.proc.pid))
-      os.kill(self.proc.pid, signal.SIGINT)
-	
+      try:
+        os.kill(self.proc.pid, signal.SIGINT)
+        self.wait(timeout)
+      except OSError:
+        pass
+
