@@ -1,7 +1,10 @@
+import os
+import sys
 import threading
 import time
 
 import lib.util as u
+import lib.add as add
 import lib.db.queue as db
 import lib.db.file as fdb
 import lib.ffmpeg as ffmpeg
@@ -28,12 +31,17 @@ class Thread(threading.Thread):
           f = fdb.list(id=c[1]['file'])[0]
           script = None
           print "TRANSCODE {}".format(f.path)
+          transcoded = f.path
           if c[1]['to'] is fdb.FileMode.INTERMEDIATE and c[1]['from'] is fdb.FileMode.RAW:
+            transcoded = transcoded + ".int"
             script = 'scripts/intermediate-h264'
+          if c[1]['to'] is fdb.FileMode.PROXY:
+            transcoded = transcoded + ".pxy"
+            script = 'scripts/proxy-h264'
 
           if script is not None:
             u.eprint ("FFMPEG!")
-            self.ffmpeg = ffmpeg.FFMPEG(script, f.path)
+            self.ffmpeg = ffmpeg.FFMPEG(script, f.path, transcoded)
  
             self.ffmpeg.start()
 
@@ -42,7 +50,12 @@ class Thread(threading.Thread):
               self.ffmpeg = None
               u.eprint ("FFMPEG! wait done")
             u.eprint ("FFMPEG done? {}".format(self.ffmpeg))
+            ppath = "private/tmp/a.mov"
+            add.import_file(os.curdir, False, transcoded, c[1]['to'], False, ppath)
 
+
+          else:
+            sys.stderr.write("Unable to transcode {}".format(f.path))
       except IndexError:
         for i in range(5):
           if not self.stopped():

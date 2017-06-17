@@ -47,9 +47,10 @@ class FFMPEG(execute.Executer):
       j = json.loads(i)
       self.duration = int(float(j['format']['duration']) * 1000000)
 
-  def __init__(self,script,path):
-    execute.Executer.__init__(self, ["./{}".format(script), path, "/tmp/z.mov"])
+  def __init__(self,script,path,out):
+    execute.Executer.__init__(self, ["./{}".format(script), path, out])
     self.path = path
+    self.out = out
     self.info = FFMPEG.Info(path)
     self.progress = FFMPEG.Progress()
 
