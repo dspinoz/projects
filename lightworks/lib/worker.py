@@ -7,6 +7,7 @@ import lib.util as u
 import lib.add as add
 import lib.db.queue as db
 import lib.db.file as fdb
+import lib.db.project_file as pfdb
 import lib.ffmpeg as ffmpeg
 
 class Thread(threading.Thread):
@@ -50,8 +51,10 @@ class Thread(threading.Thread):
               self.ffmpeg = None
               u.eprint ("FFMPEG! wait done")
             u.eprint ("FFMPEG done? {}".format(self.ffmpeg))
-            ppath = "private/tmp/a.mov"
-            add.import_file(os.curdir, False, transcoded, c[1]['to'], False, ppath)
+
+            pfs = pfdb.find(f.id)
+            for pf in pfs:
+              add.import_file(os.curdir, False, transcoded, c[1]['to'], False, pf.path)
 
 
           else:

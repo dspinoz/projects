@@ -5,14 +5,14 @@ import optparse
 
 import lib.lwf as lwf
 import lib.lwfexcept
-import lib.util as util
+import lib.util as u
 import lib.db.config as cfg
 import lib.db.file as fdb
 import lib.db.project_file as pfdb
 import lib.db.queue as qdb
 
 
-def import_file(root,userel,path,mode,transcode,project_path=None):
+def import_file(root,userel,path,mode,transcode,project_path=None,recursive=False):
 
   st = os.stat(path)
   
@@ -23,9 +23,11 @@ def import_file(root,userel,path,mode,transcode,project_path=None):
     if userel:
       project_path = os.path.relpath(path,root)
     else:
-      project_path = util.strip_path_components(path,safe_root=True)
+      project_path = u.strip_path_components(path,safe_root=True)
       project_path = os.sep.join([os.curdir, project_path])
       project_path = os.path.relpath(project_path,os.curdir)
+  
+  u.eprint("import {} as {} {}".format(path,mode,project_path))
   
   pf = None
   try:
@@ -45,10 +47,10 @@ def import_file(root,userel,path,mode,transcode,project_path=None):
     cfgdir = "proxydir"
     copyfile = "proxycopy"
 
-  copyfile = util.str2bool(cfg.get(copyfile)[1])
+  copyfile = u.str2bool(cfg.get(copyfile)[1])
   
   datadir = os.path.join(lwf.data_dir(),cfg.get(cfgdir)[1])
-  rpath = util.strip_path_components(path,safe_root=True)
+  rpath = u.strip_path_components(path,safe_root=True)
   fpath = os.sep.join([datadir,rpath])
   
   stats = []
@@ -60,21 +62,28 @@ def import_file(root,userel,path,mode,transcode,project_path=None):
   
   try:
     added = fdb.add(path)
+    u.eprint("new file {}".format(added))
   except lib.lwfexcept.FileAlreadyImportedError:
     added = fdb.get(path=path)
-    print "ref existing file {}".format(added)
+    u.eprint("ref existing file {}".format(added))
 
-  save(added,stats,fpath,transcode,copyfile)
+  if not recursive:
+    if os.path.exists(path + ".int"):
+      import_file(root,userel,path+".int",fdb.FileMode.INTERMEDIATE,False,project_path,True)
+    if os.path.exists(path + ".pxy"):
+      import_file(root,userel,path+".pxy",fdb.FileMode.PROXY,False,project_path,True)
   
+  pf.fetch()
+  save(pf,added,stats,fpath,transcode,copyfile)
+
   pf.set(added)
-  
+
   pf.fetch()
   
   print pf
-    
 
-def save(f,stats,savepath,transcode,copy):
-  #print f
+def save(pf,f,stats,savepath,transcode,copy):
+  u.eprint("save {}".format(f))
   
   for s in stats:
     fdb.set(path="",id=f.id,key=s[0],value=s[1])
@@ -89,11 +98,14 @@ def save(f,stats,savepath,transcode,copy):
   if transcode:
     jobs = []
     if f.get("mode") == fdb.FileMode.RAW:
-      jobs.append({'type':'transcode', 'file': f.id, 'from': fdb.FileMode.RAW, 'to': fdb.FileMode.INTERMEDIATE})
-      jobs.append({'type':'transcode', 'file': f.id, 'from': fdb.FileMode.INTERMEDIATE, 'to': fdb.FileMode.PROXY})
+      if pf.get(fdb.FileMode.INTERMEDIATE) is None:
+        jobs.append({'type':'transcode', 'file': f.id, 'from': fdb.FileMode.RAW, 'to': fdb.FileMode.INTERMEDIATE})
+      if pf.get(fdb.FileMode.PROXY) is None:
+        jobs.append({'type':'transcode', 'file': f.id, 'from': fdb.FileMode.INTERMEDIATE, 'to': fdb.FileMode.PROXY})
     elif f.get("mode") == fdb.FileMode.INTERMEDIATE:
       cfgdir = "intermediatedir"
-      jobs.append({'type':'transcode', 'file': f.id, 'from': fdb.FileMode.INTERMEDIATE, 'to': fdb.FileMode.PROXY})
+      if pf.get(fdb.FileMode.PROXY) is None:
+        jobs.append({'type':'transcode', 'file': f.id, 'from': fdb.FileMode.INTERMEDIATE, 'to': fdb.FileMode.PROXY})
     elif f.get("mode") == fdb.FileMode.PROXY:
       cfgdir = "proxydir"
   

@@ -6,6 +6,7 @@ from collections import namedtuple
 import init as lwdb
 import file as dbfile
 from .. import lwfexcept
+from .. import util as u
 
 class ProjectFile:
   def __init__(self,id,path):
@@ -25,6 +26,12 @@ class ProjectFile:
     
     add_file(self.id, file.id, file.get("mode"))
     self.files[file.get("mode")] = file
+
+  def get(self,mode):
+    try:
+      return self.files[mode]
+    except KeyError:
+      return None
     
   def fetch(self):
     
@@ -65,6 +72,8 @@ def add(path):
     raise e
 
 def add_file(projectid,fileid,fileid_mode):
+  
+  u.eprint("PF {} add file {} {}".format(projectid,fileid_mode,fileid))
   
   conn = lwdb.init()
   curr = conn.cursor()
@@ -138,6 +147,29 @@ def get_files(pf):
     
     conn.close()
     
+    return data
+  except sqlite3.Error as e:
+    conn.close()
+    raise e
+
+def find(fileid):
+  data = []
+  conn = lwdb.init()
+  curr = conn.cursor()
+  try:
+    
+    curr.execute('SELECT project_file_id FROM project_file_ref WHERE file_id = ?', (fileid,))
+      
+    file_data = curr.fetchall()
+    for d in file_data:
+      f = get(id=d[0])
+      data.append(f)
+    
+    conn.close()
+    
+    if len(data) is 0:
+      raise lwfexcept.ProjectFileNotFoundError(fileid)
+
     return data
   except sqlite3.Error as e:
     conn.close()
