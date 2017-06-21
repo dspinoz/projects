@@ -2,9 +2,11 @@ import os
 import sys
 import shutil
 import optparse
+import json
 
 import lib.lwf as lwf
 import lib.lwfexcept
+import lib.ffmpeg as ffmpeg
 import lib.util as u
 import lib.db.config as cfg
 import lib.db.file as fdb
@@ -57,6 +59,13 @@ def import_file(root,userel,path,mode,transcode,project_path=None,recursive=Fals
   stats.append(('size',st.st_size))
   stats.append(('mtime',st.st_mtime))
   stats.append(('mode',mode))
+
+  i = ffmpeg.FFMPEG.Info(path)
+  i.start()
+  i.wait()
+
+  stats.append(("info", json.dumps(i.json())))
+
 
   added = None
   

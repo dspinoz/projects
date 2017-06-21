@@ -74,8 +74,8 @@ def parser_hook(parser,options,args):
     
   if options.path:
     print options.path
-    for a in db.get(options.path, options.key):
-      print "{} = {}".format(a[0],a[1])
+    f = db.get(options.path, options.key)
+    print "{}".format(f.metadata_str())
     sys.exit(0)
       
   print parser.format_help()

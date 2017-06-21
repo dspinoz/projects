@@ -4,6 +4,7 @@ import StringIO
 
 import lib.util as u
 import lib.execute as execute
+import lib.db.file as fdb
 
 PROGRESS_LEN = 10
 
@@ -40,24 +41,34 @@ class FFMPEG(execute.Executer):
       #u.eprint("info {}".format(line))
       self.istream.write(line)
 
-    def wait(self):
-      execute.Executer.wait(self)
+    def json(self):
       i = self.istream.getvalue()
       #u.eprint(str(i))
-      j = json.loads(i)
+      return json.loads(i)
+
+    def wait(self):
+      execute.Executer.wait(self)
+      j = self.json()
       self.duration = int(float(j['format']['duration']) * 1000000)
 
   def __init__(self,script,path,out):
     execute.Executer.__init__(self, ["./{}".format(script), path, out])
     self.path = path
     self.out = out
-    self.info = FFMPEG.Info(path)
+    self.file = fdb.get(path)
+    u.eprint("info F {} {}".format(self.file,self.file.get("info")))
+    self.info = None
+    if self.file.get("info") is None:
+      self.info = FFMPEG.Info(path)
     self.progress = FFMPEG.Progress()
 
   def start(self):
-    self.info.start()
-    self.info.wait()
-    u.eprint("ffmpeg start - after info")
+    if self.info is not None:
+      self.info.start()
+      self.info.wait()
+      self.file.set("info", json.dumps(self.info.json()))
+      fdb.set(None,"info",json.dumps(self.info.json()),id=self.file.id)
+      u.eprint("ffmpeg start - after info")
     execute.Executer.start(self)
   
   def wait(self):
@@ -77,19 +88,32 @@ class FFMPEG(execute.Executer):
       sys.stderr.write("{0: >6}".format(u.size_human(int(s['total_size']))))
       sys.stderr.write("\n")
       
-    u.eprint("got to the end? {} {}".format(s['out_time_ms'], self.info.duration));
+    d = None
+    if self.info is None:
+      j = json.loads(self.file.get("info"))
+      d = int(float(j['format']['duration']) * 1000000)
+    else:
+      d = self.info.duration
+    u.eprint("got to the end? {} {}".format(s['out_time_ms'], d));
     return ret
 
   def stdout(self,line):
     self.progress.write(line)
-    if self.progress.isvalid() and self.info.duration:
+    if self.progress.isvalid():
+      d = None
+      if self.info is None:
+        j = json.loads(self.file.get("info"))
+        d = int(float(j['format']['duration']) * 1000000)
+      else:
+        d = self.info.duration
+
       s = self.progress.getstatus()
       u.eprint(str(s))
       
       speed = s['speed'].split('x')[0]
       
       pt = int(s['out_time_ms'])
-      tt = self.info.duration
+      tt = d
       
       ppf = float(pt)/tt
       ppi = int(ppf * 100)

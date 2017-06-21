@@ -22,8 +22,16 @@ class File:
     self.metadata = {}
     self.status = FileStatus(diff = "-", raw = "-", intermediate = "-", proxy = "-")
   
-  def __str__(self):
-    return "F#{:<4} {}".format(self.id, self.path)
+  def __str__(self,metadata=False):
+    s = "F#{:<4} {:<4} {}".format(self.id, self.get("mode"), self.path)
+    return s
+
+  def metadata_str(self):
+    s = str(self)
+    s += "\n"
+    for k in self.metadata:
+      s += "{:<10} {}\n".format( k,self.metadata[k] )
+    return s
   
   def get(self,key):
     try:

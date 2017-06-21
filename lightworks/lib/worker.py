@@ -30,8 +30,8 @@ class Thread(threading.Thread):
         
         if c[1]['type'] == 'transcode':
           if self.mode is not c[1]['to']:
-            sys.stderr.write("Not transcoding {}".format(c[1]['file']))
-            next
+            sys.stderr.write("Not transcoding {}\n".format(c[1]['file']))
+            continue
 
           f = fdb.list(id=c[1]['file'])[0]
           script = None
