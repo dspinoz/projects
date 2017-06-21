@@ -134,6 +134,8 @@ def import_directory(path,mode,transcode):
     for f in files:
       if f.startswith("."):
         continue
+      if not f.endswith(".MOV"):
+        continue
       
       p = os.path.join(root,f)
       
