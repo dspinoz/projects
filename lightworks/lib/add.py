@@ -3,6 +3,7 @@ import sys
 import shutil
 import optparse
 import json
+import datetime
 
 import lib.lwf as lwf
 import lib.lwfexcept
@@ -12,9 +13,12 @@ import lib.db.config as cfg
 import lib.db.file as fdb
 import lib.db.project_file as pfdb
 import lib.db.queue as qdb
+import lib.db.event as edb
 
 
 def import_file(root,userel,path,mode,transcode,project_path=None,recursive=False):
+
+  start = datetime.datetime.utcnow()
 
   st = os.stat(path)
   
@@ -89,6 +93,9 @@ def import_file(root,userel,path,mode,transcode,project_path=None,recursive=Fals
 
   pf.fetch()
   
+  end = datetime.datetime.utcnow()
+  edb.add({"type": "import", "from":path, "to":project_path, "as":mode, "took": str(end - start)})
+
   print pf
 
 def save(pf,f,stats,savepath,transcode,copy):

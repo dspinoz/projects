@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import sqlite3
 import json
+import datetime
 
 import init as lwdb
 
@@ -10,6 +11,8 @@ def add(event):
     conn = lwdb.init()
     curr = conn.cursor()
     
+    event['time'] = str(datetime.datetime.utcnow())
+
     curr.execute('INSERT INTO event VALUES (?)',(json.dumps(event),))
       
     conn.commit()
