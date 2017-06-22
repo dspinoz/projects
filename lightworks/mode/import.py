@@ -47,12 +47,20 @@ def parser_hook(parser,options,args):
     if not os.path.exists(options.path):
       print "Could not find",options.path,"for importing"
       sys.exit(1)
-    if os.path.isdir(options.path):
-      print "Importing directory",options.path
-      add.import_directory(options.path, options.mode, options.transcode)
-    else:
-      print "Importing file", options.path
-      add.import_file(os.curdir, False, options.path, options.mode, options.transcode,options.project_path)
+
+    try:
+      if os.path.isdir(options.path):
+        print "Importing directory",options.path
+        add.import_directory(options.path, options.mode, options.transcode)
+      else:
+        print "Importing file", options.path
+        add.import_file(os.curdir, False, options.path, options.mode, options.transcode,options.project_path)
+    except lib.lwfexcept.FileInfoError:
+      print "Could not generate file info",options.path
+      sys.exit(1)
+    except lib.lwfexcept.FileFFMPEGError:
+      print "Could not transcode with ffmpeg",options.path
+      sys.exit(2)
     
     sys.exit(0)
       

@@ -4,6 +4,7 @@ import StringIO
 
 import lib.util as u
 import lib.execute as execute
+import lib.lwfexcept as lwfexcept
 import lib.db.file as fdb
 
 PROGRESS_LEN = 10
@@ -35,7 +36,9 @@ class FFMPEG(execute.Executer):
   class Info(execute.Executer):
     def __init__(self,path):
       execute.Executer.__init__(self, ["./scripts/info", path])
+      self.path = path
       self.istream = StringIO.StringIO()
+      self.duration = -1
   
     def stdout(self,line):
       #u.eprint("info {}".format(line))
@@ -48,8 +51,15 @@ class FFMPEG(execute.Executer):
 
     def wait(self):
       execute.Executer.wait(self)
+      if self.returncode() is not 0:
+        raise lwfexcept.FileInfoError()
+
       j = self.json()
-      self.duration = int(float(j['format']['duration']) * 1000000)
+      try:
+        self.duration = int(float(j['format']['duration']) * 1000000)
+      except KeyError:
+        sys.stderr.write("Invalid info for {}".format(self.path))
+        raise lwfexcept.FileInfoError()
 
   def __init__(self,script,path,out):
     execute.Executer.__init__(self, ["./{}".format(script), path, out])
@@ -73,6 +83,8 @@ class FFMPEG(execute.Executer):
   
   def wait(self):
     ret = execute.Executer.wait(self)
+    if self.returncode() is not 0:
+      raise lwfexcept.FileFFMPEGError()
     s = self.progress.getstatus()
 
     # todo ffmpeg return code error print(self.returncode())

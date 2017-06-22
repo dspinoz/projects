@@ -58,23 +58,28 @@ class Thread(threading.Thread):
             script = 'scripts/proxy-h264'
 
           if script is not None:
-            self.ffmpeg = ffmpeg.FFMPEG(script, f.path, transcoded)
+            try:
+              self.ffmpeg = ffmpeg.FFMPEG(script, f.path, transcoded)
  
-            self.ffmpeg.start()
+              self.ffmpeg.start()
 
-            if self.ffmpeg.wait():
-              self.ffmpeg = None
+              if self.ffmpeg.wait():
+                self.ffmpeg = None
             
-            u.eprint ("FFMPEG done? {}".format(self.ffmpeg))
+              u.eprint ("FFMPEG done? {}".format(self.ffmpeg))
 
-            pfs = pfdb.find(f.id)
-            for pf in pfs:
-              add.import_file(os.curdir, False, transcoded, c[1]['to'], False, pf.path)
+              pfs = pfdb.find(f.id)
+              for pf in pfs:
+                add.import_file(os.curdir, False, transcoded, c[1]['to'], False, pf.path)
 
-            if not writeback:
-              os.remove(transcoded)
-              u.eprint("removed tmp {}".format(transcoded))
-
+              if not writeback:
+                os.remove(transcoded)
+                u.eprint("removed tmp {}".format(transcoded))
+            except lwfexcept.FileInfoError:
+              sys.stderr.write("Unable to get file info {}".format(f.path))
+            except lwfexcept.FileFFMPEGError:
+              sys.stderr.write("Unable to transcode with ffmpeg {}".format(f.path))
+            
           else:
             sys.stderr.write("Unable to transcode {}".format(f.path))
       except IndexError:

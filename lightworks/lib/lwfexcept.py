@@ -13,6 +13,7 @@ class ConfigValueNotFoundError(Exception):
     return Exception.__str__(self) + self.cfg
 
 # project file has not been added
+# project file could not be found
 class ProjectFileNotFoundError(Exception):
   def __init__(self,path):
     Exception.__init__(self)
@@ -28,14 +29,7 @@ class ProjectFileAlreadyExistsError(Exception):
   def __str__(self):
     return Exception.__str__(self) + self.path
 
-# project_file could not be found
-class ProjectFileNotFoundError(Exception):
-  def __init__(self,path):
-    Exception.__init__(self)
-    self.path = path
-  def __str__(self):
-    return Exception.__str__(self) + self.path
-    
+# file has not been added
 # file could not be found
 class FileNotFoundError(Exception):
   def __init__(self):
@@ -57,5 +51,15 @@ class ProjectFileDuplicateFileError(Exception):
 # attempt to import a file as a project_file, but the mode has already 
 # been consumed by another file
 class ProjectFileModeAlreadyTakenError(Exception):
+  def __init__(self):
+    Exception.__init__(self)
+
+# scripts/info failed
+class FileInfoError(Exception):
+  def __init__(self):
+    Exception.__init__(self)
+
+# scripts for transcoding failed
+class FileFFMPEGError(Exception):
   def __init__(self):
     Exception.__init__(self)
