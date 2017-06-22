@@ -1,2 +1,2 @@
 #!/bin/sh -xe
-exec ffprobe -show_format -show_streams -print_format json  $1
+exec ffprobe -show_format -show_streams -print_format json "$1"
