@@ -36,6 +36,7 @@ def parser_hook(parser,options,args):
   cfg.set("rawcopy", "yes")
   cfg.set("intermediatecopy", "yes")
   cfg.set("proxycopy", "yes")
+  cfg.set("writeback", "yes")
 
   for c in cfg.list():
     print "{:<10} = {}".format(c[0], c[1])

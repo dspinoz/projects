@@ -2,9 +2,11 @@ import os
 import sys
 import threading
 import time
+import tempfile
 
 import lib.util as u
 import lib.add as add
+import lib.db.config as cfg
 import lib.db.queue as db
 import lib.db.file as fdb
 import lib.db.project_file as pfdb
@@ -43,6 +45,11 @@ class Thread(threading.Thread):
           u.eprint ("TRANSCODE {}".format(f.path))
           transcoded = f.path
 
+          writeback = u.str2bool(cfg.get("writeback")[1])
+          if not writeback:
+            transcoded = tempfile.NamedTemporaryFile().name
+            u.eprint("writing to tmp {}".format(transcoded))
+
           if self.mode is fdb.FileMode.INTERMEDIATE and c[1]['from'] is fdb.FileMode.RAW:
             transcoded = transcoded + ".int"
             script = 'scripts/intermediate-h264'
@@ -64,6 +71,9 @@ class Thread(threading.Thread):
             for pf in pfs:
               add.import_file(os.curdir, False, transcoded, c[1]['to'], False, pf.path)
 
+            if not writeback:
+              os.remove(transcoded)
+              u.eprint("removed tmp {}".format(transcoded))
 
           else:
             sys.stderr.write("Unable to transcode {}".format(f.path))
