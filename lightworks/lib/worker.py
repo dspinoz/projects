@@ -12,21 +12,26 @@ import lib.ffmpeg as ffmpeg
 
 class Thread(threading.Thread):
 
-  def __init__(self,num,mode,shutdown):
+  def __init__(self,num,mode,max,shutdown):
     threading.Thread.__init__(self)
     self._stop_event = threading.Event()
     self.num = num
     self.ffmpeg = None
     self.shutdown = shutdown
     self.mode = mode
+    self.max = max
+    self.count = 0
     print "worker thread {} create".format(num)
 
   def run(self):
     u.eprint ("worker thread {} run".format(self.num))
     while not self.shutdown.is_set() and not self.stopped():
+      if self.max is not 0 and self.count >= self.max:
+        break
       try:
         c = db.pop()
-        u.eprint ("{} :{} #{} {} {} {}".format(self.num, c[0],c[1]['file'],c[1]['type'],c[1]['from'],c[1]['to']))
+        self.count = self.count + 1
+        u.eprint ("{} {}/{}: {} #{} {} {} {}".format(self.num, self.count, self.max, c[0],c[1]['file'],c[1]['type'],c[1]['from'],c[1]['to']))
         
         if c[1]['type'] == 'transcode':
           if self.mode is not c[1]['to']:

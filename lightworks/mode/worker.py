@@ -19,6 +19,7 @@ def get_parser():
   parser.add_option("-l", "--list", dest="list", action="store_true", help="List queued items")
   parser.add_option("", "--file", dest="file", default=None, help="File for queued jobs")
   parser.add_option("", "--num", dest="num", type=int, default=1, help="Number of threads for processing")
+  parser.add_option("", "--max", dest="max", type=int, default=0, help="Maximum number of jobs to provess")
   parser.add_option("-m", "--mode", dest="mode", help="Current mode of files to import [default: %default]", default="PROXY", choices=["RAW", "INTERMEDIATE", "PROXY"])
   return parser
 
@@ -50,7 +51,7 @@ def parser_hook(parser,options,args):
   shutdown_event = threading.Event()
 
   for i in range(0,options.num):
-    t = worker.Thread(i, options.mode, shutdown_event)
+    t = worker.Thread(i, options.mode, options.max, shutdown_event)
     t.start()
     sys.stderr.write("worker {} started\n".format(i))
     threads.append(t)
