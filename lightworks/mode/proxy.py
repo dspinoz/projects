@@ -72,9 +72,22 @@ def parser_hook(parser,options,args):
     u.eprint ("savepath real {}".format(savepath))
 
     if os.path.exists(savepath):
-      print savepath,"already here"
-      continue
+      sst = os.stat(savepath)
+      fst = os.stat(fpath)
+
+      if sst.st_size != fst.st_size:
+        print "not the proxy file, size diff!"
+        continue
+
+      if sst.st_mtime != fst.st_mtime:
+        print "not the proxy file, mtime diff!"
+        continue
+
+      if os.path.exists(savepath):
+        print savepath,"already here"
+        continue
     
+    print "copying",fpath,savepath
     if not os.path.exists(os.path.dirname(savepath)):
       os.makedirs(os.path.dirname(savepath))
     
