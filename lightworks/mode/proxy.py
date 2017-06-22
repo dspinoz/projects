@@ -1,9 +1,12 @@
 import os
 import sys
 import optparse
+import shutil
 
-import lib.util as util
+import lib.util as u
+import lib.lwf as lwf
 import lib.lwfexcept as lwfexcept
+import lib.db.config as cfg
 import lib.db.file as fdb
 import lib.db.project_file as pdb
 
@@ -30,11 +33,52 @@ def parser_hook(parser,options,args):
   except lwfexcept.ProjectFileNotFoundError:
     pass
 
-  for c in list:
-    c.fetch()
+  for p in list:
+    p.fetch()
 
-    f = c.get(fdb.FileMode.PROXY)
-    print c.path,c.get(fdb.FileMode.PROXY)
+    f = p.get(fdb.FileMode.PROXY)
+
+    if f is None:
+      print p.path,"????"
+      continue
+
+    print p.path,f.path
+
+    copyfile = u.str2bool(cfg.get("proxycopy")[1])
+    datadir = os.path.join(lwf.data_dir(),cfg.get("proxydir")[1])
+
+    rpath = u.strip_path_components(f.path,safe_root=True)
+    fpath = os.sep.join([datadir,rpath])
+    
+    if not copyfile:
+      if not os.path.exists(f.path):
+        print "File has gone! No copy available"
+        continue
+      else:
+        fpath = f.path
+    else:
+      if not os.path.exists(fpath):
+        print "File copy has gone!"
+        continue
+      else:
+        fpath = fpath
+
+
+    savepath = os.path.join(os.path.dirname(lwf.data_dir()), p.path)
+    u.eprint ("savepath full {}".format(savepath))
+    savepath = os.path.relpath(savepath)
+    u.eprint ("savepath rel {}".format(savepath))
+    savepath = os.path.realpath(savepath)
+    u.eprint ("savepath real {}".format(savepath))
+
+    if os.path.exists(savepath):
+      print savepath,"already here"
+      continue
+    
+    if not os.path.exists(os.path.dirname(savepath)):
+      os.makedirs(os.path.dirname(savepath))
+    
+    shutil.copy2(fpath,savepath)
 
   sys.exit(0)
   
