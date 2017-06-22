@@ -1,3 +1,4 @@
+import os
 import sys
 import json
 import StringIO
@@ -35,7 +36,7 @@ class FFMPEG(execute.Executer):
 
   class Info(execute.Executer):
     def __init__(self,path):
-      execute.Executer.__init__(self, ["./scripts/info", path])
+      execute.Executer.__init__(self, ["{}/scripts/info".format(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))), path])
       self.path = path
       self.istream = StringIO.StringIO()
       self.duration = -1
@@ -62,7 +63,7 @@ class FFMPEG(execute.Executer):
         raise lwfexcept.FileInfoError()
 
   def __init__(self,script,path,out):
-    execute.Executer.__init__(self, ["./{}".format(script), path, out])
+    execute.Executer.__init__(self, ["{}/scripts/{}".format(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), script), path, out])
     self.path = path
     self.out = out
     self.file = fdb.get(path)

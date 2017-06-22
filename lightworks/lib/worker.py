@@ -6,6 +6,7 @@ import tempfile
 
 import lib.util as u
 import lib.add as add
+import lib.lwfexcept as lwfexcept
 import lib.db.config as cfg
 import lib.db.queue as db
 import lib.db.file as fdb
@@ -52,10 +53,10 @@ class Thread(threading.Thread):
 
           if self.mode is fdb.FileMode.INTERMEDIATE and c[1]['from'] is fdb.FileMode.RAW:
             transcoded = transcoded + ".int"
-            script = 'scripts/intermediate-h264'
+            script = 'intermediate-h264'
           if self.mode is fdb.FileMode.PROXY:
             transcoded = transcoded + ".pxy"
-            script = 'scripts/proxy-h264'
+            script = 'proxy-h264'
 
           if script is not None:
             try:
