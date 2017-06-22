@@ -3,6 +3,7 @@ import sys
 import optparse
 
 import lib.util as util
+import lib.lwfexcept as lwfexcept
 import lib.db.project_file as db
 
 desc="""
@@ -26,9 +27,15 @@ def get_parser():
 def parser_hook(parser,options,args):
   if options.help:
     print parser.format_help()
-    sys.exit(0) 
+    sys.exit(0)
+ 
+  list = []
 
-  list = db.list()
+  try:
+    list = db.list()
+  except lwfexcept.ProjectFileNotFoundError:
+    pass
+
   for c in list:
     c.fetch()
     print c

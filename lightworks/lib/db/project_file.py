@@ -108,7 +108,7 @@ def list(filter=None,id=None,path=None):
     file_data = curr.fetchall()
     
     if len(file_data) is 0:
-      raise lwfexcept.ProjectFileNotFoundError
+      raise lwfexcept.ProjectFileNotFoundError(None)
     
     data = []
     for d in file_data:
