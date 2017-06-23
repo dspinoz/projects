@@ -16,7 +16,7 @@ import lib.db.queue as qdb
 import lib.db.event as edb
 
 
-def import_file(root,userel,path,mode,transcode,project_path=None,recursive=False):
+def import_file(root,userel,path,mode,transcode,project_path=None,recursive=False,storeas=None):
 
   start = datetime.datetime.utcnow()
 
@@ -24,6 +24,9 @@ def import_file(root,userel,path,mode,transcode,project_path=None,recursive=Fals
   
   root = os.path.realpath(root)
   path = os.path.realpath(path)
+
+  if storeas is None:
+    storeas = path
   
   if project_path is None:
     if userel:
@@ -56,7 +59,8 @@ def import_file(root,userel,path,mode,transcode,project_path=None,recursive=Fals
   copyfile = u.str2bool(cfg.get(copyfile)[1])
   
   datadir = os.path.join(lwf.data_dir(),cfg.get(cfgdir)[1])
-  rpath = u.strip_path_components(path,safe_root=True)
+
+  rpath = u.strip_path_components(storeas,safe_root=True)
   fpath = os.sep.join([datadir,rpath])
   
   stats = []
@@ -74,20 +78,20 @@ def import_file(root,userel,path,mode,transcode,project_path=None,recursive=Fals
   added = None
   
   try:
-    added = fdb.add(path)
+    added = fdb.add(storeas)
     u.eprint("new file {}".format(added))
   except lib.lwfexcept.FileAlreadyImportedError:
-    added = fdb.get(path=path)
+    added = fdb.get(path=storeas)
     u.eprint("ref existing file {}".format(added))
 
   if not recursive:
     if os.path.exists(path + ".int"):
-      import_file(root,userel,path+".int",fdb.FileMode.INTERMEDIATE,False,project_path,True)
+      import_file(root,userel,path+".int",fdb.FileMode.INTERMEDIATE,False,project_path,True,storeas+".int")
     if os.path.exists(path + ".pxy"):
-      import_file(root,userel,path+".pxy",fdb.FileMode.PROXY,False,project_path,True)
+      import_file(root,userel,path+".pxy",fdb.FileMode.PROXY,False,project_path,True,storeas+".pxy")
   
   pf.fetch()
-  save(pf,added,stats,fpath,transcode,copyfile)
+  save(pf,added,stats,path,fpath,transcode,copyfile)
 
   pf.set(added)
 
@@ -98,7 +102,7 @@ def import_file(root,userel,path,mode,transcode,project_path=None,recursive=Fals
 
   print pf
 
-def save(pf,f,stats,savepath,transcode,copy):
+def save(pf,f,stats,src,savepath,transcode,copy):
   u.eprint("save {}".format(f))
   
   for s in stats:
@@ -109,7 +113,7 @@ def save(pf,f,stats,savepath,transcode,copy):
     if not os.path.exists(os.path.dirname(savepath)):
       os.makedirs(os.path.dirname(savepath))
 
-    shutil.copy2(f.path,savepath)
+    shutil.copy2(src,savepath)
   
   if transcode:
     jobs = []

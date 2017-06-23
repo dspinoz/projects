@@ -51,11 +51,15 @@ class Thread(threading.Thread):
             transcoded = tempfile.NamedTemporaryFile().name
             u.eprint("writing to tmp {}".format(transcoded))
 
+          trans_ext = ""
+
           if self.mode is fdb.FileMode.INTERMEDIATE and c[1]['from'] is fdb.FileMode.RAW:
-            transcoded = transcoded + ".int"
+            trans_ext = ".int"
+            transcoded = transcoded + trans_ext
             script = 'intermediate-h264'
           if self.mode is fdb.FileMode.PROXY:
-            transcoded = transcoded + ".pxy"
+            trans_ext = ".pxy"
+            transcoded = transcoded + trans_ext
             script = 'proxy-h264'
 
           if script is not None:
@@ -71,7 +75,7 @@ class Thread(threading.Thread):
 
               pfs = pfdb.find(f.id)
               for pf in pfs:
-                add.import_file(os.curdir, False, transcoded, c[1]['to'], False, pf.path)
+                add.import_file(os.curdir, False, transcoded, c[1]['to'], False, pf.path, storeas=f.path + trans_ext)
 
               if not writeback:
                 os.remove(transcoded)
