@@ -138,6 +138,6 @@ def import_directory(path,mode,transcode):
         continue
       
       p = os.path.join(root,f)
-      
-      import_file(root, True, p, mode, transcode, os.path.relpath(p,path))
+      u.eprint("import p {} root {} path {}".format(p,root,path))
+      import_file(root, True, p, mode, transcode, os.path.join(os.path.basename(path), os.path.relpath(p,path)))
     
