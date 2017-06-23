@@ -54,7 +54,7 @@ def parser_hook(parser,options,args):
         add.import_directory(options.path, options.mode, options.transcode)
       else:
         print "Importing file", options.path
-        add.import_file(os.curdir, False, options.path, options.mode, options.transcode,options.project_path)
+        add.import_file(os.path.dirname(options.path), True, options.path, options.mode, options.transcode,options.project_path)
     except lib.lwfexcept.FileInfoError:
       print "Could not generate file info",options.path
       sys.exit(1)
