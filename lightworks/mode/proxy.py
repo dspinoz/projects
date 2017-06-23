@@ -38,6 +38,11 @@ def parser_hook(parser,options,args):
 
     f = p.get(fdb.FileMode.PROXY)
 
+    if os.path.exists(p.path):
+      print "remove existing file, mode",p.mode,"path",p.path
+      # todo unlink if safe
+    p.set_mode(None)
+
     if f is None:
       print p.path,"????"
       continue
@@ -92,6 +97,7 @@ def parser_hook(parser,options,args):
       os.makedirs(os.path.dirname(savepath))
     
     shutil.copy2(fpath,savepath)
+    p.set_mode(fdb.FileMode.PROXY)
 
   sys.exit(0)
   

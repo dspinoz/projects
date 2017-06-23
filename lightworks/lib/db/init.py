@@ -42,6 +42,7 @@ def init():
   c.execute('''
             CREATE TABLE IF NOT EXISTS project_file (
               path TEXT NOT NULL,
+              mode INTEGER DEFAULT NULL,
               PRIMARY KEY(path) )''')
               
   c.execute('''

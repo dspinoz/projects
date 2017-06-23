@@ -9,19 +9,24 @@ from .. import lwfexcept
 from .. import util as u
 
 class ProjectFile:
-  def __init__(self,id,path):
+  def __init__(self,id,path,mode=None):
     self.id = id
     self.path = path
+    self.mode = mode
     self.files = {}
   
   def __str__(self):
     
-    s = "P#{:<4} {} ({})\n".format(self.id, self.path, len(self.files))
+    s = "P#{:<4} {:>4} {} ({})\n".format(self.id, self.mode, self.path, len(self.files))
     for m in self.files:
       f = self.files[m]
       s += "  {}: {}\n".format(m, f)
     return s
-    
+
+  def set_mode(self,mode):
+    set_mode(self.id, mode)
+    self.mode = mode
+
   def set(self,file):
     
     add_file(self.id, file.id, file.get("mode"))
@@ -91,19 +96,37 @@ def add_file(projectid,fileid,fileid_mode):
     conn.close()
     raise e
     
+def set_mode(id,mode=None,curr=None):
+  try:
+    mycurr = False
+    if curr is None:
+      conn = lwdb.init()
+      curr = conn.cursor()
+      mycurr = True
+    
+    curr.execute('UPDATE project_file SET mode = ? WHERE rowid = ?',(mode,id))
+    
+    if mycurr:
+      conn.commit()
+      conn.close()
+    return True
+  except sqlite3.Error as e:
+    print('project_file::set_mode',e)
+    return False
+
 def list(filter=None,id=None,path=None):
   conn = lwdb.init()
   curr = conn.cursor()
   try:
     
     if filter is None and id is None and path is None:
-      curr.execute('SELECT rowid, path FROM project_file')
+      curr.execute('SELECT rowid, path, mode FROM project_file')
     elif filter is not None and id is None and path is None:
-      curr.execute('SELECT rowid, path FROM project_file WHERE path LIKE ?', (filter,))
+      curr.execute('SELECT rowid, path, mode FROM project_file WHERE path LIKE ?', (filter,))
     elif path is not None and id is None:
-      curr.execute('SELECT rowid, path FROM project_file WHERE path = ?', (path,))
+      curr.execute('SELECT rowid, path, mode FROM project_file WHERE path = ?', (path,))
     elif id is not None:
-      curr.execute('SELECT rowid, path FROM project_file WHERE rowid = ?', (id,))
+      curr.execute('SELECT rowid, path, mode FROM project_file WHERE rowid = ?', (id,))
       
     file_data = curr.fetchall()
     
@@ -112,7 +135,7 @@ def list(filter=None,id=None,path=None):
     
     data = []
     for d in file_data:
-      f = ProjectFile(d[0], d[1])
+      f = ProjectFile(d[0], d[1], d[2])
       data.append(f)
     
     conn.close()
