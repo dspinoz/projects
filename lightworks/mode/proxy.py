@@ -18,7 +18,7 @@ Switch to proxy files.
 def get_parser():
   parser = optparse.OptionParser(add_help_option=False, description=desc, usage=optparse.SUPPRESS_USAGE)
   parser.add_option('', "--help", dest="help", action="store_true", help="Show proxy options")
-  parser.add_option("-S", "--list-proxy", dest="list_proxy", action="store_true", help="List proxy files")
+  parser.add_option("-l", "--list", dest="list_proxy", action="store_true", help="List proxy files")
   return parser
   
 def parser_hook(parser,options,args):
