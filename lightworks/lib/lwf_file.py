@@ -10,6 +10,13 @@ import lib.db.config as cfg
 import lib.db.file as fdb
 import lib.db.project_file as pdb
 
+
+class CouldNotVerifyError(Exception):
+  def __init__(self):
+    Exception.__init__(self)
+  def __str__(self):
+    return Exception.__str__(self)
+
 class LWFFile:
   def __init__(self,mode):
     if mode == fdb.FileMode.PROXY:
@@ -17,6 +24,9 @@ class LWFFile:
       self.modestr = "proxy"
     else:
       raise lwfexcept.UnsupportedFileModeError
+    
+  def verify(self):
+    print "verify file"
     
   def set(self):
  
@@ -29,6 +39,9 @@ class LWFFile:
 
     for p in list:
       p.fetch()
+      
+      if p.mode == self.mode:
+        print "mode is already current, verifying...",p.path
 
       f = p.get(self.mode)
 
