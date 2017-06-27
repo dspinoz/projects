@@ -25,7 +25,6 @@ def add(file, event):
 
 
 def list(file=None,complete=None,limit=None,curr=None):
-  print "list"
   data = []
   #try:
   mycurr = False
@@ -109,12 +108,10 @@ def pop():
     complete(i[0], curr=curr)
 
     curr.execute("COMMIT")
-    print "popped"
+    
   except sqlite3.Error:
     curr.execute("ROLLBACK")
-    print "rollback"
 
   conn.close()
-  print "pop {}".format(i)
   return i
 
