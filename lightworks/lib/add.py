@@ -142,6 +142,9 @@ def import_directory(path,mode,transcode):
         continue
       
       p = os.path.join(root,f)
-      u.eprint("import p {} root {} path {}".format(p,root,path))
-      import_file(root, True, p, mode, transcode, os.path.join(os.path.basename(path), os.path.relpath(p,path)))
-    
+      
+      try:
+        u.eprint("import p {} root {} path {}".format(p,root,path))
+        import_file(root, True, p, mode, transcode, os.path.join(os.path.basename(path), os.path.relpath(p,path)))
+      except lib.lwfexcept.ProjectFileModeAlreadyTakenError:
+        print "Already imported? ",p
