@@ -27,8 +27,29 @@ def parser_hook(parser,options,args):
     print parser.format_help()
     sys.exit(0)
  
-  f = lwf_file.LWFFile(fdb.FileMode.PROXY)
-  f.set()
+  list = []
 
+  try:
+    list = pdb.list()
+  except lwfexcept.ProjectFileNotFoundError:
+    pass
+
+  for p in list:
+    p.fetch()
+    
+    try:
+      
+      f = lwf_file.LWFFile(p)
+      f.set(fdb.FileMode.PROXY)
+      
+    except lwf_file.ProjectFileDoesNotHaveModeError as e:
+      print "Project File",p.path,"does not have proxy file available"
+      
+    except lwf_file.FileNotFoundError as e:
+      print "Project File",p.path,"could not find original file",e.path
+      
+    except lwf_file.ProjectFileDifferentError as e:
+      print "Project File",p.path,"was different in",e.description+"!"
+      
   sys.exit(0)
   
