@@ -37,19 +37,27 @@ def parser_hook(parser,options,args):
   for p in list:
     p.fetch()
     
+    err = None
+    
     try:
       
       f = lwf_file.LWFFile(p)
       f.set(fdb.FileMode.PROXY)
       
     except lwf_file.ProjectFileDoesNotHaveModeError as e:
-      print "Project File",p.path,"does not have proxy file available"
+      err = "Project File {} does not have {} file available".format(e.path,e.mode)
       
+    except lwf_file.ProjectFileNotFoundError as e:
+      err = "Project File {} could not be found".format(e.path)
+    
     except lwf_file.FileNotFoundError as e:
-      print "Project File",p.path,"could not find original file",e.path
+      err = "Project File {} could not find original file {} {}".format(p.path,e.path,e.mode)
       
     except lwf_file.ProjectFileDifferentError as e:
-      print "Project File",p.path,"was different in",e.description+"!"
+      err = "Project File {} was different in {}!".format(e.path,e.description)
+    
+    if err is not None:
+      print u'\u2715',err
       
   sys.exit(0)
   

@@ -10,9 +10,15 @@ import lib.db.config as cfg
 import lib.db.file as fdb
 import lib.db.project_file as pdb
 
+class WeirdError(Exception):
+  def __init__(self,description):
+    Exception.__init__(self)
+    self.description = description
+  def __str__(self):
+    return Exception.__str__(self) + " " + str(self.description)
 
 class ProjectFileDoesNotHaveModeError(Exception):
-  def __init__(self,mode,path):
+  def __init__(self,path,mode):
     Exception.__init__(self)
     self.mode = mode
     self.path = path
@@ -60,14 +66,16 @@ class LWFFile:
     fpath = os.sep.join([datadir,rpath])
     
     if not copyfile:
+      u.eprint("get src {}, orig path".format(f.path))
       if not os.path.exists(f.path):
         raise FileNotFoundError(f.path,mode)
         
       else:
         fpath = f.path
     else:
+      u.eprint("get src {}, copy path".format(fpath))
       if not os.path.exists(fpath):
-        raise FileNotFoundError(f.path,mode)
+        raise FileNotFoundError(fpath,mode)
       else:
         fpath = fpath
 
@@ -86,31 +94,57 @@ class LWFFile:
   def check_already_set(self,mode,modestr):
     
     if not os.path.exists(self.p.path):
-      return
+      return False
       
-    u.eprint ("project file already exists {}".format(self.p.path))
-    
-    src = self.p.get(mode)
-    
-    if src is None:
-      raise ProjectFileDoesNotHaveModeError(self.p.path,mode)
-    
+    u.eprint ("project file already exists {} {}".format(self.p.mode, self.p.path))
     
     if self.p.mode == mode:
-      u.eprint ("mode is already set, exists, verifying... {}".format(self.p.path))
-      
-      self.verify(src.path,self.p.path)
-      
-    else:
-      print "what is the file, another mode? safely remove?",self.p.path
+      try:
+        # todo support more modes
+        src = self.src_path(self.p.mode,"proxy")
+        dst = self.dst_path()
         
-  def verify(self,src,dst):
+        self.verify(self.p.mode, src, dst)
+        # tick 2714
+        # cross 2715
+        print  u'\u2714',os.path.relpath(dst)
+        return True
+      except e:
+        raise e
+    
+  def cleanup_existing(self):
+    
+    if not os.path.exists(self.p.path):
+      return
+    
+    f = self.p.get(self.p.mode)
+    
+    if f is None:
+      raise WeirdError("Project is set to mode {}, but does not have the file info".format(self.p.mode))
+    
+    try:
+      
+      # todo support more modes
+      src = self.src_path(self.p.mode,"proxy")
+      dst = self.dst_path()
+      
+      self.verify(self.p.mode,src,self.p.path)
+      
+      print self.p.path,"verified as mode",self.p.mode,"safely remove"
+      shutil.move(self.p.path, self.p.path+".deleted")
+      p.set_mode(None)
+      
+    except e:
+      raise e
+    
+        
+  def verify(self,mode,src,dst):
     
     if not os.path.exists(dst):
       raise ProjectFileNotFoundError(dst)
       
     if not os.path.exists(src):
-      raise FileNotFoundError(src)
+      raise FileNotFoundError(src,mode)
       
     sst = os.stat(dst)
     fst = os.stat(src)
@@ -121,32 +155,26 @@ class LWFFile:
     if sst.st_mtime != fst.st_mtime:
       raise ProjectFileDifferentError(dst, "mtime")
     
-    print "{}".format(dst),"verified"
+    u.eprint("{} verified for {}".format(dst,mode))
 
   def set(self,mode):
     
+    # todo support more modes
     if mode == fdb.FileMode.PROXY:
       modestr = "proxy"
     else:
       raise lwfexcept.UnsupportedFileModeError
     
-    p = self.p
-    
-    
-    self.check_already_set(mode,modestr)
-    
+    if self.check_already_set(mode,modestr):
+      return
       
-    u.eprint ("reset {} to nothing".format(p.path))
-    p.set_mode(None)
+    self.cleanup_existing()
     
-
+    
     src = self.src_path(mode,modestr)
     dst = self.dst_path()
-
-    if os.path.exists(dst):
-      self.verify(src,dst)
     
-    print "copying",src,dst
+    print u'\u2714',"copying",mode,"files from",src,"to",dst
     if not os.path.exists(os.path.dirname(dst)):
       os.makedirs(os.path.dirname(dst))
     
