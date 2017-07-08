@@ -53,7 +53,15 @@ class LWFFile:
   def __init__(self,project_file):
     self.p = project_file
 
-  def src_path(self,mode,modestr): 
+  def src_path(self,mode): 
+    # todo support more modes
+    if mode == fdb.FileMode.PROXY:
+      modestr = "proxy"
+    elif mode == fdb.FileMode.INTERMEDIATE:
+      modestr = "intermediate"
+    else:
+      raise lwfexcept.UnsupportedFileModeError
+
     copyfile = u.str2bool(cfg.get("{}copy".format(modestr))[1])
     datadir = os.path.join(lwf.data_dir(),cfg.get("{}dir".format(modestr))[1])
 
@@ -91,7 +99,7 @@ class LWFFile:
     u.eprint ("savepath real {}".format(savepath))
     return savepath
     
-  def check_already_set(self,mode,modestr):
+  def check_already_set(self,mode):
     
     if not os.path.exists(self.p.path):
       return False
@@ -101,7 +109,7 @@ class LWFFile:
     if self.p.mode == mode:
       try:
         # todo support more modes
-        src = self.src_path(self.p.mode,"proxy")
+        src = self.src_path(self.p.mode)
         dst = self.dst_path()
         
         self.verify(self.p.mode, src, dst)
@@ -129,17 +137,16 @@ class LWFFile:
     
     try:
       
-      # todo support more modes
-      src = self.src_path(self.p.mode,"proxy")
+      src = self.src_path(self.p.mode)
       dst = self.dst_path()
       
       self.verify(self.p.mode,src,self.p.path)
       
       print self.p.path,"verified as mode",self.p.mode,"safely remove"
       shutil.move(self.p.path, self.p.path+".deleted")
-      p.set_mode(None)
+      self.p.set_mode(None)
       
-    except e:
+    except Exception as e:
       raise e
     
         
@@ -164,19 +171,13 @@ class LWFFile:
 
   def set(self,mode):
     
-    # todo support more modes
-    if mode == fdb.FileMode.PROXY:
-      modestr = "proxy"
-    else:
-      raise lwfexcept.UnsupportedFileModeError
-    
-    if self.check_already_set(mode,modestr):
+    if self.check_already_set(mode):
       return
       
     self.cleanup_existing()
     
     
-    src = self.src_path(mode,modestr)
+    src = self.src_path(mode)
     dst = self.dst_path()
     
     #print u'\u2714',"copying",mode,"files from",src,"to",dst

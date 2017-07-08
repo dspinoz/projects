@@ -12,14 +12,14 @@ import lib.db.file as fdb
 import lib.db.project_file as pdb
 
 desc="""
-Switch to proxy files.
+Switch to intermediate files.
 
 """
 
 def get_parser():
   parser = optparse.OptionParser(add_help_option=False, description=desc, usage=optparse.SUPPRESS_USAGE)
-  parser.add_option('', "--help", dest="help", action="store_true", help="Show proxy options")
-  parser.add_option("-l", "--list", dest="list_proxy", action="store_true", help="List proxy files")
+  parser.add_option('', "--help", dest="help", action="store_true", help="Show intermediate options")
+  parser.add_option("-l", "--list", dest="list_intermediate", action="store_true", help="List intermediate files")
   return parser
   
 def parser_hook(parser,options,args):
@@ -42,7 +42,7 @@ def parser_hook(parser,options,args):
     try:
       
       f = lwf_file.LWFFile(p)
-      f.set(fdb.FileMode.PROXY)
+      f.set(fdb.FileMode.INTERMEDIATE)
       
     except lwf_file.ProjectFileDoesNotHaveModeError as e:
       err = "Project File {} does not have {} file available".format(e.path,e.mode)
