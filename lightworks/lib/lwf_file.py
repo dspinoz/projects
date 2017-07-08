@@ -107,15 +107,20 @@ class LWFFile:
         self.verify(self.p.mode, src, dst)
         # tick 2714
         # cross 2715
-        print  u'\u2714',os.path.relpath(dst)
+        #print  u'\u2714',os.path.relpath(dst)
+        print  "y",os.path.relpath(dst)
         return True
-      except e:
+      except Exception as e:
         raise e
     
   def cleanup_existing(self):
     
     if not os.path.exists(self.p.path):
       return
+    
+    if self.p.mode is None:
+      raise WeirdError("Project file {} exists, but mode not set".format(self.p.path))
+      
     
     f = self.p.get(self.p.mode)
     
@@ -174,11 +179,12 @@ class LWFFile:
     src = self.src_path(mode,modestr)
     dst = self.dst_path()
     
-    print u'\u2714',"copying",mode,"files from",src,"to",dst
+    #print u'\u2714',"copying",mode,"files from",src,"to",dst
+    print "y","copying",mode,"files from",src,"to",dst
     if not os.path.exists(os.path.dirname(dst)):
       os.makedirs(os.path.dirname(dst))
     
     shutil.copy2(src,dst)
-    p.set_mode(mode)
+    self.p.set_mode(mode)
 
   

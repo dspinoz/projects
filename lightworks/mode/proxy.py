@@ -57,7 +57,8 @@ def parser_hook(parser,options,args):
       err = "Project File {} was different in {}!".format(e.path,e.description)
     
     if err is not None:
-      print u'\u2715',err
+      #print u'\u2715',err
+      print "x",err
       
   sys.exit(0)
   
