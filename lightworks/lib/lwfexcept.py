@@ -12,6 +12,14 @@ class ConfigValueNotFoundError(Exception):
   def __str__(self):
     return Exception.__str__(self) + self.cfg
 
+# LWF project has not been initialised
+class UnsupportedFileModeError(Exception):
+  def __init__(self,mode):
+    Exception.__init__(self)
+    self.mode = mode
+  def __str__(self):
+    return Exception.__str__(self) + str(self.mode)
+
 # project file has not been added
 # project file could not be found
 class ProjectFileNotFoundError(Exception):

@@ -54,13 +54,14 @@ class LWFFile:
     self.p = project_file
 
   def src_path(self,mode): 
-    # todo support more modes
     if mode == fdb.FileMode.PROXY:
       modestr = "proxy"
     elif mode == fdb.FileMode.INTERMEDIATE:
       modestr = "intermediate"
+    elif mode == fdb.FileMode.RAW:
+      modestr = "raw"
     else:
-      raise lwfexcept.UnsupportedFileModeError
+      raise lwfexcept.UnsupportedFileModeError(mode)
 
     copyfile = u.str2bool(cfg.get("{}copy".format(modestr))[1])
     datadir = os.path.join(lwf.data_dir(),cfg.get("{}dir".format(modestr))[1])

@@ -5,6 +5,8 @@ import optparse
 from importlib import import_module
 import re
 
+import lib.lwfexcept
+
 desc="""lwworkflow
 
 Lightworks Workflow Helper script to aid video editing.
@@ -56,6 +58,9 @@ if __name__ == '__main__':
     
     sys.exit(0)
     
+  except lib.lwfexcept.UnsupportedFileModeError as e:
+    print "Invalid file mode, {}".format(e)
+    sys.exit(1)
   except ImportError as e:
     print "Invalid mode, {}: {}".format(args[0], e)
     sys.exit(1)
