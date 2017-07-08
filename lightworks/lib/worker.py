@@ -91,6 +91,8 @@ class Thread(threading.Thread):
         for i in range(5):
           if not self.stopped():
             time.sleep(1)
+      except Exception as e:
+        print e
     u.eprint ("worker {} done".format(self.num))
 
   def kill(self):
