@@ -3,6 +3,7 @@ import optparse
 import json
 
 import lib.db.queue as db
+import lib.db.file as fdb
 
 desc="""
 Queue mode.
@@ -41,7 +42,11 @@ def parser_hook(parser,options,args):
       if options.clear:
         db.delete(c[0])
       else:
-        print ":{} #{} {} {} {}".format(c[0],c[1]['file'],c[1]['type'],c[1]['from'],c[1]['to'])
+        try:
+          f = fdb.get(id=c[1]['file'])
+          print ":{} {} {} {} {}".format(c[0],c[1]['type'],c[1]['from'],c[1]['to'],f.path)
+        except:
+		  print ":{} {} {} {} #{}".format(c[0],c[1]['type'],c[1]['from'],c[1]['to'],c[1]['file'])
     sys.exit(0)
   
   if options.json:
