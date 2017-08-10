@@ -26,10 +26,13 @@ class File:
     s = "F#{:<4} {:<4} {}".format(self.id, self.get("mode"), self.path)
     return s
 
-  def metadata_str(self):
+  def metadata_str(self,key=None):
     s = str(self)
     s += "\n"
     for k in self.metadata:
+      if key is not None and not key == k:
+        continue
+
       s += "{:<10} {}\n".format( k,self.metadata[k] )
     return s
   

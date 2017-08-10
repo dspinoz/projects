@@ -37,6 +37,7 @@ def get_parser():
   parser.add_option("-a", "--add", dest="add", action="store_true", help="Add file specified")
   parser.add_option("-f", "--filter", dest="filter", default=None, help="Filter list of files")
   parser.add_option("-p", "--path", dest="path", default=None, help="File path to modify")
+  parser.add_option("-i", "--id", dest="id", default=None, help="File id to list")
   parser.add_option("-k", "--key", dest="key", default=None, help="Show/Set metadata value for file")
   parser.add_option("-v", "--value", dest="value", help="Set value for file metadata")
   return parser
@@ -72,10 +73,10 @@ def parser_hook(parser,options,args):
     db.set(options.path, options.key, options.value)
     # continue to show key
     
-  if options.path:
+  if options.path or options.id:
     print options.path
-    f = db.get(options.path, options.key)
-    print "{}".format(f.metadata_str())
+    f = db.get(options.path, options.id)
+    print "{}".format(f.metadata_str(options.key))
     sys.exit(0)
       
   print parser.format_help()
