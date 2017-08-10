@@ -45,10 +45,16 @@ class Thread(threading.Thread):
           script = None
           u.eprint ("TRANSCODE {}".format(f.path))
           transcoded = f.path
+          
+          tmp = None
+          try:
+            tmp = cfg.get("tempdir")[1]
+          except lwfexcept.ConfigValueNotFoundError:
+            pass
 
           writeback = u.str2bool(cfg.get("writeback")[1])
           if not writeback:
-            transcoded = tempfile.NamedTemporaryFile().name
+            transcoded = tempfile.NamedTemporaryFile(dir=tmp).name
             u.eprint("writing to tmp {}".format(transcoded))
 
           trans_ext = ""
