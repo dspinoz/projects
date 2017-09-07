@@ -32,6 +32,14 @@ class TestStringMethods(unittest.TestCase):
 
 if __name__ == '__main__':
     print inspect.getdoc(TestStringMethods)
+    for (name,value) in inspect.getmembers(TestStringMethods):
+      if name in TestStringMethods.__dict__ and inspect.ismethod(value):
+          print name
+          print inspect.getdoc(value)
     print "COMMENTS:"
     print inspect.getcomments(TestStringMethods)
+    for (name,value) in inspect.getmembers(TestStringMethods):
+      if name in TestStringMethods.__dict__ and inspect.ismethod(value):
+          print name
+          print inspect.getcomments(value)
     unittest.main()
