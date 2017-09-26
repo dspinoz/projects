@@ -143,9 +143,18 @@ d3.json('/data/SH2-50.json', function(err,json) {
   console.log(err,json);
   d3.select('#main-issue-info').html(json.key + '&nbsp;<small>'+json.fields.description+'</small>');
   
-  facts.add(json.fields.subtasks);
-  
-  dc.redrawAll();
+  for(var i = 0; i < json.fields.subtasks.length; i++) {
+    var s = json.fields.subtasks[i];
+    
+    d3.json('/data/'+s.key+'.json', function(err,json) {
+      if (err) { return; }
+      
+      //console.log(json);
+      facts.add([json]);
+      
+      dc.redrawAll();
+    });
+  }
 });
 
 } catch (e) {
