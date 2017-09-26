@@ -90,10 +90,10 @@
         <div class="col-sm-4">
           <div class="panel panel-default">
             <div class="panel-heading">
-              <h3 class="panel-title"></h3>
+              <h3 class="panel-title">Priority</h3>
             </div>
             <div class="panel-body">
-              <div id=""></div>
+              <div id="chart-priority"></div>
             </div>
           </div>
         </div>
@@ -122,9 +122,11 @@
 var facts = crossfilter();
 
 var chartStatus = dc.pieChart("#chart-status");
+    chartPriority = dc.pieChart("#chart-priority"),
     chartAssignee = dc.pieChart("#chart-assignee");
 
 var statusDim = facts.dimension(function(d) { return d.fields.status.name; }),
+    priorityDim = facts.dimension(function(d) { return d.fields.priority.name; }),
     assigneeDim = facts.dimension(function(d) { return d.fields.assignee ? d.fields.assignee.key : "Unassigned"; });
 
 chartStatus
@@ -132,6 +134,11 @@ chartStatus
   .dimension(statusDim)
   .group(statusDim.group().reduceCount());
   
+chartPriority
+  .innerRadius(30)
+  .dimension(priorityDim)
+  .group(priorityDim.group().reduceCount());
+
 chartAssignee
   .innerRadius(30)
   .dimension(assigneeDim)
