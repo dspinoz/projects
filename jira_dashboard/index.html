@@ -80,10 +80,10 @@
         <div class="col-sm-4">
           <div class="panel panel-default">
             <div class="panel-heading">
-              <h3 class="panel-title"></h3>
+              <h3 class="panel-title">Assignee</h3>
             </div>
             <div class="panel-body">
-              <div id=""></div>
+              <div id="chart-assignee"></div>
             </div>
           </div>
         </div>
@@ -122,14 +122,20 @@
 var facts = crossfilter();
 
 var chartStatus = dc.pieChart("#chart-status");
+    chartAssignee = dc.pieChart("#chart-assignee");
 
-var statusDim = facts.dimension(function(d) { return d.fields.status.name; });
+var statusDim = facts.dimension(function(d) { return d.fields.status.name; }),
+    assigneeDim = facts.dimension(function(d) { return d.fields.assignee ? d.fields.assignee.key : "Unassigned"; });
 
 chartStatus
   .innerRadius(30)
   .dimension(statusDim)
-  .group(statusDim.group().reduceCount())
-  .title(function(d) { return d.value; });
+  .group(statusDim.group().reduceCount());
+  
+chartAssignee
+  .innerRadius(30)
+  .dimension(assigneeDim)
+  .group(assigneeDim.group().reduceCount());
 
 dc.renderAll();
 
