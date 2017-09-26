@@ -61,6 +61,12 @@
     <div class="container" role="main">
 
       <div class="row">
+        <div class="rol-sm-12">
+          <h3 id="main-issue-info"></h3>
+        </div>
+      </div>
+      
+      <div class="row">
         <div class="col-sm-4">
           <div class="panel panel-default">
             <div class="panel-heading">
@@ -114,6 +120,12 @@
     try{
 
 var facts = crossfilter();
+
+d3.json('/data/SH2-50.json', function(err,json) {
+  console.log(err,json);
+  d3.select('#main-issue-info').html(json.key + '&nbsp;<small>'+json.fields.description+'</small>');
+  
+});
 
 } catch (e) {
   console.log("ERROR",e);
