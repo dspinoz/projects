@@ -70,10 +70,10 @@
         <div class="col-sm-4">
           <div class="panel panel-default">
             <div class="panel-heading">
-              <h3 class="panel-title"></h3>
+              <h3 class="panel-title">Status</h3>
             </div>
             <div class="panel-body">
-              <div id=""></div>
+              <div id="chart-status"></div>
             </div>
           </div>
         </div>
@@ -121,10 +121,25 @@
 
 var facts = crossfilter();
 
+var chartStatus = dc.pieChart("#chart-status");
+
+var statusDim = facts.dimension(function(d) { return d.fields.status.name; });
+
+chartStatus
+  .innerRadius(30)
+  .dimension(statusDim)
+  .group(statusDim.group().reduceCount())
+  .title(function(d) { return d.value; });
+
+dc.renderAll();
+
 d3.json('/data/SH2-50.json', function(err,json) {
   console.log(err,json);
   d3.select('#main-issue-info').html(json.key + '&nbsp;<small>'+json.fields.description+'</small>');
   
+  facts.add(json.fields.subtasks);
+  
+  dc.redrawAll();
 });
 
 } catch (e) {
