@@ -100,6 +100,19 @@
       </div>
       
       <div class="row">
+        <div class="col-sm-4">
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              <h3 class="panel-title">Labels</h3>
+            </div>
+            <div class="panel-body">
+              <div id="chart-label"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="row">
         <div class="col-sm-12">
           <table class="table table-bordered table-hover" id="data-table">
             <thead>
@@ -123,10 +136,12 @@ var facts = crossfilter();
 
 var chartStatus = dc.pieChart("#chart-status");
     chartPriority = dc.pieChart("#chart-priority"),
+    chartLabel = dc.pieChart("#chart-label"),
     chartAssignee = dc.pieChart("#chart-assignee");
 
 var statusDim = facts.dimension(function(d) { return d.fields.status.name; }),
     priorityDim = facts.dimension(function(d) { return d.fields.priority.name; }),
+    labelDim = facts.dimension(function(d) { return d.fields.labels; }, true),
     assigneeDim = facts.dimension(function(d) { return d.fields.assignee ? d.fields.assignee.key : "Unassigned"; });
 
 chartStatus
@@ -138,6 +153,11 @@ chartPriority
   .innerRadius(30)
   .dimension(priorityDim)
   .group(priorityDim.group().reduceCount());
+
+chartLabel
+  .innerRadius(30)
+  .dimension(labelDim)
+  .group(labelDim.group().reduceCount());
 
 chartAssignee
   .innerRadius(30)
