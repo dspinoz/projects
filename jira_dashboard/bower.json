@@ -1,0 +1,23 @@
+{
+  "name": "jira_dashboard",
+  "version": "0.0.1",
+  "homepage": "https://github.com/dspinoz/projects/jira_dashboard",
+  "authors": [
+    "dspinoz <dspinoz@gmail.com>"
+  ],
+  "description": "interact with jira tasks and subtasks",
+  "main": "index.html",
+  "keywords": [
+    "spending",
+    "dashboard"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "dc.js": "2",
+    "colorbrewer": "~1.0.0",
+    "bootstrap": "~3.3.7",
+    "datatables": "~1.10.12",
+    "cubism": "~1.6.0",
+    "crossfilter2": "~1.4.2"
+  }
+}
