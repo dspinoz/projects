@@ -10,8 +10,6 @@ import csv
 
 PORT_NUMBER=8000
 
-transactions = re.compile('^data.csv$')
-
 class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
   def do_GET(s):
     p = s.path[1:] #remove slash from front of url
@@ -26,22 +24,8 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
       f.close()
       
     except IOError:
-    
-      if transactions.match(p):
         
-        items = os.listdir('data')
-        
-        s.wfile.write('name,\n')
-        
-        for i in items:
-        
-          s.wfile.write('data' + os.path.sep + i)
-          s.wfile.write(',')
-          s.wfile.write('\n')
-            
-        
-      else:
-        s.send_error(404, 'File not found')
+      s.send_error(404, 'File not found')
 
 if __name__ == '__main__':
   srv = BaseHTTPServer.HTTPServer
