@@ -110,6 +110,16 @@
             </div>
           </div>
         </div>
+        <div class="col-sm-4">
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              <h3 class="panel-title">Counts</h3>
+            </div>
+            <div class="panel-body">
+              <h3>Issues: <span id="chart-count-issues"><span class="filter-count"></span> <small>of <span class="total-count"></span></small></span></h3>
+            </div>
+          </div>
+        </div>
       </div>
       
       <div class="row">
@@ -137,12 +147,18 @@ var facts = crossfilter();
 var chartStatus = dc.pieChart("#chart-status");
     chartPriority = dc.pieChart("#chart-priority"),
     chartLabel = dc.pieChart("#chart-label"),
+    chartCountIssues = dc.dataCount("#chart-count-issues"),
     chartAssignee = dc.pieChart("#chart-assignee");
 
 var statusDim = facts.dimension(function(d) { return d.fields.status.name; }),
     priorityDim = facts.dimension(function(d) { return d.fields.priority.name; }),
+    keyDim = facts.dimension(function(d) { return d.key; }),
     labelDim = facts.dimension(function(d) { return d.fields.labels; }, true),
     assigneeDim = facts.dimension(function(d) { return d.fields.assignee ? d.fields.assignee.key : "Unassigned"; });
+
+chartCountIssues
+  .dimension(facts)
+  .group(facts.groupAll());
 
 chartStatus
   .innerRadius(30)
