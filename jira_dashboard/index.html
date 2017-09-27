@@ -154,6 +154,18 @@
 
     <script>
     try{
+      
+function formatSeconds(seconds) {
+  var weeks = Math.floor(seconds / 432000); //5 days
+  var days = Math.floor((seconds % 432000) / 86400);
+  var hours = Math.floor(((seconds % 432000) % 86400) / 3600);
+  var minutes = Math.floor((((seconds % 432000) % 86400) % 3600) / 60);
+  var seconds = (((seconds % 432000) % 86400) % 3600) % 60;
+  //return weeks + " weeks " + days + " days " + hours + " hours " + minutes + " minutes " + seconds + " seconds";
+  return (weeks ? weeks + "w " : "") +
+         (days ? days + "d " : "") +
+         (hours ? hours + "h " : "");
+}
 
 var facts = crossfilter();
 
@@ -230,7 +242,8 @@ chartCountWorked
     }
     
     return 0;
-  }));
+  }))
+  .formatNumber(formatSeconds);
   
 chartCountComplete
   .valueAccessor(function(d) { return d; })
@@ -239,7 +252,8 @@ chartCountComplete
       return d.fields.timetracking.originalEstimateSeconds; 
     }
     return 0;
-  }));
+  }))
+  .formatNumber(formatSeconds);
 
 chartStatus
   .innerRadius(30)
