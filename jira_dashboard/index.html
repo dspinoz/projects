@@ -110,6 +110,18 @@
             </div>
           </div>
         </div>
+        
+        <div class="col-sm-4">
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              <h3 class="panel-title">Component</h3>
+            </div>
+            <div class="panel-body">
+              <div id="chart-component"></div>
+            </div>
+          </div>
+        </div>
+        
         <div class="col-sm-4">
           <div class="panel panel-default">
             <div class="panel-heading">
@@ -148,6 +160,7 @@ var facts = crossfilter();
 var chartStatus = dc.pieChart("#chart-status");
     chartPriority = dc.pieChart("#chart-priority"),
     chartCVIS = dc.pieChart("#chart-cvis"),
+    chartComponent = dc.pieChart("#chart-component"),
     chartCountIssues = dc.dataCount("#chart-count-issues"),
     chartCountComplete = dc.numberDisplay("#chart-count-complete"),
     chartCountWorked = dc.numberDisplay("#chart-count-worked"),
@@ -158,6 +171,7 @@ var statusDim = facts.dimension(function(d) { return d.fields.status.name; }),
     keyDim = facts.dimension(function(d) { return d.key; }),
     // TODO add other CVIS versions
     cvisDim = facts.dimension(function(d) { return d.fields.labels.filter(function(l) { return this.indexOf(l) >= 0;}, ["B2A", "B2B"]); }, true),
+    componentDim = facts.dimension(function(d) { return d.fields.labels.filter(function(l) { return this.indexOf(l) >= 0;}, ["SDU", "CMFD"]); }, true),
     assigneeDim = facts.dimension(function(d) { return d.fields.assignee ? d.fields.assignee.key : "Unassigned"; });
 
 chartCountIssues
@@ -200,6 +214,11 @@ chartCVIS
   .innerRadius(30)
   .dimension(cvisDim)
   .group(cvisDim.group().reduceCount());
+
+chartComponent
+  .innerRadius(30)
+  .dimension(componentDim)
+  .group(componentDim.group().reduceCount());
 
 chartAssignee
   .innerRadius(30)
