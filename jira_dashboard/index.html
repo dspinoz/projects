@@ -117,6 +117,7 @@
             </div>
             <div class="panel-body">
               <h3>Issues: <span id="chart-count-issues"><span class="filter-count"></span> <small>of <span class="total-count"></span></small></span></h3>
+              <h3>Time: <span id="chart-count-worked"></span> / <span id="chart-count-complete"></span></h3>
             </div>
           </div>
         </div>
@@ -148,6 +149,8 @@ var chartStatus = dc.pieChart("#chart-status");
     chartPriority = dc.pieChart("#chart-priority"),
     chartLabel = dc.pieChart("#chart-label"),
     chartCountIssues = dc.dataCount("#chart-count-issues"),
+    chartCountComplete = dc.numberDisplay("#chart-count-complete"),
+    chartCountWorked = dc.numberDisplay("#chart-count-worked"),
     chartAssignee = dc.pieChart("#chart-assignee");
 
 var statusDim = facts.dimension(function(d) { return d.fields.status.name; }),
@@ -159,6 +162,28 @@ var statusDim = facts.dimension(function(d) { return d.fields.status.name; }),
 chartCountIssues
   .dimension(facts)
   .group(facts.groupAll());
+
+chartCountWorked
+  .valueAccessor(function(d) { return d; })
+  .group(facts.groupAll().reduceSum(function(d) { 
+    if (d.fields.worklog && d.fields.worklog.worklogs) {
+      var tot = 0;
+      d.fields.worklog.worklogs.forEach(function(w) {
+        tot += w.timeSpentSeconds;
+      });
+      return tot;
+    }
+    return 0;
+  }));
+  
+chartCountComplete
+  .valueAccessor(function(d) { return d; })
+  .group(facts.groupAll().reduceSum(function(d) { 
+    if (d.fields.timetracking && d.fields.timetracking.remainingEstimateSeconds) {
+      return d.fields.timetracking.remainingEstimateSeconds; 
+    }
+    return 0;
+  }));
 
 chartStatus
   .innerRadius(30)
@@ -192,7 +217,7 @@ d3.json('/data/SH2-50.json', function(err,json) {
     d3.json('/data/'+s.key+'.json', function(err,json) {
       if (err) { return; }
       
-      //console.log(json);
+      console.log(json);
       facts.add([json]);
       
       dc.redrawAll();
