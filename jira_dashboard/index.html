@@ -129,7 +129,8 @@
             </div>
             <div class="panel-body">
               <h3>Issues: <span id="chart-count-issues"><span class="filter-count"></span> <small>of <span class="total-count"></span></small></span></h3>
-              <h3>Time: <span id="chart-count-worked"></span> <small>/ <span id="chart-count-complete"></span></small></h3>
+              <h3>Worked: <span id="chart-count-worked"></span></h3>
+              <h3>ETC: <span id="chart-count-complete"></span></h3>
             </div>
           </div>
         </div>
@@ -248,8 +249,8 @@ chartCountWorked
 chartCountComplete
   .valueAccessor(function(d) { return d; })
   .group(facts.groupAll().reduceSum(function(d) { 
-    if (d.fields.timetracking && d.fields.timetracking.originalEstimateSeconds) {
-      return d.fields.timetracking.originalEstimateSeconds; 
+    if (d.fields.timetracking && d.fields.timetracking.remainingEstimateSeconds) {
+      return d.fields.timetracking.remainingEstimateSeconds; 
     }
     return 0;
   }))
@@ -292,7 +293,7 @@ d3.json('/data/SH2-50.json', function(err,json) {
     d3.json('/data/'+s.key+'.json', function(err,json) {
       if (err) { return; }
       
-      //console.log(json);
+      console.log(json);
       facts.add([json]);
       
       dc.redrawAll();
