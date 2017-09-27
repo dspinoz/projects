@@ -144,6 +144,7 @@
                 <th>Issue Id</th>
                 <th>Status</th>
                 <th>Summary</th>
+                <th>Assignee</th>
                 <th>Progress</th>
               </tr>
             </thead>
@@ -168,7 +169,81 @@ function formatSeconds(seconds) {
          (hours ? hours + "h " : "");
 }
 
+function refreshDataTable() {
+  dc.events.trigger(function () {
+    dataTable.api()
+      .clear()
+      .rows.add(facts.allFiltered())
+      .draw();
+  });
+}
+
 var facts = crossfilter();
+
+var dataTable = $("#data-table").dataTable({
+  "lengthMenu": [ [10, 25, 50, -1], [10, 25, 50, "All"] ],
+  "footerCallback": function ( row, data, start, end, display ) {
+    var api = this.api(), data ;
+  },
+  "order": [[0, 'desc']],
+  "dom": 'T<"clear-l"l><"clear-l"i><"clear-r"f><"clear-r"p>t',
+  "tableTools": {
+    "sSwfPath": "copy_csv_xls_pdf.swf"
+  },
+  columnDefs: [
+    {
+      targets: 0,
+      data: function(d) { return d.key; }
+    },
+    {
+      targets: 1,
+      data: function(d) { return d.fields.status.name; }
+    },
+    {
+      targets: 2,
+      data: function(d) { return d.fields.summary; }
+    },
+    {
+      targets: 3,
+      data: function(d) { return d.fields.assignee ? d.fields.assignee.key : "Unassigned"; }
+    },
+    {
+      targets: 4,
+      data: function(d) { 
+        if (d.fields.timetracking) {
+          var str = "";
+          
+          if (d.fields.timetracking.originalEstimate) {
+            str += d.fields.timetracking.originalEstimate;
+          } else {
+            str += "??";
+          }
+          
+          str += " - ";
+          
+          if (d.fields.timetracking.timeSpent) {
+            str += d.fields.timetracking.timeSpent;
+          } else {
+            str += "??";
+          }
+          
+          str += " = <strong>";
+          
+          if (d.fields.timetracking.remainingEstimate) {
+            str += d.fields.timetracking.remainingEstimate;
+          } else {
+            str += "??";
+          }
+          
+          str += "</strong>";
+          
+          return str;
+        }
+        return 'N/A'; 
+      }
+    }
+  ]
+});
 
 var chartStatus = dc.pieChart("#chart-status");
     chartPriority = dc.pieChart("#chart-priority"),
@@ -178,6 +253,11 @@ var chartStatus = dc.pieChart("#chart-status");
     chartCountComplete = dc.numberDisplay("#chart-count-complete"),
     chartCountWorked = dc.numberDisplay("#chart-count-worked"),
     chartAssignee = dc.pieChart("#chart-assignee");
+
+for (var i = 0; i < dc.chartRegistry.list().length; i++) {
+  var chartI = dc.chartRegistry.list()[i];
+  chartI.on("filtered", refreshDataTable);
+}
 
 var statusDim = facts.dimension(function(d) { return d.fields.status.name; }),
     priorityDim = facts.dimension(function(d) { return d.fields.priority.name; }),
@@ -296,6 +376,7 @@ d3.json('/data/SH2-50.json', function(err,json) {
       console.log(json);
       facts.add([json]);
       
+      refreshDataTable();
       dc.redrawAll();
     });
   }
