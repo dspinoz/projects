@@ -145,7 +145,9 @@
                 <th>Status</th>
                 <th>Summary</th>
                 <th>Assignee</th>
-                <th>Progress</th>
+                <th>Time</th>
+                <th>% Progress</th>
+                <th>Updated</th>
               </tr>
             </thead>
           </table>
@@ -178,6 +180,7 @@ function refreshDataTable() {
   });
 }
 
+var now = new Date();
 var facts = crossfilter();
 
 var dataTable = $("#data-table").dataTable({
@@ -193,7 +196,7 @@ var dataTable = $("#data-table").dataTable({
   columnDefs: [
     {
       targets: 0,
-      data: function(d) { return d.key; }
+      data: function(d) { return '<a href="">' +d.key+ '</a>'; }
     },
     {
       targets: 1,
@@ -219,7 +222,7 @@ var dataTable = $("#data-table").dataTable({
             str += "??";
           }
           
-          str += " - ";
+          str += " - <em>";
           
           if (d.fields.timetracking.timeSpent) {
             str += d.fields.timetracking.timeSpent;
@@ -227,7 +230,7 @@ var dataTable = $("#data-table").dataTable({
             str += "??";
           }
           
-          str += " = <strong>";
+          str += "</em> = <strong>";
           
           if (d.fields.timetracking.remainingEstimate) {
             str += d.fields.timetracking.remainingEstimate;
@@ -240,6 +243,26 @@ var dataTable = $("#data-table").dataTable({
           return str;
         }
         return 'N/A'; 
+      }
+    },
+    {
+      targets: 5,
+      data: function(d) { 
+        if (d.fields.timetracking && d.fields.timetracking.originalEstimateSeconds &&
+            d.fields.timetracking.timeSpentSeconds && d.fields.timetracking.remainingEstimateSeconds) {
+        
+          return ((d.fields.timetracking.timeSpentSeconds / d.fields.timetracking.originalEstimateSeconds) * 100).toFixed(1);
+        
+        }
+        
+        return "N/A"; 
+      }
+    },
+    {
+      targets: 6,
+      data: function(d) { 
+        var updated = d3.time.format.iso.parse(d.fields.updated);
+        return '<span title="'+updated+'">'+formatSeconds((now.getTime() - updated.getTime()) / 1000) + ' ago</span>';
       }
     }
   ]
