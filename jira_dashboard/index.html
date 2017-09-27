@@ -129,7 +129,7 @@
             </div>
             <div class="panel-body">
               <h3>Issues: <span id="chart-count-issues"><span class="filter-count"></span> <small>of <span class="total-count"></span></small></span></h3>
-              <h3>Time: <span id="chart-count-worked"></span> / <span id="chart-count-complete"></span></h3>
+              <h3>Time: <span id="chart-count-worked"></span> <small>/ <span id="chart-count-complete"></span></small></h3>
             </div>
           </div>
         </div>
@@ -181,21 +181,42 @@ chartCountIssues
 chartCountWorked
   .valueAccessor(function(d) { return d; })
   .group(facts.groupAll().reduceSum(function(d) { 
+    
+    var worklog = -1;
     if (d.fields.worklog && d.fields.worklog.worklogs) {
-      var tot = 0;
+      worklog = 0;
       d.fields.worklog.worklogs.forEach(function(w) {
-        tot += w.timeSpentSeconds;
+        worklog += w.timeSpentSeconds;
       });
-      return tot;
     }
+    
+    if (d.fields.timetracking && d.fields.timetracking.timeSpentSeconds) {
+      if (worklog == -1) {
+        return d.fields.timetracking.timeSpentSeconds;
+      }
+      
+      if (worklog != d.fields.timetracking.timeSpentSeconds) {
+        alert(d.key + ' time spent = ' + d.fields.timetracking.timeSpentSeconds + ' worklog = ' + worklog);
+        
+        if (worklog > d.fields.timetracking.timeSpentSeconds) {
+          return worklog;
+        }
+        return d.fields.timetracking.timeSpentSeconds;
+      }
+      
+      return worklog;
+    } else if (worklog > 0) {
+      return worklog;
+    }
+    
     return 0;
   }));
   
 chartCountComplete
   .valueAccessor(function(d) { return d; })
   .group(facts.groupAll().reduceSum(function(d) { 
-    if (d.fields.timetracking && d.fields.timetracking.remainingEstimateSeconds) {
-      return d.fields.timetracking.remainingEstimateSeconds; 
+    if (d.fields.timetracking && d.fields.timetracking.originalEstimateSeconds) {
+      return d.fields.timetracking.originalEstimateSeconds; 
     }
     return 0;
   }));
