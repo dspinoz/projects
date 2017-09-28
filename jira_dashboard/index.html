@@ -291,8 +291,13 @@ var statusDim = facts.dimension(function(d) { return d.fields.status.name; }),
       }
       
       // TODO add other CVIS versions
-      var cvis = d.fields.labels.filter(function(l) { return this.indexOf(l) >= 0;}, ["B2A", "B2B"]); 
+      var cvis = d.fields.labels.filter(function(l) { return this.indexOf(l) >= 0;}, ["B1", "B2A", "B2B"]); 
       var comp = d.fields.labels.filter(function(l) { return this.indexOf(l) >= 0;}, ["CMFD", "SDU"]); 
+      var hedado = d.fields.labels.filter(function(l) { return this.indexOf(l) >= 0;}, ["HEDAD-O"]); 
+      
+      if (hedado.length > 0) {
+        return "HEDAD-O";
+      }
       
       if (cvis.length == 0 || comp.length == 0) {
         return "Unknown CVIS";
