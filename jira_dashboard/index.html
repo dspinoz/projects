@@ -160,15 +160,20 @@
     try{
       
 function formatSeconds(seconds) {
-  var weeks = Math.floor(seconds / 432000); //5 days
-  var days = Math.floor((seconds % 432000) / 86400);
-  var hours = Math.floor(((seconds % 432000) % 86400) / 3600);
-  var minutes = Math.floor((((seconds % 432000) % 86400) % 3600) / 60);
-  var seconds = (((seconds % 432000) % 86400) % 3600) % 60;
-  //return weeks + " weeks " + days + " days " + hours + " hours " + minutes + " minutes " + seconds + " seconds";
+  var sec = 1;
+  var sec_min = sec * 60;
+  var sec_hour = sec_min * 60;
+  var sec_day = sec_hour * 8;
+  var sec_week = sec_day * 5;
+  
+  var weeks = Math.floor(seconds / sec_week);
+  var days = Math.floor((seconds % sec_week) / sec_day);
+  var hours = Math.floor(((seconds % sec_week) % sec_day) / sec_hour);
+  var mins = Math.floor((((seconds % sec_week) % sec_day) % sec_hour) / sec_min);
   return (weeks ? weeks + "w " : "") +
          (days ? days + "d " : "") +
-         (hours ? hours + "h " : "");
+         (hours ? hours + "h " : "") +
+         (mins ? mins + "m " : "");
 }
 
 function refreshDataTable() {
@@ -216,24 +221,24 @@ var dataTable = $("#data-table").dataTable({
         if (d.fields.timetracking) {
           var str = "";
           
-          if (d.fields.timetracking.originalEstimate) {
-            str += d.fields.timetracking.originalEstimate;
+          if (d.fields.timetracking.originalEstimateSeconds) {
+            str += formatSeconds(d.fields.timetracking.originalEstimateSeconds);
           } else {
             str += "??";
           }
           
           str += " - <em>";
           
-          if (d.fields.timetracking.timeSpent) {
-            str += d.fields.timetracking.timeSpent;
+          if (d.fields.timetracking.timeSpentSeconds) {
+            str += formatSeconds(d.fields.timetracking.timeSpentSeconds);
           } else {
             str += "??";
           }
           
           str += "</em> = <strong>";
           
-          if (d.fields.timetracking.remainingEstimate) {
-            str += d.fields.timetracking.remainingEstimate;
+          if (d.fields.timetracking.remainingEstimateSeconds) {
+            str += formatSeconds(d.fields.timetracking.remainingEstimateSeconds);
           } else {
             str += "??";
           }
