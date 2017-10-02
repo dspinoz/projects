@@ -144,10 +144,6 @@
                 <th>Issue Id</th>
                 <th>Status</th>
                 <th>Summary</th>
-                <th>Assignee</th>
-                <th>Time</th>
-                <th>% Progress</th>
-                <th>Updated</th>
               </tr>
             </thead>
           </table>
@@ -178,9 +174,17 @@ function formatSeconds(seconds) {
 
 function refreshDataTable() {
   dc.events.trigger(function () {
+  
+    var issues = d3.map();
+    facts.allFiltered().forEach(function(d) {
+      if (!issues.has(d.key)) {
+        issues.set(d.key, d._orig);
+      }
+    });
+  
     dataTable.api()
       .clear()
-      .rows.add(facts.allFiltered())
+      .rows.add(issues.values())
       .draw();
   });
 }
@@ -210,189 +214,23 @@ var dataTable = $("#data-table").dataTable({
     {
       targets: 2,
       data: function(d) { return d.fields.summary; }
-    },
-    {
-      targets: 3,
-      data: function(d) { return d.fields.assignee ? d.fields.assignee.key : "Unassigned"; }
-    },
-    {
-      targets: 4,
-      data: function(d) { 
-        if (d.fields.timetracking) {
-          var str = "";
-          
-          if (d.fields.timetracking.originalEstimateSeconds) {
-            str += formatSeconds(d.fields.timetracking.originalEstimateSeconds);
-          } else {
-            str += "??";
-          }
-          
-          str += " - <em>";
-          
-          if (d.fields.timetracking.timeSpentSeconds) {
-            str += formatSeconds(d.fields.timetracking.timeSpentSeconds);
-          } else {
-            str += "??";
-          }
-          
-          str += "</em> = <strong>";
-          
-          if (d.fields.timetracking.remainingEstimateSeconds) {
-            str += formatSeconds(d.fields.timetracking.remainingEstimateSeconds);
-          } else {
-            str += "??";
-          }
-          
-          str += "</strong>";
-          
-          return str;
-        }
-        return 'N/A'; 
-      }
-    },
-    {
-      targets: 5,
-      data: function(d) { 
-        if (d.fields.timetracking && d.fields.timetracking.originalEstimateSeconds &&
-            d.fields.timetracking.timeSpentSeconds && d.fields.timetracking.remainingEstimateSeconds) {
-        
-          return ((d.fields.timetracking.timeSpentSeconds / d.fields.timetracking.originalEstimateSeconds) * 100).toFixed(1);
-        
-        }
-        
-        return "N/A"; 
-      }
-    },
-    {
-      targets: 6,
-      data: function(d) { 
-        var updated = d3.time.format.iso.parse(d.fields.updated);
-        return '<span title="'+updated+'">'+formatSeconds((now.getTime() - updated.getTime()) / 1000) + ' ago</span>';
-      }
     }
   ]
 });
 
 var chartStatus = dc.pieChart("#chart-status");
-    chartPriority = dc.pieChart("#chart-priority"),
-    chartCVISComponent = dc.pieChart("#chart-cvis-component"),
-    chartECP = dc.pieChart("#chart-ecp"),
-    chartCountIssues = dc.dataCount("#chart-count-issues"),
-    chartCountComplete = dc.numberDisplay("#chart-count-complete"),
-    chartCountWorked = dc.numberDisplay("#chart-count-worked"),
-    chartAssignee = dc.pieChart("#chart-assignee");
 
 for (var i = 0; i < dc.chartRegistry.list().length; i++) {
   var chartI = dc.chartRegistry.list()[i];
   chartI.on("filtered", refreshDataTable);
 }
 
-var statusDim = facts.dimension(function(d) { return d.fields.status.name; }),
-    priorityDim = facts.dimension(function(d) { return d.fields.priority.name; }),
-    keyDim = facts.dimension(function(d) { return d.key; }),
-    cvisComponentDim = facts.dimension(function(d) {
-      if (d.fields.labels.filter(function(l) { return this.indexOf(l) >= 0; }, ["CRD"]).length == 0) {
-        return "Non-CRD";
-      }
-      
-      // TODO add other CVIS versions
-      var cvis = d.fields.labels.filter(function(l) { return this.indexOf(l) >= 0;}, ["B1", "B2A", "B2B"]); 
-      var comp = d.fields.labels.filter(function(l) { return this.indexOf(l) >= 0;}, ["CMFD", "SDU"]); 
-      var hedado = d.fields.labels.filter(function(l) { return this.indexOf(l) >= 0;}, ["HEDAD-O"]); 
-      
-      if (hedado.length > 0) {
-        return "HEDAD-O";
-      }
-      
-      if (cvis.length == 0 || comp.length == 0) {
-        return "Unknown CVIS";
-      }
-      
-      return comp.concat(cvis).join(" ");
-    }),
-    ecpDim = facts.dimension(function(d) {
-      // TODO add other CVIS versions
-      var ret = d.fields.labels.filter(function(l) { return l.indexOf("ECP") == 0; });
-      
-      if (ret.length == 0) return "None";
-      
-      return ret.join(" ");
-    }),
-    assigneeDim = facts.dimension(function(d) { return d.fields.assignee ? d.fields.assignee.key : "Unassigned"; });
-
-chartCountIssues
-  .dimension(facts)
-  .group(facts.groupAll());
-
-chartCountWorked
-  .valueAccessor(function(d) { return d; })
-  .group(facts.groupAll().reduceSum(function(d) { 
-    
-    var worklog = -1;
-    if (d.fields.worklog && d.fields.worklog.worklogs) {
-      worklog = 0;
-      d.fields.worklog.worklogs.forEach(function(w) {
-        worklog += w.timeSpentSeconds;
-      });
-    }
-    
-    if (d.fields.timetracking && d.fields.timetracking.timeSpentSeconds) {
-      if (worklog == -1) {
-        return d.fields.timetracking.timeSpentSeconds;
-      }
-      
-      if (worklog != d.fields.timetracking.timeSpentSeconds) {
-        alert(d.key + ' time spent = ' + d.fields.timetracking.timeSpentSeconds + ' worklog = ' + worklog);
-        
-        if (worklog > d.fields.timetracking.timeSpentSeconds) {
-          return worklog;
-        }
-        return d.fields.timetracking.timeSpentSeconds;
-      }
-      
-      return worklog;
-    } else if (worklog > 0) {
-      return worklog;
-    }
-    
-    return 0;
-  }))
-  .formatNumber(formatSeconds);
-  
-chartCountComplete
-  .valueAccessor(function(d) { return d; })
-  .group(facts.groupAll().reduceSum(function(d) { 
-    if (d.fields.timetracking && d.fields.timetracking.remainingEstimateSeconds) {
-      return d.fields.timetracking.remainingEstimateSeconds; 
-    }
-    return 0;
-  }))
-  .formatNumber(formatSeconds);
+var statusDim = facts.dimension(function(d) { return d.status; });
 
 chartStatus
   .innerRadius(30)
   .dimension(statusDim)
   .group(statusDim.group().reduceCount());
-  
-chartPriority
-  .innerRadius(30)
-  .dimension(priorityDim)
-  .group(priorityDim.group().reduceCount());
-
-chartCVISComponent
-  .innerRadius(30)
-  .dimension(cvisComponentDim)
-  .group(cvisComponentDim.group().reduceCount());
-
-chartECP
-  .innerRadius(30)
-  .dimension(ecpDim)
-  .group(ecpDim.group().reduceCount());
-
-chartAssignee
-  .innerRadius(30)
-  .dimension(assigneeDim)
-  .group(assigneeDim.group().reduceCount());
 
 dc.renderAll();
 
@@ -400,14 +238,37 @@ d3.json('/data/SH2-50.json', function(err,json) {
   console.log(err,json);
   d3.select('#main-issue-info').html(json.key + '&nbsp;<small>'+json.fields.description+'</small>');
   
-  for(var i = 0; i < json.fields.subtasks.length; i++) {
+  for(var i = 0; i < json.fields.subtasks.length && i < 70; i++) {
     var s = json.fields.subtasks[i];
     
     d3.json('/data/'+s.key+'.json', function(err,json) {
       if (err) { return; }
       
-      console.log(json);
-      facts.add([json]);
+      // flatten issue info with worklog
+      if (json.fields.worklog && json.fields.worklog.worklogs) {
+        json.fields.worklog.worklogs.forEach(function(w) {
+          var f = {
+            _orig: json,
+            key: json.key,
+            summary: json.fields.summary,
+            status: json.fields.status.name, 
+            
+            timeSpent: w.timeSpent,
+            timeSpentSeconds: w.timeSpentSeconds,
+            timeStarted: w.started,
+            timeAuthor: w.author.key
+          };
+          facts.add([f]);
+        });
+      } else {
+        var f = {
+          _orig: json,
+          key: json.key,
+          summary: json.fields.summary,
+          status: json.fields.status.name
+        };
+        facts.add([f]);
+      }
       
       refreshDataTable();
       dc.redrawAll();
