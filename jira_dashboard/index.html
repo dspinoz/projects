@@ -246,6 +246,8 @@ var dataTable = $("#data-table").dataTable({
 var chartStatus = dc.pieChart("#chart-status");
 var chartAssignee = dc.pieChart("#chart-assignee");
 var chartPriority = dc.pieChart("#chart-priority");
+var chartCVISComponent = dc.pieChart("#chart-cvis-component");
+var chartECP = dc.pieChart("#chart-ecp");
 var chartCountIssues = dc.numberDisplay("#chart-count-issues");
 var chartCountIssuesTotal = dc.numberDisplay("#chart-count-issues-total");
 //var chartCountWorked = dc.numberDisplay("#chart-count-worked");
@@ -259,7 +261,34 @@ for (var i = 0; i < dc.chartRegistry.list().length; i++) {
 var statusDim = facts.dimension(function(d) { return d.status; });
 var priorityDim = facts.dimension(function(d) { return d.priority; });
 var keyDim = facts.dimension(function(d) { return d.key; });
-var  assigneeDim = facts.dimension(function(d) { return d.assigned; });
+var assigneeDim = facts.dimension(function(d) { return d.assigned; });
+var cvisComponentDim = facts.dimension(function(d) {
+  if (d.labels.filter(function(l) { return this.indexOf(l) >= 0; }, ["CRD"]).length == 0) {
+    return "Non-CRD";
+  }
+
+  var cvis = d.labels.filter(function(l) { return this.indexOf(l) >= 0;}, ["B1", "B2A", "B2B"]);
+  var comp = d.labels.filter(function(l) { return this.indexOf(l) >= 0;}, ["CMFD", "SDU"]);
+  var hedado = d.labels.filter(function(l) { return this.indexOf(l) >= 0;}, ["HEDAD-O"]);
+
+  if (hedado.length > 0) {
+    return "HEDAD-O";
+  }
+
+  if (cvis.length == 0 || comp.length == 0) {
+    return "Unknown CVIS";
+  }
+
+  return comp.concat(cvis).join(" ");
+});
+var ecpDim = facts.dimension(function(d) {
+  var ret = d.labels.filter(function(l) { return l.indexOf("ECP") == 0; });
+
+  if (ret.length == 0) return "None";
+
+  return ret.join(" ");
+});
+
 
 chartCountIssues
   .group(reduceCount(facts.groupAll()))
@@ -290,6 +319,18 @@ chartPriority
   .group(reduceCount(priorityDim.group()))
   .valueAccessor(function(d) { return d.value.size(); });
 
+chartCVISComponent
+  .innerRadius(30)
+  .dimension(cvisComponentDim)
+  .group(reduceCount(cvisComponentDim.group()))
+  .valueAccessor(function(d) { return d.value.size(); });
+
+chartECP
+  .innerRadius(30)
+  .dimension(ecpDim)
+  .group(reduceCount(ecpDim.group()))
+  .valueAccessor(function(d) { return d.value.size(); });
+
 
 dc.renderAll();
 
@@ -313,6 +354,7 @@ d3.json('/data/SH2-50.json', function(err,json) {
             status: json.fields.status.name, 
             priority: json.fields.priority.name,
             assigned: json.fields.assignee ? json.fields.assignee.key : "Unassigned",
+            labels: json.fields.labels,
             
             timeSpent: w.timeSpent,
             timeSpentSeconds: w.timeSpentSeconds,
@@ -328,7 +370,8 @@ d3.json('/data/SH2-50.json', function(err,json) {
           summary: json.fields.summary,
           status: json.fields.status.name,
           priority: json.fields.priority.name,
-          assigned: json.fields.assignee ? json.fields.assignee.key : "Unassigned"
+          assigned: json.fields.assignee ? json.fields.assignee.key : "Unassigned",
+          labels: json.fields.labels
         };
         facts.add([f]);
       }
