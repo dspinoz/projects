@@ -253,6 +253,8 @@ var chartCountIssuesTotal = dc.numberDisplay("#chart-count-issues-total");
 var chartCountWorked = dc.numberDisplay("#chart-count-worked");
 //var chartCountComplete = dc.numberDisplay("#chart-count-complete");
 
+
+
 for (var i = 0; i < dc.chartRegistry.list().length; i++) {
   var chartI = dc.chartRegistry.list()[i];
   chartI.on("filtered", refreshDataTable);
@@ -289,6 +291,14 @@ var ecpDim = facts.dimension(function(d) {
   return ret.join(" ");
 });
 
+var worklogInterval = d3.time.friday;
+var worklogStartedDim = facts.dimension(function(d) {
+  if (!d.timeStarted) {
+    // zero out the time when not available
+    return worklogInterval.ceil(new Date());
+  }
+  return worklogInterval.ceil(d3.time.format.iso.parse(d.timeStarted));
+});
 
 chartCountIssues
   .group(reduceCount(facts.groupAll()))
@@ -383,6 +393,8 @@ d3.json('/data/SH2-50.json', function(err,json) {
         };
         facts.add([f]);
       }
+      
+      console.log('www',worklogStartedDim.group().reduceSum(function(d) { return d.timeSpentSeconds ? d.timeSpentSeconds: 0; }).all());
       
       refreshDataTable();
       dc.redrawAll();
