@@ -128,7 +128,7 @@
               <h3 class="panel-title">Counts</h3>
             </div>
             <div class="panel-body">
-              <h3>Issues: <span id="chart-count-issues"><span class="filter-count"></span> <small>of <span class="total-count"></span></small></span></h3>
+              <h3>Issues: <span id="chart-count-issues"></span> <small>of <span id="chart-count-issues-total"></span></small></h3>
               <h3>Worked: <span id="chart-count-worked"></span></h3>
               <h3>ETC: <span id="chart-count-complete"></span></h3>
             </div>
@@ -170,6 +170,31 @@ function formatSeconds(seconds) {
          (days ? days + "d " : "") +
          (hours ? hours + "h " : "") +
          (mins ? mins + "m " : "");
+}
+
+function reduceCount(group) {
+  function add(p, v, nf) {
+    if (!p.has(v.key)) {
+      p.set(v.key, 0);
+    }
+    
+    p.set(v.key, p.get(v.key)+1);
+    return p;
+  }
+
+  function rem(p, v, nf) {
+    p.set(v.key, p.get(v.key)-1);
+    if (p.get(v.key) <= 0) {
+      p.remove(v.key);
+    }
+    return p;
+  }
+
+  function init() {
+    return d3.map()
+  }
+  
+  return group.reduce(add,rem,init);
 }
 
 function refreshDataTable() {
@@ -219,6 +244,11 @@ var dataTable = $("#data-table").dataTable({
 });
 
 var chartStatus = dc.pieChart("#chart-status");
+var chartPriority = dc.pieChart("#chart-priority");
+var chartCountIssues = dc.numberDisplay("#chart-count-issues");
+var chartCountIssuesTotal = dc.numberDisplay("#chart-count-issues-total");
+//var chartCountWorked = dc.numberDisplay("#chart-count-worked");
+//var chartCountComplete = dc.numberDisplay("#chart-count-complete");
 
 for (var i = 0; i < dc.chartRegistry.list().length; i++) {
   var chartI = dc.chartRegistry.list()[i];
@@ -226,11 +256,32 @@ for (var i = 0; i < dc.chartRegistry.list().length; i++) {
 }
 
 var statusDim = facts.dimension(function(d) { return d.status; });
+var priorityDim = facts.dimension(function(d) { return d.priority; });
+var keyDim = facts.dimension(function(d) { return d.key; });
+
+chartCountIssues
+  .group(reduceCount(facts.groupAll()))
+  .valueAccessor(function(d) { return d.size(); })
+  .formatNumber(d3.format('.0f'));
+  
+chartCountIssuesTotal
+  .group(keyDim.group())
+  .data(function(d) { return d.all().length; })
+  .valueAccessor(function(d) { return d.size(); })
+  .formatNumber(d3.format('.0f'));
 
 chartStatus
   .innerRadius(30)
   .dimension(statusDim)
-  .group(statusDim.group().reduceCount());
+  .group(reduceCount(statusDim.group()))
+  .valueAccessor(function(d) { return d.value.size(); });
+  
+chartPriority
+  .innerRadius(30)
+  .dimension(priorityDim)
+  .group(reduceCount(priorityDim.group()))
+  .valueAccessor(function(d) { return d.value.size(); });
+
 
 dc.renderAll();
 
@@ -238,20 +289,21 @@ d3.json('/data/SH2-50.json', function(err,json) {
   console.log(err,json);
   d3.select('#main-issue-info').html(json.key + '&nbsp;<small>'+json.fields.description+'</small>');
   
-  for(var i = 0; i < json.fields.subtasks.length && i < 70; i++) {
+  for(var i = 0; i < json.fields.subtasks.length; i++) {
     var s = json.fields.subtasks[i];
     
     d3.json('/data/'+s.key+'.json', function(err,json) {
       if (err) { return; }
       
       // flatten issue info with worklog
-      if (json.fields.worklog && json.fields.worklog.worklogs) {
+      if (json.fields.worklog && json.fields.worklog.worklogs && json.fields.worklog.worklogs.length > 0) {
         json.fields.worklog.worklogs.forEach(function(w) {
           var f = {
             _orig: json,
             key: json.key,
             summary: json.fields.summary,
             status: json.fields.status.name, 
+            priority: json.fields.priority.name,
             
             timeSpent: w.timeSpent,
             timeSpentSeconds: w.timeSpentSeconds,
@@ -265,7 +317,8 @@ d3.json('/data/SH2-50.json', function(err,json) {
           _orig: json,
           key: json.key,
           summary: json.fields.summary,
-          status: json.fields.status.name
+          status: json.fields.status.name,
+            priority: json.fields.priority.name
         };
         facts.add([f]);
       }
