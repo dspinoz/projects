@@ -250,7 +250,7 @@ var chartCVISComponent = dc.pieChart("#chart-cvis-component");
 var chartECP = dc.pieChart("#chart-ecp");
 var chartCountIssues = dc.numberDisplay("#chart-count-issues");
 var chartCountIssuesTotal = dc.numberDisplay("#chart-count-issues-total");
-//var chartCountWorked = dc.numberDisplay("#chart-count-worked");
+var chartCountWorked = dc.numberDisplay("#chart-count-worked");
 //var chartCountComplete = dc.numberDisplay("#chart-count-complete");
 
 for (var i = 0; i < dc.chartRegistry.list().length; i++) {
@@ -301,6 +301,14 @@ chartCountIssuesTotal
   .valueAccessor(function(d) { return d.size(); })
   .formatNumber(d3.format('.0f'));
 
+chartCountWorked
+  .valueAccessor(function(d) { return d; })
+  .group(facts.groupAll().reduceSum(function(d) {
+    // TODO compare total aginst worklog 
+    return d.timeSpentSeconds ? d.timeSpentSeconds : 0;
+  }))
+  .formatNumber(formatSeconds);
+  
 chartStatus
   .innerRadius(30)
   .dimension(statusDim)
