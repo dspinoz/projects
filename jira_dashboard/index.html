@@ -244,6 +244,7 @@ var dataTable = $("#data-table").dataTable({
 });
 
 var chartStatus = dc.pieChart("#chart-status");
+var chartAssignee = dc.pieChart("#chart-assignee");
 var chartPriority = dc.pieChart("#chart-priority");
 var chartCountIssues = dc.numberDisplay("#chart-count-issues");
 var chartCountIssuesTotal = dc.numberDisplay("#chart-count-issues-total");
@@ -258,6 +259,7 @@ for (var i = 0; i < dc.chartRegistry.list().length; i++) {
 var statusDim = facts.dimension(function(d) { return d.status; });
 var priorityDim = facts.dimension(function(d) { return d.priority; });
 var keyDim = facts.dimension(function(d) { return d.key; });
+var  assigneeDim = facts.dimension(function(d) { return d.assigned; });
 
 chartCountIssues
   .group(reduceCount(facts.groupAll()))
@@ -275,7 +277,13 @@ chartStatus
   .dimension(statusDim)
   .group(reduceCount(statusDim.group()))
   .valueAccessor(function(d) { return d.value.size(); });
-  
+
+chartAssignee
+  .innerRadius(30)
+  .dimension(assigneeDim)
+  .group(reduceCount(assigneeDim.group()))
+  .valueAccessor(function(d) { return d.value.size(); });
+
 chartPriority
   .innerRadius(30)
   .dimension(priorityDim)
@@ -304,6 +312,7 @@ d3.json('/data/SH2-50.json', function(err,json) {
             summary: json.fields.summary,
             status: json.fields.status.name, 
             priority: json.fields.priority.name,
+            assigned: json.fields.assignee ? json.fields.assignee.key : "Unassigned",
             
             timeSpent: w.timeSpent,
             timeSpentSeconds: w.timeSpentSeconds,
@@ -318,7 +327,8 @@ d3.json('/data/SH2-50.json', function(err,json) {
           key: json.key,
           summary: json.fields.summary,
           status: json.fields.status.name,
-            priority: json.fields.priority.name
+          priority: json.fields.priority.name,
+          assigned: json.fields.assignee ? json.fields.assignee.key : "Unassigned"
         };
         facts.add([f]);
       }
