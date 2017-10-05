@@ -268,7 +268,7 @@ var dataTable = $("#data-table").dataTable({
           tot.set(w.author.key,
             tot.get(w.author.key) + w.timeSpentSeconds);
         });
-        console.log(tot.entries());
+        
         return tot.entries().map(function(d) {
           return d.key + " " + formatSeconds(d.value);
         }).join(", ");
