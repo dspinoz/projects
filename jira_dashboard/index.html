@@ -130,7 +130,7 @@
             <div class="panel-body">
               <h3>Issues: <span id="chart-count-issues"></span> <small>of <span id="chart-count-issues-total"></span></small></h3>
               <h3>Worked: <span id="chart-count-worked"></span></h3>
-              <h3>ETC: <span id="chart-count-complete"></span></h3>
+              <h3>ETC: <span id="chart-count-to-complete"></span></h3>
             </div>
           </div>
         </div>
@@ -158,6 +158,7 @@
                 <th>Status</th>
                 <th>Summary</th>
                 <th>Worklog</th>
+                <th>ETC</th>
               </tr>
             </thead>
           </table>
@@ -198,6 +199,31 @@ function reduceCount(group) {
 
   function rem(p, v, nf) {
     p.set(v.key, p.get(v.key)-1);
+    if (p.get(v.key) <= 0) {
+      p.remove(v.key);
+    }
+    return p;
+  }
+
+  function init() {
+    return d3.map()
+  }
+  
+  return group.reduce(add,rem,init);
+}
+
+function reduceSum(group,fn) {
+  function add(p, v, nf) {
+    if (!p.has(v.key)) {
+      p.set(v.key, 0);
+    }
+    
+    p.set(v.key, p.get(v.key)+fn(v));
+    return p;
+  }
+
+  function rem(p, v, nf) {
+    p.set(v.key, p.get(v.key)-fn(v));
     if (p.get(v.key) <= 0) {
       p.remove(v.key);
     }
@@ -273,6 +299,10 @@ var dataTable = $("#data-table").dataTable({
           return d.key + " " + formatSeconds(d.value);
         }).join(", ");
       }
+    },
+    {
+      targets: 4,
+      data: function(d) { return d.fields.timetracking && d.fields.timetracking.remainingEstimateSeconds ? formatSeconds(d.fields.timetracking.remainingEstimateSeconds) : "Unknown"; }
     }
   ]
 });
@@ -285,7 +315,7 @@ var chartECP = dc.pieChart("#chart-ecp");
 var chartCountIssues = dc.numberDisplay("#chart-count-issues");
 var chartCountIssuesTotal = dc.numberDisplay("#chart-count-issues-total");
 var chartCountWorked = dc.numberDisplay("#chart-count-worked");
-//var chartCountComplete = dc.numberDisplay("#chart-count-complete");
+var chartCountToComplete = dc.numberDisplay("#chart-count-to-complete");
 var chartWeeks = dc.barChart("#chart-weeks");
 
 
@@ -356,6 +386,11 @@ chartCountWorked
     // TODO compare total aginst worklog 
     return d.timeSpentSeconds ? d.timeSpentSeconds : 0;
   }))
+  .formatNumber(formatSeconds);
+
+chartCountToComplete
+  .valueAccessor(function(d) { return d3.sum(d.values()); })
+  .group(reduceSum(facts.groupAll(), function(d) { return !isNaN(d.remainingEstimate) ? d.remainingEstimate : 0; }))
   .formatNumber(formatSeconds);
   
 chartStatus
@@ -432,6 +467,9 @@ d3.json('/data/SH2-50.json', function(err,json) {
     d3.json('/data/'+s.key+'.json', function(err,json) {
       if (err) { return; }
       
+      // differentiate between nothing left and not available
+      var timeRemaining = json.fields.timetracking && json.fields.timetracking.remainingEstimateSeconds ? json.fields.timetracking.remainingEstimateSeconds : NaN;
+      
       // flatten issue info with worklog
       if (json.fields.worklog && json.fields.worklog.worklogs && json.fields.worklog.worklogs.length > 0) {
         json.fields.worklog.worklogs.forEach(function(w) {
@@ -443,6 +481,7 @@ d3.json('/data/SH2-50.json', function(err,json) {
             priority: json.fields.priority.name,
             assigned: json.fields.assignee ? json.fields.assignee.key : "Unassigned",
             labels: json.fields.labels,
+            remainingEstimate: timeRemaining,
             
             timeSpent: w.timeSpent,
             timeSpentSeconds: w.timeSpentSeconds,
@@ -459,7 +498,8 @@ d3.json('/data/SH2-50.json', function(err,json) {
           status: json.fields.status.name,
           priority: json.fields.priority.name,
           assigned: json.fields.assignee ? json.fields.assignee.key : "Unassigned",
-          labels: json.fields.labels
+          labels: json.fields.labels,
+          remainingEstimate: timeRemaining
         };
         facts.add([f]);
       }
