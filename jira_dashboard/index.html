@@ -140,6 +140,16 @@
         <div class="col-sm-4">
           <div class="panel panel-default">
             <div class="panel-heading">
+              <h3 class="panel-title">Worked <small>Hours</small></h3>
+            </div>
+            <div class="panel-body">
+              <div id="chart-worked"></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-8">
+          <div class="panel panel-default">
+            <div class="panel-heading">
               <h3 class="panel-title">Work Weeks</h3>
             </div>
             <div class="panel-body">
@@ -310,6 +320,7 @@ var dataTable = $("#data-table").dataTable({
 var chartStatus = dc.pieChart("#chart-status");
 var chartAssignee = dc.pieChart("#chart-assignee");
 var chartPriority = dc.pieChart("#chart-priority");
+var chartWorked = dc.pieChart("#chart-worked");
 var chartCVISComponent = dc.pieChart("#chart-cvis-component");
 var chartECP = dc.pieChart("#chart-ecp");
 var chartCountIssues = dc.numberDisplay("#chart-count-issues");
@@ -328,6 +339,7 @@ var statusDim = facts.dimension(function(d) { return d.status; });
 var priorityDim = facts.dimension(function(d) { return d.priority; });
 var keyDim = facts.dimension(function(d) { return d.key; });
 var assigneeDim = facts.dimension(function(d) { return d.assigned; });
+var assigneeTimeDim = facts.dimension(function(d) { return d.timeAuthor ? d.timeAuthor : "None"; });
 var cvisComponentDim = facts.dimension(function(d) {
   if (d.labels.filter(function(l) { return this.indexOf(l) >= 0; }, ["CRD"]).length == 0) {
     return "Non-CRD";
@@ -411,6 +423,16 @@ chartPriority
   .group(reduceCount(priorityDim.group()))
   .valueAccessor(function(d) { return d.value.size(); });
 
+chartWorked
+  .innerRadius(30)
+  .dimension(assigneeTimeDim)
+  .group(reduceSum(assigneeTimeDim.group(), function(d) { return d.timeSpentSeconds ? d.timeSpentSeconds : 0; }))
+  .valueAccessor(function(d) { return d3.sum(d.value.values()); })
+  .title(function(d) {
+    if (d.key == "empty") return "Empty";
+    return d.key + ": " + formatSeconds(d3.sum(d.value.values()));
+  });
+  
 chartCVISComponent
   .innerRadius(30)
   .dimension(cvisComponentDim)
@@ -434,8 +456,8 @@ chartWeeks
   .y(chartWeeksY)
   .elasticY(true)
   //.elasticX(true) //take control of the domain in order to show full range of time values
-  .width(600)
-  .height(300)
+  .width(750)
+  .height(200)
   //.brushOn(false) // allow brush so can interact 
   .centerBar(true)
   .alwaysUseRounding(true)
