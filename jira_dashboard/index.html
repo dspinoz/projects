@@ -157,6 +157,7 @@
                 <th>Issue Id</th>
                 <th>Status</th>
                 <th>Summary</th>
+                <th>Worklog</th>
               </tr>
             </thead>
           </table>
@@ -252,6 +253,26 @@ var dataTable = $("#data-table").dataTable({
     {
       targets: 2,
       data: function(d) { return d.fields.summary; }
+    },
+    {
+      targets: 3,
+      data: function(d) {
+        if (!d.fields.worklog || !d.fields.worklog.worklogs || d.fields.worklog.worklogs.length == 0) return "None";
+        
+        var tot = d3.map();
+        d.fields.worklog.worklogs.forEach(function(w) {
+          if (!tot.has(w.author.key)) {
+            tot.set(w.author.key,0);
+          }
+          
+          tot.set(w.author.key,
+            tot.get(w.author.key) + w.timeSpentSeconds);
+        });
+        console.log(tot.entries());
+        return tot.entries().map(function(d) {
+          return d.key + " " + formatSeconds(d.value);
+        }).join(", ");
+      }
     }
   ]
 });
@@ -304,13 +325,18 @@ var ecpDim = facts.dimension(function(d) {
   return ret.join(" ");
 });
 
+// collapse all worklogs for the current week
+var worklogIntervalGroup = d3.time.saturday;
+// display worklogs at end of week
 var worklogInterval = d3.time.friday;
+
 var worklogStartedDim = facts.dimension(function(d) {
   if (!d.timeStarted) {
     // zero out the time when not available
-    return worklogInterval.floor(new Date());
+    // TODO current date is bad when project has finished!
+    return worklogIntervalGroup.ceil(new Date());
   }
-  return worklogInterval.floor(d3.time.format.iso.parse(d.timeStarted));
+  return worklogIntervalGroup.ceil(d3.time.format.iso.parse(d.timeStarted));
 });
 
 chartCountIssues
@@ -365,6 +391,7 @@ chartECP
 var chartWeeksX = d3.time.scale();
 var chartWeeksY = d3.scale.linear();
 
+// TODO first and last bars on the chart only half rendered
 chartWeeks
   .dimension(worklogStartedDim)
   .group(worklogStartedDim.group().reduceSum(function(d) { return d.timeSpentSeconds ? d.timeSpentSeconds: 0; }))
@@ -375,16 +402,18 @@ chartWeeks
   .elasticX(true)
   .width(600)
   .height(300)
-  .brushOn(false)
+  .brushOn(false) // TODO cannot interact with bar chart
+  .centerBar(true)
+  .alwaysUseRounding(true)
   .title(function(d) {
-    return d3.time.format('%a %d %b%y')(d.key) + ': ' +formatSeconds(d.value);
+    return chartWeeks.xAxis().tickFormat()(d.key) + ': ' +formatSeconds(d.value);
   });
 
 chartWeeks.margins().left = 60;
 
 chartWeeks.xAxis()
   .tickFormat(function(d) {
-    return d3.time.format('%a %d %b%y')(worklogInterval.floor(d));
+    return d3.time.format('%a %d %b%y')(worklogInterval(d));
   });
 
 chartWeeks.yAxis()
@@ -436,16 +465,15 @@ d3.json('/data/SH2-50.json', function(err,json) {
         facts.add([f]);
       }
       
-      var x = d3.extent(worklogStartedDim.group().all(), function(d) { return d.key; });
-      // move one past the end in order to display all values
-      chartWeeksX.domain([x[0], worklogInterval.offset(x[1],1)]);
+      chartWeeksX.domain(
+        d3.extent(worklogStartedDim.group().all(), 
+          function(d) { return d.key; }));
       
-      console.log('xxx',worklogStartedDim.group().reduceSum(function(d) { return d.timeSpentSeconds ? d.timeSpentSeconds: 0; }).all(),x, chartWeeksX.domain());
-      
-      chartWeeksY.domain([0, d3.max(
+      chartWeeksY.domain([0, 
+        d3.max(
           worklogStartedDim.group().reduceSum(function(d) { return d.timeSpentSeconds ? d.timeSpentSeconds : 0; }).all(),
-          function(d) { return d.value; })]);
-      
+          function(d) { return d.value; })
+      ]);
       
       refreshDataTable();
       dc.redrawAll();
