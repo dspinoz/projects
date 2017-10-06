@@ -438,7 +438,7 @@ chartCountWorkedHr
     // TODO compare total aginst worklog 
     return d.timeSpentSeconds ? d.timeSpentSeconds : 0;
   }))
-  .formatNumber(function(d) { return d3.format('.0f')(d/3600) +"h"; });
+  .formatNumber(function(d) { return d3.format('.1f')(d/3600) +"h"; });
 
 chartCountToCompleteHr
   .valueAccessor(function(d) { return d3.sum(d.values()); })
@@ -446,7 +446,7 @@ chartCountToCompleteHr
     facts.groupAll(), 
     function(d) { return !isNaN(d.remainingEstimate) ? d.remainingEstimate : 0; },
     true))
-  .formatNumber(function(d) { return d3.format('.0f')(d/3600) +"h"; });
+  .formatNumber(function(d) { return d3.format('.1f')(d/3600) +"h"; });
   
 chartStatus
   .innerRadius(30)
@@ -491,9 +491,53 @@ chartECP
 var chartWeeksX = d3.time.scale();
 var chartWeeksY = d3.scale.linear();
 
+function reduceWorklog(group) {
+  
+  function kfn(d) {
+    return d.timeAuthor ? d.timeAuthor : "None";
+  }
+  
+  function vfn(d) {
+    return d.timeSpentSeconds ? d.timeSpentSeconds : 0;
+  }
+  
+  function add(p, v, nf) {
+    if (!p.has(kfn(v))) {
+      p.set(kfn(v), 0);
+    }
+    
+    p.set(kfn(v), p.get(kfn(v))+vfn(v));
+    return p;
+  }
+  
+  function rem(p, v, nf) {
+    p.set(kfn(v), p.get(kfn(v))-vfn(v));
+    if (p.get(kfn(v)) <= 0) {
+      p.remove(kfn(v));
+    }
+    return p;
+  }
+  
+  function init() {
+    return d3.map()
+  }
+  
+  return group.reduce(add,rem,init);
+}
+
+function chartWeeksGroupAccessor(index) {
+  return function(d) {
+    if (d.key.getTime() == 0 || d.value.size() == 0) return 0;
+    if (d.value.size() < (index+1)) return 0;
+    return d.value.entries()[index].value;
+  }
+}
+
+var chartWeeksGroup = reduceWorklog(worklogStartedDim.group());
+
 chartWeeks
   .dimension(worklogStartedDim)
-  .group(worklogStartedDim.group().reduceSum(function(d) { return d.timeSpentSeconds ? d.timeSpentSeconds: 0; }))
+  .group(chartWeeksGroup, '0', chartWeeksGroupAccessor(0))
   .x(chartWeeksX)
   .xUnits(worklogInterval.range)
   .y(chartWeeksY)
@@ -502,11 +546,20 @@ chartWeeks
   .width(750)
   .height(200)
   //.brushOn(false) // allow brush so can interact 
+  .renderLabel(true)
+  .label(function(d) { return formatSeconds(d.y0); })
   .centerBar(true)
   .alwaysUseRounding(true)
   .title(function(d) {
     return chartWeeks.xAxis().tickFormat()(d.key) + ': ' +formatSeconds(d.value);
   });
+
+// setup stacks, ready to show
+// TODO stacks seem to switch around during interaction
+chartWeeks.stack(chartWeeksGroup, '1', chartWeeksGroupAccessor(1));
+chartWeeks.stack(chartWeeksGroup, '2', chartWeeksGroupAccessor(2));
+chartWeeks.stack(chartWeeksGroup, '3', chartWeeksGroupAccessor(3));
+chartWeeks.stack(chartWeeksGroup, '4', chartWeeksGroupAccessor(4));
 
 chartWeeks.margins().left = 60;
 
