@@ -300,6 +300,7 @@ var dataTable = $("#data-table").dataTable({
       data: function(d) {
         if (!d.fields.worklog || !d.fields.worklog.worklogs || d.fields.worklog.worklogs.length == 0) return "None";
         
+        var logs = [];
         var tot = d3.map();
         d.fields.worklog.worklogs.forEach(function(w) {
           if (!tot.has(w.author.key)) {
@@ -308,11 +309,23 @@ var dataTable = $("#data-table").dataTable({
           
           tot.set(w.author.key,
             tot.get(w.author.key) + w.timeSpentSeconds);
+            
+            
+          logs.push({
+            started:w.started,
+            author:w.author.key,
+            timeSpent:w.timeSpentSeconds,
+            startedDate:d3.time.format.iso.parse(w.started)
+          });
         });
         
-        return tot.entries().map(function(d) {
+        var str = "";//JSON.stringify(logs);
+        
+        str += tot.entries().map(function(d) {
           return d.key + " " + formatSeconds(d.value);
         }).join(", ");
+        
+        return str;
       }
     },
     {
