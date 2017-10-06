@@ -223,10 +223,14 @@ function reduceCount(group) {
   return group.reduce(add,rem,init);
 }
 
-function reduceSum(group,fn) {
+function reduceSum(group,fn,uniq) {
   function add(p, v, nf) {
     if (!p.has(v.key)) {
       p.set(v.key, 0);
+    }
+    
+    if (uniq && p.get(v.key) != 0) {
+      return p;
     }
     
     p.set(v.key, p.get(v.key)+fn(v));
@@ -420,7 +424,10 @@ chartCountWorked
 
 chartCountToComplete
   .valueAccessor(function(d) { return d3.sum(d.values()); })
-  .group(reduceSum(facts.groupAll(), function(d) { return !isNaN(d.remainingEstimate) ? d.remainingEstimate : 0; }))
+  .group(reduceSum(
+    facts.groupAll(), 
+    function(d) { return !isNaN(d.remainingEstimate) ? d.remainingEstimate : 0; },
+    true))
   .formatNumber(formatSeconds);
   
 chartStatus
