@@ -129,8 +129,8 @@
             </div>
             <div class="panel-body">
               <h3>Issues: <span id="chart-count-issues"></span> <small>of <span id="chart-count-issues-total"></span></small></h3>
-              <h3>Worked: <span id="chart-count-worked"></span></h3>
-              <h3>ETC: <span id="chart-count-to-complete"></span></h3>
+              <h3>Worked: <span id="chart-count-worked"></span> <small id="chart-count-worked-hr"></small></h3>
+              <h3>ETC: <span id="chart-count-to-complete"></span> <small id="chart-count-to-complete-hr"></small></h3>
             </div>
           </div>
         </div>
@@ -349,6 +349,8 @@ var chartCountIssues = dc.numberDisplay("#chart-count-issues");
 var chartCountIssuesTotal = dc.numberDisplay("#chart-count-issues-total");
 var chartCountWorked = dc.numberDisplay("#chart-count-worked");
 var chartCountToComplete = dc.numberDisplay("#chart-count-to-complete");
+var chartCountWorkedHr = dc.numberDisplay("#chart-count-worked-hr");
+var chartCountToCompleteHr = dc.numberDisplay("#chart-count-to-complete-hr");
 var chartWeeks = dc.barChart("#chart-weeks");
 
 
@@ -429,6 +431,22 @@ chartCountToComplete
     function(d) { return !isNaN(d.remainingEstimate) ? d.remainingEstimate : 0; },
     true))
   .formatNumber(formatSeconds);
+
+chartCountWorkedHr
+  .valueAccessor(function(d) { return d; })
+  .group(facts.groupAll().reduceSum(function(d) {
+    // TODO compare total aginst worklog 
+    return d.timeSpentSeconds ? d.timeSpentSeconds : 0;
+  }))
+  .formatNumber(function(d) { return d3.format('.0f')(d/3600) +"h"; });
+
+chartCountToCompleteHr
+  .valueAccessor(function(d) { return d3.sum(d.values()); })
+  .group(reduceSum(
+    facts.groupAll(), 
+    function(d) { return !isNaN(d.remainingEstimate) ? d.remainingEstimate : 0; },
+    true))
+  .formatNumber(function(d) { return d3.format('.0f')(d/3600) +"h"; });
   
 chartStatus
   .innerRadius(30)
