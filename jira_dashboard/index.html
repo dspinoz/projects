@@ -37,6 +37,8 @@
     <script src='/bower_components/datatables/media/js/dataTables.bootstrap.js' type='text/javascript'></script>
     <link href='/bower_components/datatables/media/css/dataTables.bootstrap.css' rel='stylesheet' type='text/css'>
     <script src='/bower_components/cubism/cubism.v1.js' type='text/javascript'></script>
+    <link href='/dsTreeChart.css' rel='stylesheet' type='text/css'>
+    <script src='/dsTreeChart.js' type='text/javascript'></script>
     
   </head>
 
@@ -131,6 +133,20 @@
               <h3>Issues: <span id="chart-count-issues"></span> <small>of <span id="chart-count-issues-total"></span></small></h3>
               <h3>Worked: <span id="chart-count-worked"></span> <small id="chart-count-worked-hr"></small></h3>
               <h3>ETC: <span id="chart-count-to-complete"></span> <small id="chart-count-to-complete-hr"></small></h3>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="row">
+        <div class="col-sm-12">
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              <h3 class="panel-title">Status Heatmap</h3>
+            </div>
+            <div class="panel-body">
+              <div id="chart-status-map"></div>
+              <div id="chart-tree"></div>
             </div>
           </div>
         </div>
@@ -352,7 +368,8 @@ var chartCountToComplete = dc.numberDisplay("#chart-count-to-complete");
 var chartCountWorkedHr = dc.numberDisplay("#chart-count-worked-hr");
 var chartCountToCompleteHr = dc.numberDisplay("#chart-count-to-complete-hr");
 var chartWeeks = dc.barChart("#chart-weeks");
-
+var chartStatusMap = dc.heatMap("#chart-status-map");
+var chartTree = dc.dsTreeChart("#chart-tree");
 
 for (var i = 0; i < dc.chartRegistry.list().length; i++) {
   var chartI = dc.chartRegistry.list()[i];
@@ -573,13 +590,98 @@ chartWeeks.yAxis()
     return formatSeconds(d);
   });
 
+  
+chartStatusMap
+  .dimension(keyDim)
+  .group(keyDim.group())
+  .width(1024)
+  .keyAccessor(function(d,i) { console.log('kkk',d);return d.key; })
+  .valueAccessor(function(d,i) { 
+    console.log('vvv',i,d);
+    
+    var matches = facts.allFiltered()
+      .filter(function(a) { return a.key === d.key });
+    if (matches.length == 0) return "Unknown";
+    return matches[0].status;
+  })
+  .colorAccessor(function(d,i) {
+    console.log('ccc',i,d);
+    var matches = facts.allFiltered()
+      .filter(function(a) { return a.key === d.key });
+    if (matches.length == 0) return "Unknown";
+    return matches[0].status;
+  })
+  .colors(d3.scale.ordinal()
+    .domain(["Unknown", "To Do", "In Progress", "In Review", "Done"])
+    .range(["lightgrey", "slategrey","yellow","yellowgreen","green"]))
+  ;
+  
+chartTree
+  /*.colors(catColors)
+  .colorAccessor(function(d) {
+    return d.key;
+  })
+  .title(function(d) { 
+    if (!Array.isArray(d.values)) {
+      return d.key + ": " + dollarFormat(d.values);
+    }
+    
+    var tot = 0;
+    d.values.forEach(function(v) {
+      tot += v.values;
+    });
+    
+    return d.key + ": " + dollarFormat(tot); 
+  })
+  .extent(function(d) { 
+    if (!Array.isArray(d.values)) {
+      return d.values;
+    }
+    
+    var tot = 0;
+    d.values.forEach(function(v) {
+      tot += v.values;
+    });
+    
+    return tot; 
+  })*/
+  //.scale(d3.scale.linear().range([5,50]).domain([1,300]))
+  /*.renderNode(function(sel) {
+    var c = sel.selectAll('circle').data(function(d) { return [d]; });
+    c.exit().remove();
+    c.enter().append('circle');
+    c.attr('r', 5);
+  })*/
+  .dimension(facts.dimension(function(d) { return d.key; }))
+  /*.filterFunc(function(d) {
+    console.log('tree filter',d);
+    if (d.depth <= 1)
+      return d.key;
+      
+    subcatPie.filter(d.key);
+    return d.parent.key;
+  })*/;
+  
+chartTree.nest()
+  .key(function(d) { return d.assigned; })
+  .key(function(d) { return d.priority; })
+  .key(function(d) { return d.status; })
+  //.key(function(d) { return d.assigned; })
+  .rollup(function(values) {
+    return values.length
+  });
+
+chartTree.scale()
+  .range([5,20]);
+
+
 dc.renderAll();
 
 d3.json('/data/SH2-50.json', function(err,json) {
   console.log(err,json);
   d3.select('#main-issue-info').html(json.key + '&nbsp;<small>'+json.fields.description+'</small>');
   
-  for(var i = 0; i < json.fields.subtasks.length; i++) {
+  for(var i = 0; i < json.fields.subtasks.length && i < 10; i++) {
     var s = json.fields.subtasks[i];
     
     d3.json('/data/'+s.key+'.json', function(err,json) {
