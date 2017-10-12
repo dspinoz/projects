@@ -684,9 +684,9 @@ chartTreeMap
     .key(function(d) { return d.status; })
     .key(function(d) { return d.key; })
     .rollup(function(values) {
-      console.log('nest',values);
       var tot = 0;
       
+      // only count once per worklog - all will be the same
       values.filter(function(d) {
         return !isNaN(d.remainingEstimate);
       }).forEach(function(d) {
