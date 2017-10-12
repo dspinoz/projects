@@ -101,6 +101,7 @@ dc.dsTreeMap = function (parent, chartGroup) {
     
     cellEnt.append("svg:rect");
     cellEnt.append("svg:text");
+    cellEnt.append("title");
     
     
     /*
@@ -121,23 +122,27 @@ dc.dsTreeMap = function (parent, chartGroup) {
       .call(printSel,'cell update')
       .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
 
-  cell.select("rect")
-      .call(printSel,'rect update')
-      .attr("width", function(d) { return d.dx - 1; })
-      .attr("height", function(d) { return d.dy - 1; })
-      .style("fill", function(d) { return d3.rgb(color(d.parent ? (d.parent.key) : "")).brighter(); })
-      .style("fill-opacity", function(d) { return d.progress / 100; })
-      .style("stroke", function(d) {return color(d.parent ? (d.parent.key) : ""); });
+    cell.select("rect")
+        .call(printSel,'rect update')
+        .attr("width", function(d) { return d.dx - 1; })
+        .attr("height", function(d) { return d.dy - 1; })
+        .style("fill", function(d) { return d3.rgb(color(d.parent ? (d.parent.key) : "")).brighter(); })
+        .style("fill-opacity", function(d) { return d.progress / 100; })
+        .style("stroke", function(d) {return color(d.parent ? (d.parent.key) : ""); });
 
-  cell.select("text")
-      .call(printSel,'text update')
-      .attr("x", function(d) { return d.dx / 2; })
-      .attr("y", function(d) { return d.dy / 2; })
-      .attr("dy", ".35em")
-      .attr("text-anchor", "middle")
-      .text(function(d) { return d.key.split('SH2-')[1]; })
-      .style("opacity", function(d) { d.w = this.getComputedTextLength(); return d.dx > d.w ? 1 : 0; });
+    cell.select("text")
+        .call(printSel,'text update')
+        .attr("x", function(d) { return d.dx / 2; })
+        .attr("y", function(d) { return d.dy / 2; })
+        .attr("dy", ".35em")
+        .attr("text-anchor", "middle")
+        .text(function(d) { return d.key.split('SH2-')[1]; })
+        .style("opacity", function(d) { d.w = this.getComputedTextLength(); return d.dx > d.w ? 1 : 0; });
     
+    cell.select("title")
+      .text(function(d) {
+        return d.key +":" + d.value;
+      });
     
     
     
