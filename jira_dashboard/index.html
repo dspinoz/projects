@@ -143,7 +143,7 @@
         <div class="col-sm-12">
           <div class="panel panel-default">
             <div class="panel-heading">
-              <h3 class="panel-title">Status Heatmap</h3>
+              <h3 class="panel-title">Status/Progress Treemap <small>Hours</small></h3>
             </div>
             <div class="panel-body">
               <div id="chart-status-map"></div>
@@ -370,8 +370,6 @@ var chartCountToComplete = dc.numberDisplay("#chart-count-to-complete");
 var chartCountWorkedHr = dc.numberDisplay("#chart-count-worked-hr");
 var chartCountToCompleteHr = dc.numberDisplay("#chart-count-to-complete-hr");
 var chartWeeks = dc.barChart("#chart-weeks");
-var chartStatusMap = dc.heatMap("#chart-status-map");
-var chartTree = dc.dsTreeChart("#chart-tree");
 var chartTreeMap = dc.dsTreeMap("#chart-treemap");
 
 for (var i = 0; i < dc.chartRegistry.list().length; i++) {
@@ -592,89 +590,6 @@ chartWeeks.yAxis()
   .tickFormat(function(d) {
     return formatSeconds(d);
   });
-
-  
-chartStatusMap
-  .dimension(keyDim)
-  .group(keyDim.group())
-  .width(1024)
-  .keyAccessor(function(d,i) { return d.key; })
-  .valueAccessor(function(d,i) { 
-    
-    var matches = facts.allFiltered()
-      .filter(function(a) { return a.key === d.key });
-    if (matches.length == 0) return "Unknown";
-    return matches[0].status;
-  })
-  .colorAccessor(function(d,i) {
-    console.log('ccc',i,d);
-    var matches = facts.allFiltered()
-      .filter(function(a) { return a.key === d.key });
-    if (matches.length == 0) return "Unknown";
-    return matches[0].status;
-  })
-  .colors(d3.scale.ordinal()
-    .domain(["Unknown", "To Do", "In Progress", "In Review", "Done"])
-    .range(["lightgrey", "slategrey","yellow","yellowgreen","green"]))
-  ;
-  
-chartTree
-  /*.colors(catColors)
-  .colorAccessor(function(d) {
-    return d.key;
-  })
-  .title(function(d) { 
-    if (!Array.isArray(d.values)) {
-      return d.key + ": " + dollarFormat(d.values);
-    }
-    
-    var tot = 0;
-    d.values.forEach(function(v) {
-      tot += v.values;
-    });
-    
-    return d.key + ": " + dollarFormat(tot); 
-  })
-  .extent(function(d) { 
-    if (!Array.isArray(d.values)) {
-      return d.values;
-    }
-    
-    var tot = 0;
-    d.values.forEach(function(v) {
-      tot += v.values;
-    });
-    
-    return tot; 
-  })*/
-  //.scale(d3.scale.linear().range([5,50]).domain([1,300]))
-  /*.renderNode(function(sel) {
-    var c = sel.selectAll('circle').data(function(d) { return [d]; });
-    c.exit().remove();
-    c.enter().append('circle');
-    c.attr('r', 5);
-  })*/
-  .dimension(facts.dimension(function(d) { return d.key; }))
-  /*.filterFunc(function(d) {
-    console.log('tree filter',d);
-    if (d.depth <= 1)
-      return d.key;
-      
-    subcatPie.filter(d.key);
-    return d.parent.key;
-  })*/;
-  
-chartTree.nest()
-  .key(function(d) { return d.assigned; })
-  .key(function(d) { return d.priority; })
-  .key(function(d) { return d.status; })
-  //.key(function(d) { return d.assigned; })
-  .rollup(function(values) {
-    return values.length
-  });
-
-chartTree.scale()
-  .range([5,20]);
 
 chartTreeMap
   .width(1100)
