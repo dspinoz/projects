@@ -37,6 +37,7 @@
     <script src='/bower_components/datatables/media/js/dataTables.bootstrap.js' type='text/javascript'></script>
     <link href='/bower_components/datatables/media/css/dataTables.bootstrap.css' rel='stylesheet' type='text/css'>
     <script src='/bower_components/cubism/cubism.v1.js' type='text/javascript'></script>
+    <script src='/bower_components/colorbrewer/colorbrewer.js' type='text/javascript'></script>
     <link href='/dsTreeChart.css' rel='stylesheet' type='text/css'>
     <script src='/dsTreeChart.js' type='text/javascript'></script>
     <link href='/dsTreeMap.css' rel='stylesheet' type='text/css'>
@@ -188,6 +189,7 @@
                 <th>Summary</th>
                 <th>Worklog</th>
                 <th>ETC</th>
+                <th>Labels</th>
               </tr>
             </thead>
           </table>
@@ -353,6 +355,80 @@ var dataTable = $("#data-table").dataTable({
     {
       targets: 5,
       data: function(d) { return d.fields.timetracking && d.fields.timetracking.remainingEstimateSeconds ? formatSeconds(d.fields.timetracking.remainingEstimateSeconds) : "Unknown"; }
+    },
+    {
+      targets: 6,
+      data: function(d) {
+        // break up labels in order to better determine task progress
+        
+        var progress_labels = [
+          "Analysis", "Analysis-Review", 
+          "Code", "Code-Review",
+           "No-Code","No-Code-Review",
+          "Documentation", "Documentation-Review",
+           "No-Documentation", "No-Documentation-Review",
+          "Regression-Analysis", "Regression-Analysis-Review",
+          "Test", "Test-Review",
+          "FQT-Ready"
+        ];
+      
+        var labels = d.fields.labels.filter(function(l) {
+          return progress_labels.filter(function(p) { return p === l; }).length > 0;
+        })
+      
+        return labels;
+      },
+      render: function(labels,t,r) {
+        console.log('render',labels,t,r);
+        
+        var progress_labels = [
+          "Analysis", "Analysis-Review", 
+          "Code", "Code-Review",
+           "No-Code","No-Code-Review",
+          "Documentation", "Documentation-Review",
+           "No-Documentation", "No-Documentation-Review",
+          "Regression-Analysis", "Regression-Analysis-Review",
+          "Test", "Test-Review",
+          "FQT-Ready"
+        ];
+        
+        var color = d3.scale.ordinal()
+          .domain(["None", "Analysis", "Code", "No-Code", "Documentation", "No-Documentation", "Regression-Analysis", "Test", "FQT-Ready"])
+          .range(colorbrewer.RdYlGn[9]);
+          
+        function fill(label) {
+          return labels.filter(function(l) { return l === label; }).length > 0;
+        }
+          
+        var width = 100;
+        var w = 100 / progress_labels.length;
+        var svg = '<svg height=10 width='+width+'>';
+        progress_labels.forEach(function(l,i) {
+          svg += '<rect x='+(w*i)+' y=0 width='+(w)+' height=10 style="fill: '+(fill(l)?color(l):'#fff')+'; stroke:'+color(l)+'">' + 
+            '<title>'+l+'</title>' +
+          '</rect>';
+        });
+        
+        svg += '</svg>';
+        
+        return svg;
+        /*
+        // Find earliest label that indicates progress
+        var last_label = "None";
+        for (var i = 0; i < progress_labels.length; i++) {
+          if (labels.filter(function(l) { return l === progress_labels[i]; }).length == 0) {
+            //Sbreak;
+          }
+          last_label = progress_labels[i];
+        }
+        
+        var color = d3.scale.ordinal()
+          .domain(["None", "Analysis", "Code", "No-Code", "Documentation", "No-Documentation", "Regression-Analysis", "Test", "FQT-Ready"])
+          .range(colorbrewer.RdYlGn[9]);
+        
+        return '<span style="color:'+color(last_label)+'">' + last_label + '</span> ';
+        */
+      }
     }
   ]
 });
