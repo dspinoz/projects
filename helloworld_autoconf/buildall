@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -xe
 
 autoreconf -i
 ./configure --prefix=`pwd`/install
