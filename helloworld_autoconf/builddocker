@@ -1,2 +1,2 @@
 #!/bin/sh -x
-docker run --interactive --volume=`pwd`:/hfs --rm centos bash -c 'yum install -y gcc autoconf automake  make; pushd /hfs; ./buildall'
+docker run --interactive --volume=`pwd`:/hfs --rm centos bash -xe -c 'yum install -y gcc autoconf automake  make; pushd /hfs; ./buildall || yes; rm -rf autom4te.cache'
