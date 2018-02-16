@@ -362,14 +362,13 @@ var dataTable = $("#data-table").dataTable({
         // break up labels in order to better determine task progress
         
         var progress_labels = [
+          "Not-Applicable",
           "Analysis", "Analysis-Review", 
-          "Code", "Code-Review",
-           "No-Code","No-Code-Review",
-          "Documentation", "Documentation-Review",
-           "No-Documentation", "No-Documentation-Review",
-          "Regression-Analysis", "Regression-Analysis-Review",
-          "Test", "Test-Review",
-          "FQT-Ready"
+          "No-Code", "Code", "Code-Review",
+          "No-Documentation", "Documentation", "Documentation-Review",
+          "Impact-Analysis", 
+          "No-FQT", "FQT-Ready", "FQT-Review",
+          "Final-Review"
         ];
       
         var labels = d.fields.labels.filter(function(l) {
@@ -382,34 +381,69 @@ var dataTable = $("#data-table").dataTable({
         console.log('render',labels,t,r);
         
         var progress_labels = [
-          "Analysis", "Analysis-Review", 
-          "Code", "Code-Review",
-           "No-Code","No-Code-Review",
-          "Documentation", "Documentation-Review",
-           "No-Documentation", "No-Documentation-Review",
-          "Regression-Analysis", "Regression-Analysis-Review",
-          "Test", "Test-Review",
-          "FQT-Ready"
+          "Analysis",
+          "Code",
+          "Documentation",
+          "Impact-Analysis", 
+          "FQT",
+          "Final"
         ];
         
         var color = d3.scale.ordinal()
-          .domain(["None", "Analysis", "Code", "No-Code", "Documentation", "No-Documentation", "Regression-Analysis", "Test", "FQT-Ready"])
-          .range(colorbrewer.RdYlGn[9]);
+          .domain(["None", "Analysis", "Code", "Documentation", "Impact-Analysis", "FQT", "Final"])
+          .range(colorbrewer.Greens[7]);
           
         function fill(label) {
-          return labels.filter(function(l) { return l === label; }).length > 0;
+          
+          switch (label) {
+            case 'Analysis':
+              if (labels.filter(function(l) { return l === 'Not-Applicable'; }).length > 0) {
+                return true;
+              }
+              return labels.filter(function(l) { return l === 'Analysis' || l === 'Analysis-Review'; }).length >= 2;
+            case 'Code':
+              if (labels.filter(function(l) { return l === 'No-Code' || l === 'Not-Applicable'; }).length > 0) {
+                return true;
+              }
+              return labels.filter(function(l) { return l === 'Code' || l === 'Code-Review'; }).length == 2;
+            case 'Documentation':
+              if (labels.filter(function(l) { return l === 'No-Documentation' || l === 'Not-Applicable'; }).length > 0) {
+                return true;
+              }
+              return labels.filter(function(l) { return l === 'Documentation' || l === 'Documentation-Review'; }).length == 2;
+            case 'Impact-Analysis':
+              if (labels.filter(function(l) { return l === 'No-Code' || l === 'Not-Applicable'; }).length > 0) {
+                return true;
+              }
+              return labels.filter(function(l) { return l === 'Impact-Analysis'; }).length == 1;
+            case 'FQT':
+              if (labels.filter(function(l) { return l === 'No-FQT' || l === 'Not-Applicable'; }).length > 0) {
+                return true;
+              }
+              return labels.filter(function(l) { return l === 'FQT-Ready' || l === 'FQT-Review'; }).length  == 2;
+            case 'Final':
+              return labels.filter(function(l) { return l === 'Final-Review'; }).length > 0;
+            default:
+              console.log("ERRRRRRRR DEFAULT", label);
+              return false;
+          }
+          
+          console.log("ERRRRRRRR", label);
+          return false;
         }
           
         var width = 100;
         var w = 100 / progress_labels.length;
         var svg = '<svg height=10 width='+width+'>';
         progress_labels.forEach(function(l,i) {
+        
           svg += '<rect x='+(w*i)+' y=0 width='+(w)+' height=10 style="fill: '+(fill(l)?color(l):'#fff')+'; stroke:'+color(l)+'">' + 
             '<title>'+l+'</title>' +
           '</rect>';
         });
         
-        svg += '</svg>';
+        svg += '</svg> ';
+// DEBUG        + labels.join(',');
         
         return svg;
         /*
