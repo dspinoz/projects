@@ -190,6 +190,7 @@
                 <th>Worklog</th>
                 <th>ETC</th>
                 <th>Labels</th>
+                <th>Assigned</th>
               </tr>
             </thead>
           </table>
@@ -378,7 +379,6 @@ var dataTable = $("#data-table").dataTable({
         return labels;
       },
       render: function(labels,t,r) {
-        console.log('render',labels,t,r);
         
         var progress_labels = [
           "Analysis",
@@ -392,6 +392,54 @@ var dataTable = $("#data-table").dataTable({
         var color = d3.scale.ordinal()
           .domain(["None", "Analysis", "Code", "Documentation", "Impact-Analysis", "FQT", "Final"])
           .range(colorbrewer.Greens[7]);
+          
+        function stroke(label) {
+          
+          switch (label) {
+            case 'Analysis':
+              if (labels.filter(function(l) { return l === 'Not-Applicable'; }).length > 0) {
+                return true;
+              }
+              return labels.filter(function(l) { return l === 'Analysis' || l === 'Analysis-Review'; }).length > 0;
+            case 'Code':
+              if (labels.filter(function(l) { return l === 'No-Code' || l === 'Not-Applicable'; }).length > 0) {
+                return true;
+              }
+              return labels.filter(function(l) { return l === 'Code' || l === 'Code-Review'; }).length > 0;
+            case 'Documentation':
+              if (labels.filter(function(l) { return l === 'No-Documentation' || l === 'Not-Applicable'; }).length > 0) {
+                return true;
+              }
+              return labels.filter(function(l) { return l === 'Documentation' || l === 'Documentation-Review'; }).length > 0;
+            case 'Impact-Analysis':
+              if (labels.filter(function(l) { return l === 'No-Code' || l === 'Not-Applicable'; }).length > 0) {
+                return true;
+              }
+              return labels.filter(function(l) { return l === 'Impact-Analysis'; }).length > 0;
+            case 'FQT':
+              if (labels.filter(function(l) { return l === 'No-FQT' || l === 'Not-Applicable'; }).length > 0) {
+                return true;
+              }
+              return labels.filter(function(l) { return l === 'FQT-Ready' || l === 'FQT-Review'; }).length > 0;
+            case 'Final':
+              // only show when all others are complete
+              
+              var completedAnalysis = labels.filter(function(l) { return l === 'Not-Applicable' || l === 'Analysis-Review'; }).length > 0;
+              var completedCode = labels.filter(function(l) { return l === 'Not-Applicable' || l === 'No-Code' || l === 'Code-Review'; }).length > 0;
+              var completedDocumentation = labels.filter(function(l) { return l === 'No-Documentation' || l === 'Not-Applicable' || l === 'Documentation-Review'; }).length > 0;
+              var completedCIA = labels.filter(function(l) { return l === 'No-Code' || l === 'Not-Applicable' || l === 'Impact-Analysis'; }).length > 0;
+              var completedFQT = labels.filter(function(l) { return l === 'No-FQT' || l === 'Not-Applicable' || l === 'FQT-Review'; }).length > 0
+              
+              return completedAnalysis && completedCode && completedDocumentation && completedCIA && completedFQT;
+            
+            default:
+              console.log("ERRRRRRRR DEFAULT", label);
+              return false;
+          }
+          
+          console.log("ERRRRRRRR", label);
+          return false;
+        }
           
         function fill(label) {
           
@@ -437,7 +485,7 @@ var dataTable = $("#data-table").dataTable({
         var svg = '<svg height=10 width='+width+'>';
         progress_labels.forEach(function(l,i) {
         
-          svg += '<rect x='+(w*i)+' y=0 width='+(w)+' height=10 style="fill: '+(fill(l)?color(l):'#fff')+'; stroke:'+color(l)+'">' + 
+          svg += '<rect x='+(w*i)+' y=0 width='+(w)+' height=10 style="fill: '+(fill(l)?color(l):'#fff')+'; stroke:'+(stroke(l)?color(l):'#ccc')+'; stroke-width: 3px;">' + 
             '<title>'+l+'</title>' +
           '</rect>';
         });
@@ -463,6 +511,10 @@ var dataTable = $("#data-table").dataTable({
         return '<span style="color:'+color(last_label)+'">' + last_label + '</span> ';
         */
       }
+    },
+    {
+      targets: 7,
+      data: function(d) { return d.fields.assignee ? d.fields.assignee.name : "Unassigned"; }
     }
   ]
 });
