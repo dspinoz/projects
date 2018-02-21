@@ -38,6 +38,7 @@
     <link href='/bower_components/datatables/media/css/dataTables.bootstrap.css' rel='stylesheet' type='text/css'>
     <script src='/bower_components/cubism/cubism.v1.js' type='text/javascript'></script>
     <script src='/bower_components/colorbrewer/colorbrewer.js' type='text/javascript'></script>
+    <script src='/bower_components/d3-queue/d3-queue.js' type='text/javascript'></script>
     <link href='/dsTreeChart.css' rel='stylesheet' type='text/css'>
     <script src='/dsTreeChart.js' type='text/javascript'></script>
     <link href='/dsTreeMap.css' rel='stylesheet' type='text/css'>
@@ -58,6 +59,11 @@
           <a class="navbar-brand" href="#">Jira Dashboard</a>
         </div>
         <div id="navbar" class="collapse navbar-collapse">
+          <div class="progress" style="margin-top:15px;">
+            <div class="progress-bar progress-bar-success" style="width: 0%">
+              <span class="sr-only">Complete</span>
+            </div>
+          </div>
         </div><!--/.nav-collapse -->
       </div>
     </nav>
@@ -780,18 +786,46 @@ chartTreeMap
       return tot;
     });
 
-dc.renderAll();
 
-d3.json('/data/SH2-50.json', function(err,json) {
-  console.log(err,json);
-  d3.select('#main-issue-info').html(json.key + '&nbsp;<small>'+json.fields.description+'</small>');
-  
-  for(var i = 0; i < json.fields.subtasks.length; i++) {
-    var s = json.fields.subtasks[i];
+
+    console.log('renderall');
     
-    d3.json('/data/'+s.key+'.json', function(err,json) {
-      if (err) { return; }
+    refreshDataTable();
+    
+    dc.renderAll();
+    
+    console.log('renderall done');
+    
+    console.log('fetching all data');
+    
+    d3.json('/data/SH2-50.json', function(err,json) {
+    
+      var queue = d3.queue();
       
+      var total = json.fields.subtasks.length;
+      var complete = 0;
+    
+      for(var i = 0; i < json.fields.subtasks.length; i++) {
+        var s = json.fields.subtasks[i];
+        queue.defer(function(cb) {
+          d3.json('/data/'+s.key+'.json', function(err,json) {
+            d3.select('.progress-bar-success').style('width', ((++complete/total)*100)+'%');
+            cb(err,json);
+          });
+        });
+      }
+      
+      
+      queue.awaitAll(function(err, results) {
+        if (err) { throw err; }
+        console.log('done fetching data', results);
+        
+        var data = [];
+        
+        // build up data for charting
+        results.forEach(function(json) {
+        
+        
       // differentiate between nothing left and not available
       var timeRemaining = json.fields.timetracking && json.fields.timetracking.remainingEstimateSeconds ? json.fields.timetracking.remainingEstimateSeconds : NaN;
       
@@ -813,7 +847,7 @@ d3.json('/data/SH2-50.json', function(err,json) {
             timeStarted: w.started,
             timeAuthor: w.author.key
           };
-          facts.add([f]);
+          data.push(f);
         });
       } else {
         var f = {
@@ -826,33 +860,49 @@ d3.json('/data/SH2-50.json', function(err,json) {
           labels: json.fields.labels,
           remainingEstimate: timeRemaining
         };
-        facts.add([f]);
+        data.push(f);
       }
       
-      // dates set to 0 should be ignored! (no worklog recorded)
-      var dates = worklogStartedDim.group().reduceSum(function(d) { return d.timeSpentSeconds; }).all().filter(function(d) { return d.key.getTime() != 0; });
-      
-      // stop errors coming from trying to render an invalid interval
-      if (dates.length > 0) {
-        var x = d3.extent(dates, function(d) { return d.key; });
-        chartWeeksX.domain([
-          worklogInterval.offset(x[0],-1),
-          worklogInterval.offset(x[1],1)
-        ]);
+        });
         
-        chartWeeksY.domain([0, 
-          d3.max(
-            worklogStartedDim.group().reduceSum(function(d) { return d.timeSpentSeconds ? d.timeSpentSeconds : 0; }).all().filter(function(d) { return d.key.getTime() != 0; }),
-            function(d) { return d.value; })
-        ]);
-      }
-      
-      refreshDataTable();
-      dc.redrawAll();
-    });
-  }
-});
+        var interval = setInterval(load_data, 250, data);
 
+        function load_data(data) {
+          var to_add = data.splice(0, 250);
+          
+          if (!to_add.length) 
+          {
+            clearInterval(interval);
+            console.log('done loading data');
+            return;
+          }
+          
+          facts.add(to_add);
+          
+          // dates set to 0 should be ignored! (no worklog recorded)
+          var dates = worklogStartedDim.group().reduceSum(function(d) { return d.timeSpentSeconds; }).all().filter(function(d) { return d.key.getTime() != 0; });
+          
+          // stop errors coming from trying to render an invalid interval
+          if (dates.length > 0) {
+            var x = d3.extent(dates, function(d) { return d.key; });
+            chartWeeksX.domain([
+              worklogInterval.offset(x[0],-1),
+              worklogInterval.offset(x[1],1)
+            ]);
+            
+            chartWeeksY.domain([0, 
+              d3.max(
+                worklogStartedDim.group().reduceSum(function(d) { return d.timeSpentSeconds ? d.timeSpentSeconds : 0; }).all().filter(function(d) { return d.key.getTime() != 0; }),
+                function(d) { return d.value; })
+            ]);
+          }
+          
+          refreshDataTable();
+          dc.redrawAll();
+        }
+      });
+    });
+    
 } catch (e) {
   console.log("ERROR",e);
   alert(e.message);
