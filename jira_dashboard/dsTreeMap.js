@@ -124,8 +124,9 @@ dc.dsTreeMap = function (parent, chartGroup) {
 
     cell.select("rect")
         .call(printSel,'rect update')
-        .attr("width", function(d) { return d.dx - 1; })
-        .attr("height", function(d) { return d.dy - 1; })
+        // rect with width/height < 0 is invalid
+        .attr("width", function(d) { return Math.max(0,d.dx - 1); })
+        .attr("height", function(d) { return Math.max(0,d.dy - 1); })
         .style("fill", function(d) { return d3.rgb(color(d.parent ? (d.parent.key) : "")).brighter(); })
         .style("fill-opacity", function(d) { return d.progress / 100; })
         .style("stroke", function(d) {return color(d.parent ? (d.parent.key) : ""); });
