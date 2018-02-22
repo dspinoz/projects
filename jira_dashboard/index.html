@@ -809,7 +809,7 @@ chartTreeMap
         var s = json.fields.subtasks[i];
         queue.defer(function(cb) {
           d3.json('/data/'+s.key+'.json', function(err,json) {
-            d3.select('.progress-bar-success').style('width', ((++complete/total)*100)+'%');
+            d3.select('.progress-bar').classed('progress-bar-success', true).style('width', ((++complete/total)*100)+'%');
             cb(err,json);
           });
         });
@@ -866,13 +866,22 @@ chartTreeMap
         });
         
         var interval = setInterval(load_data, 250, data);
+        complete = 0;
+        total = data.length;
 
         function load_data(data) {
           var to_add = data.splice(0, 250);
           
+          complete += to_add.length;
+          
+          d3.select('.progress-bar').classed('progress-bar-success', false).classed('progress-bar-info', true).classed('active', true).classed('progress-bar-striped',true).style('width', ((++complete/total)*100)+'%');
+          
           if (!to_add.length) 
           {
             clearInterval(interval);
+            
+            d3.select('.progress').style('display', 'none');
+              
             console.log('done loading data');
             return;
           }
