@@ -251,24 +251,38 @@ function reduceCount(group) {
 }
 
 function reduceSum(group,fn,uniq) {
+  
   function add(p, v, nf) {
-    if (!p.has(v.key)) {
-      p.set(v.key, 0);
+    var key = v.key;
+    var val = fn(v);
+    
+    if (!p.has(key)) {
+      p.set(key, {count: 0, value: 0});
     }
     
-    if (uniq && p.get(v.key) != 0) {
-      return p;
+    p.get(key).count++;
+    
+    if (p.get(key).count == 1 || !uniq)  {
+      p.get(key).value += val;
     }
     
-    p.set(v.key, p.get(v.key)+fn(v));
     return p;
   }
 
   function rem(p, v, nf) {
-    p.set(v.key, p.get(v.key)-fn(v));
-    if (p.get(v.key) <= 0) {
-      p.remove(v.key);
+    var key = v.key;
+    var val = fn(v);
+    
+    if (p.get(key).count == 1 || !uniq)  {
+      p.get(key).value -= val;
     }
+  
+    p.get(key).count--;
+    
+    if (p.get(key).count == 0) {
+      p.remove(key);
+    }
+    
     return p;
   }
 
@@ -611,7 +625,7 @@ chartCountWorked
   .formatNumber(formatSeconds);
 
 chartCountToComplete
-  .valueAccessor(function(d) { return d3.sum(d.values()); })
+  .valueAccessor(function(d) { return d3.sum(d.values(), function(d) { return d.value; }); })
   .group(reduceSum(
     facts.groupAll(), 
     function(d) { return !isNaN(d.remainingEstimate) ? d.remainingEstimate : 0; },
@@ -627,7 +641,7 @@ chartCountWorkedHr
   .formatNumber(function(d) { return d3.format('.1f')(d/3600) +"h"; });
 
 chartCountToCompleteHr
-  .valueAccessor(function(d) { return d3.sum(d.values()); })
+  .valueAccessor(function(d) { return d3.sum(d.values(), function(d) { return d.value; }); })
   .group(reduceSum(
     facts.groupAll(), 
     function(d) { return !isNaN(d.remainingEstimate) ? d.remainingEstimate : 0; },
@@ -656,7 +670,7 @@ chartWorked
   .innerRadius(30)
   .dimension(assigneeTimeDim)
   .group(reduceSum(assigneeTimeDim.group(), function(d) { return d.timeSpentSeconds ? d.timeSpentSeconds : 0; }))
-  .valueAccessor(function(d) { return d3.sum(d.value.values()); })
+  .valueAccessor(function(d) { return d3.sum(d.value.values(), function(d) { return d.value; }); })
   .title(function(d) {
     if (d.key == "empty") return "Empty";
     return d.key + ": " + formatSeconds(d3.sum(d.value.values()));
