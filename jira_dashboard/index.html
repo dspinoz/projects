@@ -39,10 +39,6 @@
     <script src='/bower_components/cubism/cubism.v1.js' type='text/javascript'></script>
     <script src='/bower_components/colorbrewer/colorbrewer.js' type='text/javascript'></script>
     <script src='/bower_components/d3-queue/d3-queue.js' type='text/javascript'></script>
-    <link href='/dsTreeChart.css' rel='stylesheet' type='text/css'>
-    <script src='/dsTreeChart.js' type='text/javascript'></script>
-    <link href='/dsTreeMap.css' rel='stylesheet' type='text/css'>
-    <script src='/dsTreeMap.js' type='text/javascript'></script>
   </head>
 
   <body>
@@ -552,7 +548,7 @@ var chartCountToComplete = dc.numberDisplay("#chart-count-to-complete");
 var chartCountWorkedHr = dc.numberDisplay("#chart-count-worked-hr");
 var chartCountToCompleteHr = dc.numberDisplay("#chart-count-to-complete-hr");
 var chartWeeks = dc.barChart("#chart-weeks");
-var chartTreeMap = dc.dsTreeMap("#chart-treemap");
+var chartTreeMap = dc.treemapChart("#chart-treemap");
 
 for (var i = 0; i < dc.chartRegistry.list().length; i++) {
   var chartI = dc.chartRegistry.list()[i];
@@ -777,6 +773,7 @@ chartTreeMap
   .width(1100)
   .height(500)
   .dimension(facts.dimension(function(d) { return d.status }))
+  .title(function(d) { return d.key.split('SH2-')[1]; })
   .nest()
     .key(function(d) { return d.status; })
     .key(function(d) { return d.key; })
