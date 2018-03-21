@@ -38,17 +38,20 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
           for row in curr:
             pragma.append(row[1])
           
+          s.send_response(200)
+          s.end_headers()
+
           out = csv.writer(s.wfile)
           out.writerow(pragma)
           
           curr.execute('SELECT * FROM transactions')
           data = curr.fetchall()
           for d in data:
-			for e in list(d):
-				s.wfile.write(e)
-				s.wfile.write(',')
-			s.wfile.write('\n')
-            
+            for e in list(d):
+              s.wfile.write('%s,' %(e))
+            s.wfile.write('\n')
+	  
+          s.wfile.flush()
           conn.close()
         except sqlite3.Error:
           s.send_error(503, 'Could not open database')
