@@ -15,20 +15,20 @@ charts.itemCount
 
 dc.renderAll();
 
-var pdata = d3.range(0,100);
+var pdata = d3.range(0,102);
 var pstart = 0, pend = 10;
 var columns = 3;
 
 d3.select('#photos').text('photos here..')
 .on('mousewheel', function() {
-  var shift = 1;
-  if (d3.event.wheelDelta > 0) shift = -1;
+  var shift = columns;
+  if (d3.event.wheelDelta > 0) shift = -1*columns;
   
   console.log('hello scroll',d3.event.wheelDelta < 0 ? 'down' : 'up',d3.event.wheelDelta,shift,pstart,pstart+shift,pend,pend+shift);
   
   
-  if (pstart + shift < 0) return;
-  if (pend + shift > (pdata.length-1)) return;
+  while (pstart + shift < 0) shift++;
+  while (pend + shift > pdata.length) shift--;
   
   pstart += shift;
   pend += shift;
@@ -57,12 +57,19 @@ function updateP() {
     });
   
   
-  var p = d3.select('#photos').selectAll('p').data(pdata.filter(function(d,i){ return i >= pstart && i < pend; }));
+  var row = d3.select('#photos').selectAll('div.row').data(d3.nest().key(function(d){ return Math.floor(d/columns); }).entries(pdata.filter(function(d,i){ return i >= pstart && i < pend; })));
+  row.exit().remove();
+  row = row.enter()
+    .append('div')
+    .classed('row',true)
+    .merge(row);
+    
+  var p = row.selectAll('p').data(function(d){ return d.values; });
   p.exit().remove();
   p.enter()
     .append('p')
     .merge(p)
-    .text(function(d){ return d; });
+    .html(function(d){ return d+"&nbsp;&nbsp;"; });
 }
 
 updateP();
