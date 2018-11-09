@@ -1,0 +1,16 @@
+#!/usr/bin/env python
+from bottle import route, run, template, static_file, response
+
+@route('/bower_components/<path:path>')
+def bower_components(path):
+  return static_file(path, root='./bower_components')
+
+@route('/index.html')
+def index():
+  return static_file('index.html', root='.')
+
+@route('/index.js')
+def index3_js():
+  return static_file('index.js', root='.')
+  
+run(host='localhost', port=8000)

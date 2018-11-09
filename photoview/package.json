@@ -1,0 +1,12 @@
+{
+  "name": "photoview",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {},
+  "author": "dspinoz",
+  "license": "dspinoz",
+  "dependencies": {
+    "bower": "^1.8.4"
+  }
+}

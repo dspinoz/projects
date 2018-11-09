@@ -1,0 +1,21 @@
+{
+  "name": "photoview",
+  "description": "",
+  "main": "index.js",
+  "authors": [
+    "dspinoz"
+  ],
+  "license": "MIT",
+  "homepage": "",
+  "private": true,
+  "dependencies": {
+    "dcjs": "^3.0.8",
+    "bootstrap": "^4.1.3",
+    "jquery": "3.3.1",
+    "d3-queue": "^3.0.7",
+    "d3": "5.7.0"
+  },
+  "resolutions": {
+    "d3": "5.7.0"
+  }
+}
