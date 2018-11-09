@@ -15,8 +15,8 @@ charts.itemCount
 
 dc.renderAll();
 
-var pdata = d3.range(0,102);
-var pstart = 0, pend = 10;
+var pdata = d3.range(0,104);
+var pstart = 0, pend = 30;
 var columns = 3;
 
 d3.select('#photos').text('photos here..')
@@ -56,15 +56,29 @@ function updateP() {
       return 'white';
     });
   
+  var rows = [];
+  var current = [];
   
-  var row = d3.select('#photos').selectAll('div.row').data(d3.nest().key(function(d){ return Math.floor(d/columns); }).entries(pdata.filter(function(d,i){ return i >= pstart && i < pend; })));
+  pdata.filter(function(d,i){ return i >= pstart && i < pend; }).forEach(function(d) {
+    if (current.length>=columns) {
+      rows.push(current);
+      current = [];
+    }
+    current.push(d);
+  });
+  if (current.length){
+    rows.push(current);
+    current = null;
+  }
+  
+  var row = d3.select('#photos').selectAll('div.row').data(rows);
   row.exit().remove();
   row = row.enter()
     .append('div')
     .classed('row',true)
     .merge(row);
     
-  var p = row.selectAll('p').data(function(d){ return d.values; });
+  var p = row.selectAll('p').data(function(d){ return d; });
   p.exit().remove();
   p.enter()
     .append('p')
