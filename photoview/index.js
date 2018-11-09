@@ -17,6 +17,7 @@ dc.renderAll();
 
 var pdata = d3.range(0,100);
 var pstart = 0, pend = 10;
+var columns = 3;
 
 d3.select('#photos').text('photos here..')
 .on('mousewheel', function() {
@@ -39,6 +40,23 @@ d3.select('#photos').text('photos here..')
 });
 
 function updateP() {
+  
+  var w = 3;
+  var rect = d3.select('#h-scrollbar').selectAll('rect').data(pdata);
+  rect.exit().remove();
+  rect.enter()
+    .append('rect')
+    .merge(rect)
+    .attr('x',function(d,i){ return i*w; })
+    .attr('y',0)
+    .attr('width',w)
+    .attr('height',w)
+    .style('fill',function(d,i){
+      if (i >= pstart && i < pend) return 'black';
+      return 'white';
+    });
+  
+  
   var p = d3.select('#photos').selectAll('p').data(pdata.filter(function(d,i){ return i >= pstart && i < pend; }));
   p.exit().remove();
   p.enter()
