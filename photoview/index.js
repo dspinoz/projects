@@ -1,17 +1,84 @@
 var facts = crossfilter();
+var picset = d3.set();
 
 var charts = {
-  itemCount: dc.numberDisplay("#chart-count")
+  itemCount: dc.numberDisplay("#chart-count"),
+  make: dc.pieChart("#chart-make"),
+  model: dc.pieChart("#chart-model"),
+  exposureMode: dc.pieChart("#chart-exposure-mode"),
+  exposureProgram: dc.pieChart("#chart-exposure-program"),
+  aperture: dc.pieChart("#chart-aperture"),
+  flash: dc.pieChart("#chart-flash"),
+  lens: dc.pieChart("#chart-lens"),
+  whiteBalance: dc.pieChart("#chart-white-balance"),
+  focalLength: dc.pieChart("#chart-focal-length"),
+  focusMode: dc.pieChart("#chart-focus-mode"),
+  fileType: dc.pieChart("#chart-file-type")
 }
 
 var dimensions = {
-  id: facts.dimension(function(d,i) {return i; })
+  id: facts.dimension(function(d,i) {return i; }),
+  make: facts.dimension(function(d){ return d['Make']; }),
+  model: facts.dimension(function(d){ return d['Model']; }),
+  exposureMode: facts.dimension(function(d){ return d['ExposureMode']; }),
+  exposureProgram: facts.dimension(function(d){ return d['ExposureProgram']; }),
+  aperture: facts.dimension(function(d){ return d['Aperture']; }),
+  flash: facts.dimension(function(d){ return d['Flash']; }),
+  lens: facts.dimension(function(d){ return d['Lens']; }),
+  whiteBalance: facts.dimension(function(d){ return d['WhiteBalance']; }),
+  focalLength: facts.dimension(function(d){ return d['FocalLength']; }),
+  focusMode: facts.dimension(function(d){ return d['FocusMode']; }),
+  fileType: facts.dimension(function(d){ return d['FileType']; })
 }
 
 charts.itemCount
   .formatNumber(Math.round)
   .group(facts.groupAll().reduceCount())
   .valueAccessor(function(d) { return d; });
+  
+charts.make
+  .dimension(dimensions.make)
+  .group(dimensions.make.group().reduceCount());
+  
+charts.model
+  .dimension(dimensions.model)
+  .group(dimensions.model.group().reduceCount());
+  
+charts.exposureMode
+  .dimension(dimensions.exposureMode)
+  .group(dimensions.exposureMode.group().reduceCount());
+  
+charts.exposureProgram
+  .dimension(dimensions.exposureProgram)
+  .group(dimensions.exposureProgram.group().reduceCount());
+  
+charts.aperture
+  .dimension(dimensions.aperture)
+  .group(dimensions.aperture.group().reduceCount());
+  
+charts.flash
+  .dimension(dimensions.flash)
+  .group(dimensions.flash.group().reduceCount());
+  
+charts.lens
+  .dimension(dimensions.lens)
+  .group(dimensions.lens.group().reduceCount());
+  
+charts.whiteBalance
+  .dimension(dimensions.whiteBalance)
+  .group(dimensions.whiteBalance.group().reduceCount());
+  
+charts.focalLength
+  .dimension(dimensions.focalLength)
+  .group(dimensions.focalLength.group().reduceCount());
+  
+charts.focusMode
+  .dimension(dimensions.focusMode)
+  .group(dimensions.focusMode.group().reduceCount());
+  
+charts.fileType
+  .dimension(dimensions.fileType)
+  .group(dimensions.fileType.group().reduceCount());
 
 dc.renderAll();
 
@@ -41,6 +108,16 @@ d3.select('#photos').text('photos here..')
 });
 
 function updateP() {
+  
+  pdata.filter(function(d,i){ return i >= pstart && i < pend; }).forEach(function(p) {
+    if (!picset.has(p)) {
+      d3.json('/exif/'+p).then(function(data) {
+        picset.add(p);
+        facts.add(data);
+        dc.redrawAll();
+      });
+    }
+  });
   
   var xScale = d3.scaleBand().range([0,1000]).domain(pdata).paddingInner(0.01);
   var rect = d3.select('#h-scrollbar').selectAll('rect').data(pdata);
@@ -79,13 +156,12 @@ function updateP() {
     .classed('row',true)
     .merge(row);
     
-  var p = row.selectAll('p').data(function(d){ return d; });
-  p.exit().remove();
-  p.enter()
-    .append('p')
-    .merge(p)
-    .html(function(d){ return d+"&nbsp;&nbsp;"; });
+  var img = row.selectAll('img').data(function(d){ return d; });
+  img.exit().remove();
+  img.enter()
+    .append('img')
+    .merge(img)
+    .attr('src',function(d){ return '/icons/'+d; });
 }
 
 updateP();
-
