@@ -13,7 +13,24 @@ def icons(path):
   
 @route('/exif/<path:path>')
 def icons_exifinfo(path):
-  return subprocess.Popen("exiftool -j '{}'".format(os.path.realpath(os.path.join('./icons',path))), shell=True, stdout=subprocess.PIPE).stdout.read()
+  
+  exiffile = ".exif.{}.json".format(os.path.basename(path))
+  exifpath1 = os.path.join(os.path.dirname(path), exiffile)
+  exifpath2 = os.path.realpath(os.path.join('./icons',exifpath1))
+  
+  if os.path.isfile(exifpath2):
+    print "EXIF CACHE",exifpath2
+    return static_file(exifpath1, root='./icons')
+  
+  print "NO EXIF",path,exifpath2
+  
+  exifinfo = subprocess.Popen("exiftool -j '{}'".format(os.path.realpath(os.path.join('./icons',path))), shell=True, stdout=subprocess.PIPE).stdout.read()
+  
+  fd = open(exifpath2, "w")
+  fd.write(exifinfo)
+  fd.close()
+  
+  return static_file(exifpath1, root='./icons')
 
 @route('/index.html')
 def index():
