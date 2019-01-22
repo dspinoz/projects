@@ -23,12 +23,14 @@ parameters = {"Type":"inventory-retrieval"}
 inventoryJobId = db.has_inventory_job(db_conn)
 
 if inventoryJobId is None:
+  print("REQUESTING INVENTORY")
   res = glacier_conn.initiate_job(accountId=accountId, vaultName=vaultName, jobParameters=parameters)
   db.add_glacier_job(db_conn, res['jobId'], accountId, vaultName, json.dumps(parameters), '', '')
   inventoryJobId = db.has_inventory_job(db_conn)
+  print("REQUESTING INVENTORY {}".format(inventoryJobId))
 
 res = glacier_conn.describe_job(accountId=accountId, vaultName=vaultName, jobId=inventoryJobId)
-print(json.dumps(res))
+print("DESCRIBE JOB {}".format(json.dumps(res)))
 
 if res['Completed']:
   print("Inventory job completed")
@@ -38,6 +40,11 @@ else:
   
 res = glacier_conn.list_jobs(accountId=accountId, vaultName=vaultName)
 for job in res['JobList']:
-  print(json.dumps(job))
+  print("JOB {}".format(json.dumps(job)))
+  if job['Completed']:
+    res = glacier_conn.get_job_output(accountId=accountId, vaultName=vaultName, jobId=inventoryJobId)
+    jobres = res['body'].read()
+    for a in json.loads(jobres)['ArchiveList']:
+      print("ARCHIVE {}".format(json.dumps(a)))
 
 
