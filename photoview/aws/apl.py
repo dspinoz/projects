@@ -20,6 +20,11 @@ accountId = '-'
 vaultName = 'test'
 parameters = {"Type":"inventory-retrieval"}
 
+
+res = glacier_conn.describe_vault(accountId=accountId, vaultName=vaultName)
+print("VAULT {}".format(json.dumps(res)))
+
+
 inventoryJobId = db.has_inventory_job(db_conn)
 
 if inventoryJobId is None:
