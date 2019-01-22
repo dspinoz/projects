@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import os
 import json
+import dateutil.parser
 
 import boto3
 
@@ -22,7 +23,7 @@ parameters = {"Type":"inventory-retrieval"}
 
 
 res = glacier_conn.describe_vault(accountId=accountId, vaultName=vaultName)
-print("VAULT {}".format(json.dumps(res)))
+print("VAULT {} {} {} {} {} {}".format(res['SizeInBytes'], dateutil.parser.parse(res['LastInventoryDate']), res['NumberOfArchives'], dateutil.parser.parse(res['CreationDate']), res['VaultName'], res['VaultARN']))
 
 
 inventoryJobId = db.has_inventory_job(db_conn)
@@ -35,7 +36,7 @@ if inventoryJobId is None:
   print("REQUESTING INVENTORY {}".format(inventoryJobId))
 
 res = glacier_conn.describe_job(accountId=accountId, vaultName=vaultName, jobId=inventoryJobId)
-print("DESCRIBE JOB {}".format(json.dumps(res)))
+print("DESCRIBE INVENTORY JOB {} {} {} {}".format(res['Completed'], res['Action'], dateutil.parser.parse(res['CreationDate']), res['StatusCode']))
 
 if res['Completed']:
   print("Inventory job completed")
@@ -43,13 +44,14 @@ if res['Completed']:
 else:
   print("inventory job is running",res['StatusCode'])
   
+print("CHECKING ALL JOBS")
 res = glacier_conn.list_jobs(accountId=accountId, vaultName=vaultName)
 for job in res['JobList']:
-  print("JOB {}".format(json.dumps(job)))
-  if job['Completed']:
-    res = glacier_conn.get_job_output(accountId=accountId, vaultName=vaultName, jobId=inventoryJobId)
+  print("DESCRIBE JOB {} {} {} {} {}".format(job['JobId'], job['Completed'], job['Action'], dateutil.parser.parse(job['CreationDate']), job['StatusCode']))
+  if job['Completed'] and job['Action'] == 'InventoryRetrieval':
+    res = glacier_conn.get_job_output(accountId=accountId, vaultName=vaultName, jobId=job['JobId'])
     jobres = res['body'].read()
     for a in json.loads(jobres)['ArchiveList']:
-      print("ARCHIVE {}".format(json.dumps(a)))
+      print("ARCHIVE {}".format(a['ArchiveId'], a['ArchiveDescription'], dateutil.parser.parse(a['CreationDate']), a['Size'], a['SHA256TreeHash']))
 
 
