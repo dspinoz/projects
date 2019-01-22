@@ -36,4 +36,4 @@ def data_dir(err=True):
 def init():
   root_path = data_dir()
   
-  db.init(root_path, db_name)
+  return db.init(root_path, db_name)

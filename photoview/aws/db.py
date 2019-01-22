@@ -13,8 +13,51 @@ def init(data_dir,db_name):
             CREATE TABLE IF NOT EXISTS config (
               key TEXT PRIMARY KEY NOT NULL, 
               value TEXT)''')
+
+  c.execute('''
+            CREATE TABLE IF NOT EXISTS glacier_job (
+              id TEXT PRIMARY KEY NOT NULL, 
+              account TEXT,
+              vault TEXT,
+              parameters TEXT,
+              description TEXT,
+              output TEXT)''')
   
   conn.commit()
   
   return conn
 
+
+def has_inventory_job(conn):
+  try:
+    curr = conn.cursor()
+    
+    curr.execute('select id from glacier_job where parameters LIKE "%inventory-retrieval%" and description = ""')
+ 
+    row = curr.fetchone()
+    
+    jobid = None
+    if row is not None:
+      jobid = row[0]
+    
+    curr.close()
+    
+    return jobid
+  except sqlite3.Error as e:
+    print("has_inventory_job: {}".format(e))
+    return False
+
+
+def add_glacier_job(conn,id=None,account=None,vault=None,parameters=None,description=None,output=None):
+  
+  try:
+    curr = conn.cursor()
+    
+    curr.execute('INSERT INTO glacier_job VALUES (?,?,?,?,?,?)',(id,account,vault,parameters,description,output))
+      
+    conn.commit()
+    
+    return True
+  except sqlite3.Error as e:
+    print('add_glacier_job',e)
+    return False
