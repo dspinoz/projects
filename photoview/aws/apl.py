@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import sys
 import os
 import json
 import dateutil.parser
@@ -27,6 +28,7 @@ print("VAULT {} {} {} {} {} {}".format(res['SizeInBytes'], dateutil.parser.parse
 
 
 inventoryJobId = db.has_inventory_job(db_conn)
+print("HAS INVENTORY {}".format(inventoryJobId))
 
 if inventoryJobId is None:
   print("REQUESTING INVENTORY")
@@ -51,6 +53,10 @@ for job in res['JobList']:
   if job['Completed'] and job['Action'] == 'InventoryRetrieval':
     res = glacier_conn.get_job_output(accountId=accountId, vaultName=vaultName, jobId=job['JobId'])
     jobres = res['body'].read()
+    
+    db.set_inventory_output(db_conn, inventoryJobId, jobres)
+    print("UPDATED INVENTORY OUTPUT")
+    
     for a in json.loads(jobres)['ArchiveList']:
       print("ARCHIVE {}".format(a['ArchiveId'], a['ArchiveDescription'], dateutil.parser.parse(a['CreationDate']), a['Size'], a['SHA256TreeHash']))
 

@@ -32,7 +32,7 @@ def has_inventory_job(conn):
   try:
     curr = conn.cursor()
     
-    curr.execute('select id from glacier_job where parameters LIKE "%inventory-retrieval%" and description = ""')
+    curr.execute('select id from glacier_job where parameters LIKE "%inventory-retrieval%" and output = ""')
  
     row = curr.fetchone()
     
@@ -40,12 +40,25 @@ def has_inventory_job(conn):
     if row is not None:
       jobid = row[0]
     
-    curr.close()
-    
     return jobid
   except sqlite3.Error as e:
     print("has_inventory_job: {}".format(e))
     return False
+
+
+def set_inventory_output(conn,id,output):
+  try:
+    curr = conn.cursor()
+    
+    curr.execute('update glacier_job set output = ? where id = ?',(output, id))
+ 
+    conn.commit()
+    
+    return True
+  except sqlite3.Error as e:
+    print("set_inventory_output: {}".format(e))
+    return False
+
 
 
 def add_glacier_job(conn,id=None,account=None,vault=None,parameters=None,description=None,output=None):
