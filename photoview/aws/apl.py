@@ -35,5 +35,9 @@ if res['Completed']:
   #TODO update database
 else:
   print("inventory job is running",res['StatusCode'])
+  
+res = glacier_conn.list_jobs(accountId=accountId, vaultName=vaultName)
+for job in res['JobList']:
+  print(json.dumps(job))
 
 
