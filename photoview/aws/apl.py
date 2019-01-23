@@ -58,6 +58,6 @@ for job in res['JobList']:
     print("UPDATED INVENTORY OUTPUT")
     
     for a in json.loads(jobres)['ArchiveList']:
-      print("ARCHIVE {}".format(a['ArchiveId'], a['ArchiveDescription'], dateutil.parser.parse(a['CreationDate']), a['Size'], a['SHA256TreeHash']))
+      print("ARCHIVE {} {} {} {} {}".format(a['ArchiveId'], a['ArchiveDescription'], dateutil.parser.parse(a['CreationDate']), a['Size'], a['SHA256TreeHash']))
 
 
