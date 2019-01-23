@@ -161,7 +161,7 @@ if requestNewInventory:
   res = glacier_conn.list_jobs(accountId=accountId, vaultName=vaultName)
   for job in res['JobList']:
     print("DESCRIBE JOB {} {} {} {} {}".format(job['JobId'], job['Completed'], job['Action'], dateutil.parser.parse(job['CreationDate']), job['StatusCode']))
-    if job['Completed'] and job['Action'] == 'InventoryRetrieval':
+    if job['Completed'] and job['Action'] == 'InventoryRetrieval' and job['JobId'] == inventoryJobId:
       res = glacier_conn.get_job_output(accountId=accountId, vaultName=vaultName, jobId=job['JobId'])
       jobres = res['body'].read()
       
