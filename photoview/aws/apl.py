@@ -22,6 +22,8 @@ accountId = '-'
 vaultName = 'test'
 parameters = {"Type":"inventory-retrieval"}
 requestNewInventory = False
+uploadNewArchive = True
+uploadD3JS = True
 
 
 res = glacier_conn.describe_vault(accountId=accountId, vaultName=vaultName)
@@ -30,6 +32,15 @@ print("VAULT {} {} {} {} {} {}".format(res['SizeInBytes'], dateutil.parser.parse
 
 inventoryJobId = db.has_inventory_job(db_conn)
 print("HAS INVENTORY {}".format(inventoryJobId))
+
+
+if uploadNewArchive:
+  
+  if uploadD3JS:
+    res = glacier_conn.upload_archive(accountId=accountId, vaultName=vaultName, archiveDescription="archive description", body=open("d3.js","r"))
+    print("Uploading d3.js", res['archiveId'], res['checksum'], res['location'])
+  
+
 
 if requestNewInventory:
 
