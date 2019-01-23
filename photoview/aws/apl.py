@@ -165,7 +165,7 @@ if requestNewInventory:
       res = glacier_conn.get_job_output(accountId=accountId, vaultName=vaultName, jobId=job['JobId'])
       jobres = res['body'].read()
       
-      db.set_inventory_output(db_conn, inventoryJobId, jobres)
+      db.set_inventory_output(db_conn, job['JobId'], jobres)
       print("***** UPDATED INVENTORY OUTPUT ******")
       
       for a in json.loads(jobres)['ArchiveList']:
