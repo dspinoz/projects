@@ -89,9 +89,11 @@ if uploadNewArchive:
     print("HASH",hasher.hexdigest())
     
   if uploadABC:
-    a = open("01-miami.mp3","r")
+    filename = "IMG_2390.CR2"
+    partSize = 1048576
+    a = open(filename,"r")
     
-    res = glacier_conn.initiate_multipart_upload(accountId=accountId, vaultName=vaultName, archiveDescription="multipart archive upload 01-miami.mp3", partSize="1048576")
+    res = glacier_conn.initiate_multipart_upload(accountId=accountId, vaultName=vaultName, archiveDescription="multipart archive upload 01-miami.mp3", partSize=str(partSize))
     print("NEW MULTIPART UPLOAD",res['location'], res['uploadId'], json.dumps(res))
     
     uploadId = res['uploadId']
@@ -101,7 +103,7 @@ if uploadNewArchive:
     chunks = []
     
     while True:
-      b = a.read(1048576)
+      b = a.read(partSize)
       print("READ",len(b))
       if not b:
         print("BREAK")
@@ -130,6 +132,7 @@ if uploadNewArchive:
     
     print("CHECKSUM",archiveSize,"bytes",hasher.hexdigest())
     
+    print("CALCULATING TREEHASH FROM",len(chunks),"CHUNKS")
     for c in chunks:
       print("CHUNK",tohex(c))
       
@@ -167,19 +170,19 @@ if uploadNewArchive:
       # list of new chunks has been created for processing
       chunks = new_chunks
       
-      
-    print("MY TREEHASH", tohex(chunks[0]))
+    mytreehash = tohex(chunks[0])
+    print("MY TREEHASH", mytreehash)
       
       
     
-    h = treehash.SHA256TreeHash("01-miami.mp3")
+    h = treehash.SHA256TreeHash(filename)
     treeHash = ''.join(x.encode('hex') for x in h.computeSHA256TreeHash())
-    treeHash2 = botocore.utils.calculate_tree_hash(open("01-miami.mp3","rb"))
+    treeHash2 = botocore.utils.calculate_tree_hash(open(filename,"rb"))
     
-    print("CORE TREE HASH",treeHash == treeHash2,treeHash,treeHash2)
+    print("CHECK TREE HASH",treeHash == mytreehash, mytreehash, treeHash,treeHash == treeHash2,treeHash2)
     
     
-    res = glacier_conn.complete_multipart_upload(accountId=accountId, vaultName=vaultName, uploadId=uploadId, archiveSize=str(archiveSize), checksum=treeHash)
+    res = glacier_conn.complete_multipart_upload(accountId=accountId, vaultName=vaultName, uploadId=uploadId, archiveSize=str(archiveSize), checksum=mytreehash)
     print("MULTIPART ARCHIVE UPLOADED",res['checksum'] == hasher.hexdigest(), res['checksum'], res['archiveId'], res['location'], json.dumps(res))
     
 
