@@ -41,9 +41,7 @@ inventoryJobId = db.has_inventory_job(db_conn)
 print("HAS INVENTORY {}".format(inventoryJobId))
 
 if showInventory:
-  if inventoryJobId is None:
-    print("REQUESTING LAST SUCCESSFUL INVENTORY")
-    inventoryJobId = db.get_last_inventory_job(db_conn)
+  inventoryJobId = db.get_last_inventory_job(db_conn)
   print("SHOWING INVENTORY",inventoryJobId)
   if inventoryJobId is None:
     print("No inventory available")
@@ -58,6 +56,7 @@ if showInventory:
       if 'ArchiveDescription' in a:
         d=a['ArchiveDescription']
       print("    ",a['CreationDate'], a['Size'], d)
+  sys.exit(1)
 
 
 
