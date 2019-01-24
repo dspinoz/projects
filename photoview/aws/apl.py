@@ -40,6 +40,9 @@ inventoryJobId = db.has_inventory_job(db_conn)
 print("HAS INVENTORY {}".format(inventoryJobId))
 
 
+def tohex(bstr):
+  return ''.join(x.encode('hex') for x in bstr)
+
 class ABCFile():
   
   def __init__(self):
@@ -95,6 +98,7 @@ if uploadNewArchive:
     archiveSize = 0
     hasher = hashlib.sha256()
     
+    chunks = []
     
     while True:
       b = a.read(1048576)
@@ -112,6 +116,7 @@ if uploadNewArchive:
       res = glacier_conn.upload_multipart_part(accountId=accountId, vaultName=vaultName, uploadId=uploadId, range=rangeHeader, body=b''.join(b))
       print("UPLOADED PART", res['checksum'], json.dumps(res))
       print("CHUNK HASH",chunk_hasher.hexdigest(),chunk_hasher.hexdigest() == res['checksum'], res['checksum'])
+      chunks.append(chunk_hasher.digest())
       
       archiveSize = archiveSize + len(b)
       hasher.update(b"".join(b))
@@ -125,8 +130,48 @@ if uploadNewArchive:
     
     print("CHECKSUM",archiveSize,"bytes",hasher.hexdigest())
     
+    for c in chunks:
+      print("CHUNK",tohex(c))
+      
+      
+      
+    while len(chunks) > 1:
+      
+      new_chunks = []
+      
+      it = iter(chunks)
+      
+      while True:
+        a = None
+        b = None
+        try:
+          a = next(it)
+        except:
+          #reached the end of the list
+          break
+          
+        try:
+          b = next(it)
+        except:
+          #only a single element remains - add to new list
+          new_chunks.append(a)
+          break
+          
+        pair = (a,b)
+      
+        h = hashlib.sha256()
+        h.update(pair[0])
+        h.update(pair[1])
+        new_chunks.append(h.digest())
+      
+      # list of new chunks has been created for processing
+      chunks = new_chunks
+      
+      
+    print("MY TREEHASH", tohex(chunks[0]))
+      
+      
     
-    # TODO calculate the treehash inline while reading
     h = treehash.SHA256TreeHash("01-miami.mp3")
     treeHash = ''.join(x.encode('hex') for x in h.computeSHA256TreeHash())
     treeHash2 = botocore.utils.calculate_tree_hash(open("01-miami.mp3","rb"))
