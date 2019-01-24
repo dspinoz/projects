@@ -45,6 +45,22 @@ def has_inventory_job(conn):
     print("has_inventory_job: {}".format(e))
     return False
 
+def get_last_inventory_job(conn):
+  try:
+    curr = conn.cursor()
+    
+    curr.execute('select id from glacier_job where parameters LIKE "%inventory-retrieval%" and output != "" ORDER BY ID DESC LIMIT 1')
+ 
+    row = curr.fetchone()
+    
+    jobid = None
+    if row is not None:
+      jobid = row[0]
+    
+    return jobid
+  except sqlite3.Error as e:
+    print("has_inventory_job: {}".format(e))
+    return False
 
 def set_inventory_output(conn,id,output):
   try:
@@ -59,7 +75,18 @@ def set_inventory_output(conn,id,output):
     print("set_inventory_output: {}".format(e))
     return False
 
-
+def get_inventory_output(conn,id):
+  try:
+    curr = conn.cursor()
+    
+    curr.execute('select output from glacier_job where id = ?',(id,))
+ 
+    row = curr.fetchone()
+    
+    return row[0]
+  except sqlite3.Error as e:
+    print("get_inventory_output: {}".format(e))
+    return False
 
 def add_glacier_job(conn,id=None,account=None,vault=None,parameters=None,description=None,output=None):
   

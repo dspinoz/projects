@@ -27,6 +27,7 @@ vaultName = 'test'
 parameters = {"Type":"inventory-retrieval"}
 requestNewInventory = False
 uploadNewArchive = True
+showInventory = True
 uploadD3JS = False
 uploadD3JSTAR = True
 uploadABC = True
@@ -38,6 +39,26 @@ print("VAULT {} {} {} {} {} {}".format(res['SizeInBytes'], dateutil.parser.parse
 
 inventoryJobId = db.has_inventory_job(db_conn)
 print("HAS INVENTORY {}".format(inventoryJobId))
+
+if showInventory:
+  if inventoryJobId is None:
+    print("REQUESTING LAST SUCCESSFUL INVENTORY")
+    inventoryJobId = db.get_last_inventory_job(db_conn)
+  print("SHOWING INVENTORY",inventoryJobId)
+  if inventoryJobId is None:
+    print("No inventory available")
+  else:
+    i = db.get_inventory_output(db_conn, str(inventoryJobId))
+    print(i)
+    i = json.loads(i)
+    print("VAULT",i['VaultARN'],i["InventoryDate"],len(i['ArchiveList']),"ARCHIVES")
+    for a in i["ArchiveList"]:
+      print("  ",a['ArchiveId'],a['SHA256TreeHash'])
+      d = None
+      if 'ArchiveDescription' in a:
+        d=a['ArchiveDescription']
+      print("    ",a['CreationDate'], a['Size'], d)
+
 
 
 def tohex(bstr):
