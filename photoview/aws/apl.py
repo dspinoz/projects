@@ -5,6 +5,7 @@ import json
 import dateutil.parser
 import hashlib
 import StringIO
+import time
 
 import botocore
 import boto3
@@ -31,7 +32,8 @@ showInventory = True
 uploadD3JS = False
 uploadD3JSTAR = True
 uploadABC = True
-
+retrieveArchive = True
+showJobs = False
 
 res = glacier_conn.describe_vault(accountId=accountId, vaultName=vaultName)
 print("VAULT {} {} {} {} {} {}".format(res['SizeInBytes'], dateutil.parser.parse(res['LastInventoryDate']), res['NumberOfArchives'], dateutil.parser.parse(res['CreationDate']), res['VaultName'], res['VaultARN']))
@@ -204,6 +206,51 @@ if uploadNewArchive:
     
     res = glacier_conn.complete_multipart_upload(accountId=accountId, vaultName=vaultName, uploadId=uploadId, archiveSize=str(archiveSize), checksum=mytreehash)
     print("MULTIPART ARCHIVE UPLOADED",res['checksum'] == hasher.hexdigest(), res['checksum'], res['archiveId'], res['location'], json.dumps(res))
+
+
+if retrieveArchive:
+  archiveId = "..."
+  
+  retrieveParameters = {"Type":"archive-retrieval", "ArchiveId": archiveId, "Tier": "Bulk", "Description": "Retrieve archive"}
+  res = glacier_conn.initiate_job(accountId=accountId, vaultName=vaultName, jobParameters=retrieveParameters)
+  print("REQUESTING ARCHIVE",archiveId,"WITH JOB",res['jobId'])
+  db.add_glacier_job(db_conn, res['jobId'], accountId, vaultName, json.dumps(retrieveParameters), retrieveParameters['Description'], '')
+  
+  retrieveJob = res['jobId']
+  
+  while True:
+  
+    res = glacier_conn.describe_job(accountId=accountId, vaultName=vaultName, jobId=retrieveJob)
+    print("DESCRIBE RETRIEVE JOB {} {} {} {}".format(res['Completed'], res['Action'], dateutil.parser.parse(res['CreationDate']), res['StatusCode']))
+    
+    # in order to confirm the contents with res['ArchiveSHA256TreeHash'] must know the chunks that were uploaded to glacier, or store the hash for the archive when uploading.
+    
+    if res['Completed']:
+      print("** RETRIEVE JOB COMPLETED! **")
+      
+      res = glacier_conn.get_job_output(accountId=accountId, vaultName=vaultName, jobId=retrieveJob)
+      
+      body = res['body']
+      del res['body']
+      print("JOB OUTPUT RESPONSE (no body)", json.dumps(res))
+      
+      outf = "retrieve"
+      fd = open(outf,'w')
+      fd.write(body.read())
+      fd.close()
+      
+      print("CREATED FILE",outf,"FROM RETRIEVE JOB")
+      print("COMPLETE")
+      
+      break
+    
+    n = 30
+    sec = 60
+    print("Waiting for",n,n*sec)
+    for i in range(1,n+1):
+      time.sleep(sec)
+      print("  been",i,i*sec)
+    
     
 
 
@@ -224,20 +271,23 @@ if requestNewInventory:
     #TODO update database
   else:
     print("inventory job is running",res['StatusCode'])
-    
+
+if showJobs or requestNewInventory:
   print("CHECKING ALL JOBS")
   res = glacier_conn.list_jobs(accountId=accountId, vaultName=vaultName)
   for job in res['JobList']:
     print("DESCRIBE JOB {} {} {} {} {}".format(job['JobId'], job['Completed'], job['Action'], dateutil.parser.parse(job['CreationDate']), job['StatusCode']))
-    if job['Completed'] and job['Action'] == 'InventoryRetrieval' and job['JobId'] == inventoryJobId:
-      res = glacier_conn.get_job_output(accountId=accountId, vaultName=vaultName, jobId=job['JobId'])
-      jobres = res['body'].read()
-      
-      db.set_inventory_output(db_conn, job['JobId'], jobres)
-      print("***** UPDATED INVENTORY OUTPUT ******")
-      
-      for a in json.loads(jobres)['ArchiveList']:
-        print("ARCHIVE {}".format(json.dumps(a)))
-        print("ARCHIVE {} {} {} {} {}".format(a['ArchiveId'], a['ArchiveDescription'], dateutil.parser.parse(a['CreationDate']), a['Size'], a['SHA256TreeHash']))
+    
+    if requestNewInventory:
+      if job['Completed'] and job['Action'] == 'InventoryRetrieval' and job['JobId'] == inventoryJobId:
+        res = glacier_conn.get_job_output(accountId=accountId, vaultName=vaultName, jobId=job['JobId'])
+        jobres = res['body'].read()
+        
+        db.set_inventory_output(db_conn, job['JobId'], jobres)
+        print("***** UPDATED INVENTORY OUTPUT ******")
+        
+        for a in json.loads(jobres)['ArchiveList']:
+          print("ARCHIVE {}".format(json.dumps(a)))
+          print("ARCHIVE {} {} {} {} {}".format(a['ArchiveId'], a['ArchiveDescription'], dateutil.parser.parse(a['CreationDate']), a['Size'], a['SHA256TreeHash']))
 
 
