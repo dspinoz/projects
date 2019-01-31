@@ -12,4 +12,24 @@ class AWSGlacierModel(models.Model):
 class Inventory(AWSGlacierModel):
   output = models.TextField()
   date = models.DateTimeField()
-  
+
+class Job(AWSGlacierModel):
+  jobId = models.CharField(max_length=255)
+  parameters = models.TextField()
+  creationDate = models.DateTimeField()
+  statusCode = models.CharField(max_length=255)
+  completionDate = models.DateTimeField()
+  completed = models.BooleanField()
+  description = models.TextField()
+  action = models.CharField(max_length=255)
+  snsTopic = models.CharField(max_length=255)
+
+class Archive(AWSGlacierModel):
+  archiveId = models.CharField(max_length=255)
+  size = models.BigIntegerField()
+  sha256 = models.CharField(max_length=255)
+  sha256TreeHash = models.CharField(max_length=255)
+  description = models.TextField()
+  creationDate = models.DateTimeField()
+  deletedDate = models.DateTimeField()
+  partSize = models.BigIntegerField()
