@@ -22,7 +22,7 @@ class Job(AWSGlacierModel):
   parameters = models.TextField(blank=True)
   creationDate = models.DateTimeField(default=datetime.today)
   statusCode = models.CharField(max_length=255)
-  completionDate = models.DateTimeField(null=True, blank=True, default=None)
+  completionDate = models.DateTimeField(null=True, blank=True)
   completed = models.BooleanField(default=False)
   description = models.TextField(blank=True)
   action = models.CharField(max_length=255, blank=True)
@@ -36,7 +36,7 @@ class Archive(AWSGlacierModel):
   sha256TreeHash = models.CharField(max_length=255)
   description = models.TextField(blank=True)
   creationDate = models.DateTimeField(default=datetime.today)
-  deletedDate = models.DateTimeField(null=True, blank=True, default=None)
+  deletedDate = models.DateTimeField(null=True, blank=True)
   partSize = models.BigIntegerField(null=True, blank=True, default=None)
 
 class InventoryRetrieval(models.Model):
