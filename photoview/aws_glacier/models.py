@@ -40,5 +40,5 @@ class Archive(AWSGlacierModel):
   partSize = models.BigIntegerField(null=True, blank=True, default=None)
 
 class InventoryRetrieval(models.Model):
-  jobId = models.ForeignKey(Job, on_delete=models.CASCADE)
+  job = models.ForeignKey(Job, on_delete=models.CASCADE)
   inventory = models.ForeignKey(Inventory, on_delete=models.CASCADE)
