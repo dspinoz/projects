@@ -25,6 +25,7 @@ class Job(AWSGlacierModel):
   description = models.TextField(blank=True)
   action = models.CharField(max_length=255)
   snsTopic = models.CharField(max_length=255, null=True)
+  retrievedOutput = models.BooleanField(default=False)
 
 class Archive(AWSGlacierModel):
   archiveId = models.CharField(max_length=255)
