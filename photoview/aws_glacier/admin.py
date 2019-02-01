@@ -8,8 +8,10 @@ from django.contrib import admin
 from .models import Inventory
 from .models import Archive
 from .models import Job
+from .models import InventoryRetrieval
 
 admin.site.register(Inventory)
 admin.site.register(Archive)
 admin.site.register(Job)
+admin.site.register(InventoryRetrieval)
 
