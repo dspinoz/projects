@@ -8,6 +8,8 @@ from django.db import models
 class AWSGlacierModel(models.Model):
   accountId = models.CharField(max_length=255)
   vaultName = models.CharField(max_length=255)
+  class Meta:
+    abstract = True
 
 class Inventory(AWSGlacierModel):
   output = models.TextField()
