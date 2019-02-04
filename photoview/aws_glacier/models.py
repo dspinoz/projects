@@ -28,6 +28,9 @@ class Job(AWSGlacierModel):
   action = models.CharField(max_length=255, blank=True)
   snsTopic = models.CharField(max_length=255, null=True, blank=True, default=None)
   retrievedOutput = models.BooleanField(default=False)
+  available = models.BooleanField(default=True)
+  availableDate = models.DateTimeField(default=datetime.today)
+  lastModifiedDate = models.DateTimeField(auto_now=True)
 
 class Archive(AWSGlacierModel):
   archiveId = models.CharField(max_length=255)
@@ -42,3 +45,4 @@ class Archive(AWSGlacierModel):
 class InventoryRetrieval(models.Model):
   job = models.ForeignKey(Job, on_delete=models.CASCADE)
   inventory = models.ForeignKey(Inventory, on_delete=models.CASCADE)
+  vault = models.CharField(max_length=255, default=None)
