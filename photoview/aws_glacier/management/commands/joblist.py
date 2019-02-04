@@ -44,15 +44,19 @@ class Command(BaseCommand):
       myjob.availableDate = datetime.now()
       myjob.accountId = options['account-id']
       myjob.vaultName = options['vault-name']
-      myjob.parameters = json.dumps(self.getParameters(job))
+      if job['Action'] == 'InventoryRetrieval':
+        myjob.parameters = json.dumps(job['InventoryRetrievalParameters'])
+      if job['Action'] == 'ArchiveRetrieval':
+        myjob.parameters = json.dumps({"RetrievalByteRange": job["RetrievalByteRange"], "Tier": job["Tier"], "SHA256TreeHash": job["SHA256TreeHash"], "ArchiveId": job["ArchiveId"], "ArchiveSizeInBytes": job["ArchiveSizeInBytes"], "ArchiveSHA256TreeHash": job["ArchiveSHA256TreeHash"]})
       myjob.statusCode = job['StatusCode']
       if 'StatusMessage' in job:
         myjob.statusMessage = job['StatusMessage']
       myjob.action = job['Action']
+      if 'JobDescription' in job:
+        myjob.description = job['JobDescription']
       myjob.creationDate = dateutil.parser.parse(job['CreationDate'])
       myjob.completed = job['Completed']
-
-      if job['Completed']:
+      if 'CompletionDate' in job:
         myjob.completedDate = dateutil.parser.parse(job['CompletionDate'])
         if not myjob.retrievedOutput:
           print("JOB {} has recently completed: {}".format(myjob.id, myjob.jobId))
