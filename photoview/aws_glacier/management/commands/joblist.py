@@ -38,30 +38,27 @@ class Command(BaseCommand):
     for job in res['JobList']:
       availableJobs.append(job['JobId'])
       
-      try:
-          myjob = Job.objects.get(jobId = job['JobId'])
-          
-          myjob.available = True
-          myjob.availableDate = datetime.now()
-          myjob.accountId = options['account-id']
-          myjob.vaultName = options['vault-name']
-          myjob.parameters = json.dumps(self.getParameters(job))
-          myjob.statusCode = job['StatusCode']
-          myjob.statusMessage = job['StatusMessage']
-          myjob.action = job['Action']
-          myjob.creationDate = dateutil.parser.parse(job['CreationDate'])
-          myjob.completed = job['Completed']
-          myjob.save()
-          
-      except ObjectDoesNotExist:
-        myjob = Job.objects.create(jobId = job['JobId'], parameters = json.dumps(self.getParameters(job)), statusCode = job['StatusCode'], statusMessage = job['StatusMessage'], action = job['Action'], creationDate = dateutil.parser.parse(job['CreationDate']), completed = job['Completed'], accountId = options['account-id'], vaultName = options['vault-name'])
+      (myjob, newjob) = Job.objects.get_or_create(jobId = job['JobId'])
+      
+      myjob.available = True
+      myjob.availableDate = datetime.now()
+      myjob.accountId = options['account-id']
+      myjob.vaultName = options['vault-name']
+      myjob.parameters = json.dumps(self.getParameters(job))
+      myjob.statusCode = job['StatusCode']
+      if 'StatusMessage' in job:
+        myjob.statusMessage = job['StatusMessage']
+      myjob.action = job['Action']
+      myjob.creationDate = dateutil.parser.parse(job['CreationDate'])
+      myjob.completed = job['Completed']
 
       if job['Completed']:
         myjob.completedDate = dateutil.parser.parse(job['CompletionDate'])
-        myjob.save()
         if not myjob.retrievedOutput:
           print("JOB {} has recently completed: {}".format(myjob.id, myjob.jobId))
           completedJobs = True
+      
+      myjob.save()
     
     if completedJobs:
       print("Run joboutputs to get job outputs")

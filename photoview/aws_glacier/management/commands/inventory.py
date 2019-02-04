@@ -18,9 +18,25 @@ class Command(BaseCommand):
   def add_arguments(self, parser):
     parser.add_argument('account-id')
     parser.add_argument('vault-name')
+    parser.add_argument('--request-new', action='store_true', default=False, help="Request a new inventory")
   
   def handle(self, *args, **options):
     glacier_conn = boto3.client('glacier')
+    
+    if 'request_new' in options:
+      print("REQUESTING NEW INVENTORY")
+      parameters = {"Type":"inventory-retrieval"}
+      res = glacier_conn.initiate_job(accountId=options['account-id'], vaultName=options['vault-name'], jobParameters=parameters)
+      
+      meta = res['ResponseMetadata']
+      headers = meta['HTTPHeaders']
+      AWSGlacierRequestResponse.objects.create(requestId = meta['RequestId'], endpoint = 'initiate_job.inventoryretrieval', retryAttempts = meta['RetryAttempts'], statusCode = meta['HTTPStatusCode'], date = dateutil.parser.parse(headers['date']), responseLength = headers['content-length'], responseContentType = headers['content-type'], responseBody = json.dumps(res), accountId = options['account-id'], vaultName = options['vault-name'])
+
+      inventoryJob = res['jobId']
+      print("Job created: {}".format(inventoryJob))
+      print("Run joblist to get updates")
+      
+      sys.exit(retCode)
     
     inventoryRetrieval = InventoryRetrieval.objects.order_by('-lastModifiedDate').first()
     if inventoryRetrieval is None:
