@@ -61,3 +61,11 @@ class InventoryRetrieval(models.Model):
   inventory = models.ForeignKey(Inventory, on_delete=models.CASCADE)
   lastModifiedDate = models.DateTimeField(auto_now=True)
   vault = models.CharField(max_length=255, default=None)
+
+class ArchiveRetrieval(models.Model):
+  job = models.ForeignKey(Job, on_delete=models.CASCADE)
+  archive = models.ForeignKey(Archive, on_delete=models.CASCADE)
+  lastModifiedDate = models.DateTimeField(auto_now=True)
+  startByte = models.BigIntegerField(default=0)
+  endByte = models.BigIntegerField(default=0)
+

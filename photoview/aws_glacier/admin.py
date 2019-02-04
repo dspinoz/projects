@@ -8,6 +8,7 @@ from django.contrib import admin
 from .models import Inventory
 from .models import Archive
 from .models import Job
+from .models import ArchiveRetrieval
 from .models import InventoryRetrieval
 from .models import AWSGlacierRequestResponse
 
@@ -43,6 +44,17 @@ class InventoryRetrievalAdmin(admin.ModelAdmin):
   def inventory_id(self, obj):
     return obj.inventory.id
 
+@admin.register(ArchiveRetrieval)
+class ArchiveRetrievalAdmin(admin.ModelAdmin):
+  date_hierarchy = 'lastModifiedDate'
+  list_display = ('id', 'job_id', 'archive_id', 'lastModifiedDate', 'startByte', 'endByte')
+  list_filter = ('lastModifiedDate', )
+  
+  def job_id(self, obj):
+    return obj.job.jobId
+  def archive_id(self, obj):
+    return obj.archive.id
+  
 @admin.register(AWSGlacierRequestResponse)
 class AWSGlacierRequestResponseAdmin(admin.ModelAdmin):
   date_hierarchy = 'date'
