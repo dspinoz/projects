@@ -27,6 +27,7 @@ class AWSGlacierRequestResponse(AWSGlacierModel):
 class Inventory(AWSGlacierModel):
   output = models.TextField(null=True, default=None)
   date = models.DateTimeField(default=datetime.today)
+  processed = models.BooleanField(default=False)
 
 class Job(AWSGlacierModel):
   jobId = models.CharField(max_length=255)
@@ -53,6 +54,7 @@ class Archive(AWSGlacierModel):
   creationDate = models.DateTimeField(default=datetime.today)
   deletedDate = models.DateTimeField(null=True, blank=True)
   partSize = models.BigIntegerField(null=True, blank=True, default=None)
+  available = models.BooleanField(default=True)
 
 class InventoryRetrieval(models.Model):
   job = models.ForeignKey(Job, on_delete=models.CASCADE)
