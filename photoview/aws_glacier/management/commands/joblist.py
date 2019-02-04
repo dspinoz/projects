@@ -33,6 +33,7 @@ class Command(BaseCommand):
     AWSGlacierRequestResponse.objects.create(requestId = meta['RequestId'], endpoint = 'list_jobs', retryAttempts = meta['RetryAttempts'], statusCode = meta['HTTPStatusCode'], date = dateutil.parser.parse(headers['date']), responseLength = headers['content-length'], responseContentType = headers['content-type'], responseBody = json.dumps(res), accountId = options['account-id'], vaultName = options['vault-name'])
 
     availableJobs = []
+    completedJobs = False
 
     for job in res['JobList']:
       availableJobs.append(job['JobId'])
@@ -58,6 +59,12 @@ class Command(BaseCommand):
       if job['Completed']:
         myjob.completedDate = dateutil.parser.parse(job['CompletionDate'])
         myjob.save()
+        if not myjob.retrievedOutput:
+          print("JOB {} has recently completed: {}".format(myjob.id, myjob.jobId))
+          completedJobs = True
+    
+    if completedJobs:
+      print("Run joboutputs to get job outputs")
     
     for myjob in Job.objects.filter(available=True):
       if myjob.jobId not in availableJobs:
