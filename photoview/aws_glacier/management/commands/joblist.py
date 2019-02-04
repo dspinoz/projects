@@ -40,6 +40,8 @@ class Command(BaseCommand):
       try:
           myjob = Job.objects.get(jobId = job['JobId'])
           
+          myjob.available = True
+          myjob.availableDate = datetime.now()
           myjob.accountId = options['account-id']
           myjob.vaultName = options['vault-name']
           myjob.parameters = json.dumps(self.getParameters(job))
