@@ -8,6 +8,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.core.exceptions import ObjectDoesNotExist
 
 from aws_glacier.models import Job
+from aws_glacier.models import AWSGlacierRequestResponse
 
 class Command(BaseCommand):
   help = "List jobs"
@@ -23,16 +24,18 @@ class Command(BaseCommand):
     return None
   
   def handle(self, *args, **options):
-    print("LIST JOBS", options)
     glacier_conn = boto3.client('glacier')
 
     res = glacier_conn.list_jobs(accountId=options['account-id'], vaultName=options['vault-name'])
+
+    meta = res['ResponseMetadata']
+    headers = meta['HTTPHeaders']
+    AWSGlacierRequestResponse.objects.create(requestId = meta['RequestId'], endpoint = 'list_jobs', retryAttempts = meta['RetryAttempts'], statusCode = meta['HTTPStatusCode'], date = dateutil.parser.parse(headers['date']), responseLength = headers['content-length'], responseContentType = headers['content-type'], responseBody = json.dumps(res), accountId = options['account-id'], vaultName = options['vault-name'])
 
     availableJobs = []
 
     for job in res['JobList']:
       availableJobs.append(job['JobId'])
-      
       
       try:
           myjob = Job.objects.get(jobId = job['JobId'])

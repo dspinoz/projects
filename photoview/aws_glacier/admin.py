@@ -9,9 +9,11 @@ from .models import Inventory
 from .models import Archive
 from .models import Job
 from .models import InventoryRetrieval
+from .models import AWSGlacierRequestResponse
 
 admin.site.register(Inventory)
 admin.site.register(Archive)
 admin.site.register(Job)
 admin.site.register(InventoryRetrieval)
+admin.site.register(AWSGlacierRequestResponse)
 

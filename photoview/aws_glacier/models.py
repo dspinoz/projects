@@ -13,6 +13,17 @@ class AWSGlacierModel(models.Model):
   class Meta:
     abstract = True
 
+class AWSGlacierRequestResponse(AWSGlacierModel):
+  requestId = models.TextField(blank=True)
+  lastModifiedDate = models.DateTimeField(auto_now=True)
+  date = models.DateTimeField(blank=False, default=datetime.today)
+  endpoint = models.TextField(blank=True)
+  statusCode = models.IntegerField(default=200)
+  retryAttempts = models.IntegerField()
+  responseLength = models.IntegerField(default=0)
+  responseContentType = models.CharField(max_length=255)
+  responseBody = models.TextField(blank=True)
+
 class Inventory(AWSGlacierModel):
   output = models.TextField(null=True, default=None)
   date = models.DateTimeField(default=datetime.today)
