@@ -56,4 +56,5 @@ class Archive(AWSGlacierModel):
 class InventoryRetrieval(models.Model):
   job = models.ForeignKey(Job, on_delete=models.CASCADE)
   inventory = models.ForeignKey(Inventory, on_delete=models.CASCADE)
+  lastModifiedDate = models.DateTimeField(auto_now=True)
   vault = models.CharField(max_length=255, default=None)
