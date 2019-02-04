@@ -23,7 +23,7 @@ class Command(BaseCommand):
   def handle(self, *args, **options):
     glacier_conn = boto3.client('glacier')
     
-    if 'request_new' in options:
+    if 'request_new' in options and options['request_new']:
       print("REQUESTING NEW INVENTORY")
       parameters = {"Type":"inventory-retrieval"}
       res = glacier_conn.initiate_job(accountId=options['account-id'], vaultName=options['vault-name'], jobParameters=parameters)
@@ -36,7 +36,7 @@ class Command(BaseCommand):
       print("Job created: {}".format(inventoryJob))
       print("Run joblist to get updates")
       
-      sys.exit(retCode)
+      sys.exit(0)
     
     inventoryRetrieval = InventoryRetrieval.objects.order_by('-lastModifiedDate').first()
     if inventoryRetrieval is None:
