@@ -1,3 +1,4 @@
+import sys
 import dateutil
 from datetime import datetime
 import json
@@ -20,24 +21,26 @@ class Command(BaseCommand):
   
   def handle(self, *args, **options):
     glacier_conn = boto3.client('glacier')
-    print("INVENTORY LIST")
-
-    inventoryRetrieval = InventoryRetrieval.objects.order_by('lastModifiedDate').first()
+    
+    inventoryRetrieval = InventoryRetrieval.objects.order_by('-lastModifiedDate').first()
     if inventoryRetrieval is None:
-      print("THERE IS NO CURRENT INVENTORY")
-    else:
-      print("INVENTORY", inventoryRetrieval.lastModifiedDate," (", inventoryRetrieval.job.jobId,")")
-      inventory = json.loads(inventoryRetrieval.inventory.output)
-      print("{} archives".format(len(inventory['ArchiveList'])))
-      for a in inventory['ArchiveList']:
-        print("ARCHIVE {} {} {} {} {}".format(a['ArchiveId'], a['ArchiveDescription'], dateutil.parser.parse(a['CreationDate']), a['Size'], a['SHA256TreeHash']))
-
-    completedJobs = Job.objects.filter(action='InventoryRetrieval', completed=True).order_by('lastModifiedDate')
-    print(completedJobs.count(), "COMPLETED INVENTORY JOBS")
-    for j in completedJobs:
-      print("  ", j.jobId, j.lastModifiedDate)
-
-    pendingJobs = Job.objects.filter(action='InventoryRetrieval', completed=False).order_by('lastModifiedDate')
+      print("THERE IS NO INVENTORY AVAILABLE")
+      if Job.objects.filter(action='InventoryRetrieval', completed=False).order_by('-lastModifiedDate').count():
+        print("There are inventory jobs pending")
+      sys.exit(1)
+    
+    pendingJobs = Job.objects.filter(action='InventoryRetrieval', completed=False).order_by('-lastModifiedDate')
     print(pendingJobs.count(), "PENDING INVENTORY JOBS")
     for j in pendingJobs:
-      print("  ", j.jobId, j.lastModifiedDate)
+      print("  {}: {} {}  ".format(j.id, j.jobId, j.lastModifiedDate))
+    
+    completedJobs = Job.objects.filter(action='InventoryRetrieval', completed=True).order_by('-lastModifiedDate')
+    print(completedJobs.count(), "COMPLETED INVENTORY JOBS")
+    for j in completedJobs:
+      print("  {}: {} {}".format(j.id, j.jobId, j.lastModifiedDate))
+      
+    inventory = json.loads(inventoryRetrieval.inventory.output)
+    print("CURRENT INVENTORY ({})\n({}, {})".format(len(inventory['ArchiveList']), inventoryRetrieval.lastModifiedDate, inventoryRetrieval.job.jobId))
+    for a in inventory['ArchiveList']:
+      print("  ARCHIVE {}: {} {} {} {}".format(a['ArchiveId'], a['ArchiveDescription'], dateutil.parser.parse(a['CreationDate']), a['Size'], a['SHA256TreeHash']))
+
