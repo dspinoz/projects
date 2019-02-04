@@ -41,7 +41,7 @@ class Command(BaseCommand):
     
         meta = res['ResponseMetadata']
         headers = meta['HTTPHeaders']
-        AWSGlacierRequestResponse.objects.create(requestId = meta['RequestId'], endpoint = 'get_job_output', retryAttempts = meta['RetryAttempts'], statusCode = meta['HTTPStatusCode'], date = dateutil.parser.parse(headers['date']), responseLength = headers['content-length'], responseContentType = headers['content-type'], responseBody = json.dumps(res), accountId = options['account-id'], vaultName = options['vault-name'])
+        AWSGlacierRequestResponse.objects.create(requestId = meta['RequestId'], endpoint = 'get_job_output.{}'.format(job.action.lower()), retryAttempts = meta['RetryAttempts'], statusCode = meta['HTTPStatusCode'], date = dateutil.parser.parse(headers['date']), responseLength = headers['content-length'], responseContentType = headers['content-type'], responseBody = json.dumps(res), accountId = options['account-id'], vaultName = options['vault-name'])
         
         inventory = Inventory.objects.create(output=jsonstr, date = dateutil.parser.parse(jsonres['InventoryDate']), accountId = options['account-id'], vaultName = options['vault-name'])
         
