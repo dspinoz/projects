@@ -33,6 +33,7 @@ class Job(AWSGlacierModel):
   parameters = models.TextField(blank=True)
   creationDate = models.DateTimeField(default=datetime.today)
   statusCode = models.CharField(max_length=255)
+  statusMessage = models.TextField(blank=True)
   completionDate = models.DateTimeField(null=True, blank=True)
   completed = models.BooleanField(default=False)
   description = models.TextField(blank=True)

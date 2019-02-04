@@ -46,16 +46,17 @@ class Command(BaseCommand):
           myjob.vaultName = options['vault-name']
           myjob.parameters = json.dumps(self.getParameters(job))
           myjob.statusCode = job['StatusCode']
+          myjob.statusMessage = job['StatusMessage']
           myjob.action = job['Action']
           myjob.creationDate = dateutil.parser.parse(job['CreationDate'])
           myjob.completed = job['Completed']
           myjob.save()
           
       except ObjectDoesNotExist:
-        myjob = Job.objects.create(jobId = job['JobId'], parameters = json.dumps(self.getParameters(job)), statusCode = job['StatusCode'], action = job['Action'], creationDate = dateutil.parser.parse(job['CreationDate']), completed = job['Completed'], accountId = options['account-id'], vaultName = options['vault-name'])
+        myjob = Job.objects.create(jobId = job['JobId'], parameters = json.dumps(self.getParameters(job)), statusCode = job['StatusCode'], statusMessage = job['StatusMessage'], action = job['Action'], creationDate = dateutil.parser.parse(job['CreationDate']), completed = job['Completed'], accountId = options['account-id'], vaultName = options['vault-name'])
 
       if job['Completed']:
-        myjob.completedDate = datetime.now()
+        myjob.completedDate = dateutil.parser.parse(job['CompletionDate'])
         myjob.save()
     
     for myjob in Job.objects.filter(available=True):
