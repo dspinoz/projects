@@ -73,6 +73,33 @@ class ArchiveRetrieval(models.Model):
   endByte = models.BigIntegerField(default=0)
   content = models.FileField(upload_to="uploads/%Y/%m/%d/", null=True, blank=True, default=None)
 
+class ArchiveUploadRequest(AWSGlacierModel):
+  uploadId = models.CharField(max_length=255)
+  description = models.TextField(blank=True)
+  partSize = models.IntegerField(blank=True)
+  filePath = models.TextField()
+  size = models.BigIntegerField(default=0)
+  sha256 = models.CharField(max_length=255, blank=True)
+  sha256TreeHash = models.CharField(max_length=255, blank=True)
+  lastModifiedDate = models.DateTimeField(auto_now=True)
+
+class ArchiveUploadPart(AWSGlacierModel):
+  index = models.BigIntegerField(default=0)
+  startByte = models.BigIntegerField(default=0)
+  endByte = models.BigIntegerField()
+  lastModifiedDate = models.DateTimeField(auto_now=True)
+
+class UploadPart(models.Model):
+  upload = models.ForeignKey(ArchiveUploadRequest, on_delete=models.CASCADE)
+  part = models.ForeignKey(ArchiveUploadPart, on_delete=models.CASCADE)
+  sha256 = models.CharField(max_length=255)
+  lastModifiedDate = models.DateTimeField(auto_now=True)
+
+class ArchiveUpload(models.Model):
+  upload = models.ForeignKey(ArchiveUploadRequest, on_delete=models.CASCADE)
+  archive = models.ForeignKey(Archive, on_delete=models.CASCADE)
+  lastModifiedDate = models.DateTimeField(auto_now=True)
+
 @receiver(models.signals.post_delete, sender=ArchiveRetrieval)
 def auto_delete_file_on_delete(sender, instance, **kwargs):
   """

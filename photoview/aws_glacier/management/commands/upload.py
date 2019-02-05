@@ -12,6 +12,7 @@ from django.core.exceptions import ObjectDoesNotExist
 
 from aws_glacier.models import Job
 from aws_glacier.models import AWSGlacierRequestResponse
+from aws_glacier.models import Archive, ArchiveUploadRequest, ArchiveUploadPart, UploadPart, ArchiveUpload
 
 class Command(BaseCommand):
   help = "Upload archive"
@@ -54,9 +55,12 @@ class Command(BaseCommand):
       resType = headers['content-type']
     AWSGlacierRequestResponse.objects.create(requestId = meta['RequestId'], endpoint = 'initiate_multipart_upload', retryAttempts = meta['RetryAttempts'], statusCode = meta['HTTPStatusCode'], date = dateutil.parser.parse(headers['date']), responseLength = resLength, responseContentType = resType, responseBody = json.dumps(res), accountId = options['account-id'], vaultName = options['vault-name'])
     
-    print("NEW MULTIPART UPLOAD", res['uploadId'])
-    
     uploadId = res['uploadId']
+    print("NEW MULTIPART UPLOAD", uploadId)
+    
+    uploadRequest = ArchiveUploadRequest.objects.create(uploadId=uploadId, description=options['description'], partSize=str(options['partsize']), filePath=os.path.realpath(options['content']), accountId=options['account-id'], vaultName=options['vault-name'])
+    
+    
     archiveSize = 0
     archiveHasher = hashlib.sha256()
     
@@ -68,8 +72,10 @@ class Command(BaseCommand):
       if not b:
         print("BREAK, REACHED EOF")
         break
-        
-      rangeHeader = 'bytes {}-{}/*'.format(archiveSize, archiveSize + len(b) - 1)
+      
+      part = ArchiveUploadPart.objects.create(index=len(parts), startByte=archiveSize, endByte=archiveSize + len(b) - 1, accountId=options['account-id'], vaultName=options['vault-name'])
+      
+      rangeHeader = 'bytes {}-{}/*'.format(part.startByte, part.endByte)
       print("RANGE",rangeHeader)
       
       chunkHasher = hashlib.sha256()
@@ -87,9 +93,12 @@ class Command(BaseCommand):
         resType = headers['content-type']
       AWSGlacierRequestResponse.objects.create(requestId = meta['RequestId'], endpoint = 'upload_multipart_part', retryAttempts = meta['RetryAttempts'], statusCode = meta['HTTPStatusCode'], date = dateutil.parser.parse(headers['date']), responseLength = resLength, responseContentType = resType, responseBody = json.dumps(res), accountId = options['account-id'], vaultName = options['vault-name'])
       
-      print("UPLOADED PART", res['checksum'])
-      print("CHUNK HASH",chunkHasher.hexdigest(),chunkHasher.hexdigest() == res['checksum'], res['checksum'])
+      resChunkCheck = res['checksum']
+      print("UPLOADED PART", resChunkCheck)
+      print("CHUNK HASH",chunkHasher.hexdigest(),chunkHasher.hexdigest() == resChunkCheck, resChunkCheck)
       parts.append(chunkHasher.digest())
+      
+      UploadPart.objects.create(upload=uploadRequest, part=part, sha256=chunkHasher.hexdigest())
       
       archiveSize = archiveSize + len(b)
       archiveHasher.update(b"".join(b))
@@ -119,6 +128,10 @@ class Command(BaseCommand):
     
     print("CHECKSUM",archiveSize,"bytes","HASH", archiveHasher.hexdigest())
     
+    uploadRequest.size = archiveSize
+    uploadRequest.sha256 = archiveHasher.hexdigest()
+    uploadRequest.save()
+
     print("CALCULATING TREEHASH FROM",len(parts),"PARTS")
     for p in parts:
       print("PART",self.tohex(p))
@@ -172,8 +185,18 @@ class Command(BaseCommand):
       resType = headers['content-type']
     AWSGlacierRequestResponse.objects.create(requestId = meta['RequestId'], endpoint = 'complete_multipart_upload', retryAttempts = meta['RetryAttempts'], statusCode = meta['HTTPStatusCode'], date = dateutil.parser.parse(headers['date']), responseLength = resLength, responseContentType = resType, responseBody = json.dumps(res), accountId = options['account-id'], vaultName = options['vault-name'])
     
-    print("MULTIPART ARCHIVE UPLOADED",res['checksum'] == mytreehash, res['checksum'], res['archiveId'])
-    if not res['checksum'] == mytreehash:
+    newArchiveId = res['archiveId']
+    resChecksum = res['checksum']
+    
+    uploadRequest.sha256TreeHash = mytreehash
+    uploadRequest.save()
+    
+    myarchive = Archive.objects.create(archiveId=newArchiveId, size=archiveSize, sha256=archiveHasher.hexdigest(), sha256TreeHash=mytreehash, description=options['description'], partSize=options['partsize'], available=False, accountId=options['account-id'], vaultName=options['vault-name'])
+    
+    ArchiveUpload.objects.create(upload=uploadRequest, archive=myarchive)
+    
+    print("MULTIPART ARCHIVE UPLOADED",resChecksum == mytreehash, resChecksum, newArchiveId)
+    if not resChecksum == mytreehash:
       print("INCORRECT TREEHASH FOR UPLOAD!")
     else:
-      print("Successfully uploaded {}: {}".format(options['content'], res['archiveId']))
+      print("Successfully uploaded {}: {}".format(options['content'], newArchiveId))
