@@ -21,7 +21,7 @@ class AWSGlacierRequestResponse(AWSGlacierModel):
   statusCode = models.IntegerField(default=200)
   retryAttempts = models.IntegerField()
   responseLength = models.IntegerField(default=0)
-  responseContentType = models.CharField(max_length=255)
+  responseContentType = models.CharField(max_length=255, blank=True)
   responseBody = models.TextField(blank=True)
 
 class Inventory(AWSGlacierModel):
