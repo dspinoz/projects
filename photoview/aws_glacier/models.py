@@ -68,4 +68,5 @@ class ArchiveRetrieval(models.Model):
   lastModifiedDate = models.DateTimeField(auto_now=True)
   startByte = models.BigIntegerField(default=0)
   endByte = models.BigIntegerField(default=0)
+  content = models.FileField(upload_to="uploads/%Y/%m/%d/", null=True, blank=True, default=None)
 

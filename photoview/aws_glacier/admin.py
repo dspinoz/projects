@@ -47,16 +47,25 @@ class InventoryRetrievalAdmin(admin.ModelAdmin):
 @admin.register(ArchiveRetrieval)
 class ArchiveRetrievalAdmin(admin.ModelAdmin):
   date_hierarchy = 'lastModifiedDate'
-  list_display = ('id', 'job_id', 'archive_id', 'lastModifiedDate', 'startByte', 'endByte')
+  list_display = ('id', 'job_id', 'archive_id', 'lastModifiedDate', 'startByte', 'endByte', 'content_file_name', 'content_size')
   list_filter = ('lastModifiedDate', )
   
   def job_id(self, obj):
     return obj.job.jobId
   def archive_id(self, obj):
-    return obj.archive.id
+    return obj.archive.archiveId
+  def content_file_name(self,obj):
+    try:
+      return obj.content.file.name
+    except ValueError:
+      return "NOT_SET"
+  def content_size(self,obj):
+    try:
+      return obj.content.size
+    except ValueError:
+      return "NOT_SET"
   
 @admin.register(AWSGlacierRequestResponse)
 class AWSGlacierRequestResponseAdmin(admin.ModelAdmin):
   date_hierarchy = 'date'
   list_display = ('id', 'requestId', 'endpoint', 'statusCode', 'retryAttempts', 'responseContentType', 'responseLength')
-  list_filter = ('date', 'endpoint', 'statusCode', 'responseContentType')

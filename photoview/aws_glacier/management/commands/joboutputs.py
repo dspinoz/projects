@@ -2,11 +2,14 @@ import sys
 import dateutil
 from datetime import datetime
 import json
+import tempfile
 
 import boto3
 
 from django.core.management.base import BaseCommand, CommandError
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.files import File
+from django.core.files.base import ContentFile
 
 from aws_glacier.models import Job
 from aws_glacier.models import Archive, ArchiveRetrieval
@@ -74,12 +77,13 @@ class Command(BaseCommand):
         range = jobparams['RetrievalByteRange'].split('-')
         retrieval = ArchiveRetrieval.objects.create(job=job, archive=myarchive, startByte=range[0], endByte=range[1])
         
-        outf = "retrieve"
-        fd = open(outf,'w')
-        fd.write(body.read())
-        fd.close()
-      
-        print("CREATED FILE",outf,"FROM RETRIEVE JOB")
+        with tempfile.SpooledTemporaryFile(max_size=10000000, mode='w+b') as t:
+          t.write(body.read())
+          t.flush()
+          t.seek(0)
+          retrieval.content.save('retrieval', File(t))
+        
+        print("CREATED FILE",retrieval.content.name,"FROM RETRIEVE JOB")
         
         job.retrievedOutput = True
         job.save()
