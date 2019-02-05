@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import sys
+import os
 from datetime import datetime
 
 from django.db import models
+from django.dispatch import receiver
 
 # Create your models here.
 
@@ -69,4 +72,36 @@ class ArchiveRetrieval(models.Model):
   startByte = models.BigIntegerField(default=0)
   endByte = models.BigIntegerField(default=0)
   content = models.FileField(upload_to="uploads/%Y/%m/%d/", null=True, blank=True, default=None)
+
+@receiver(models.signals.post_delete, sender=ArchiveRetrieval)
+def auto_delete_file_on_delete(sender, instance, **kwargs):
+  """
+  Deletes file from filesystem
+  when corresponding `ArchiveRetrieval` object is deleted.
+  """
+  if instance.content:
+    if os.path.isfile(instance.content.path):
+      instance.content.delete()
+
+@receiver(models.signals.pre_save, sender=ArchiveRetrieval)
+def auto_delete_file_on_change(sender, instance, **kwargs):
+  """
+  Deletes old file from filesystem
+  when corresponding `ArchiveRetrieval` object is updated
+  with new file.
+  """
+  if not instance.pk:
+    return False
+
+  try:
+    old_file = ArchiveRetrieval.objects.get(pk=instance.pk).content
+  except ArchiveRetrieval.DoesNotExist:
+    return False
+  try:
+    new_file = instance.content
+    if not old_file == new_file:
+      if os.path.isfile(old_file.path):
+        os.remove(old_file.path)
+  except ValueError:
+    return False
 
