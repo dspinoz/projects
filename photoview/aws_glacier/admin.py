@@ -11,24 +11,43 @@ from .models import Job
 from .models import ArchiveRetrieval
 from .models import InventoryRetrieval
 from .models import AWSGlacierRequestResponse
+from .models import ArchiveUploadRequest, ArchiveUploadPart, UploadPart, ArchiveUpload
+
+class InventoryRetrievalInline(admin.TabularInline):
+  model = InventoryRetrieval
+
+class ArchiveRetrievalInline(admin.TabularInline):
+  model = ArchiveRetrieval
+  
+class UploadPartInline(admin.TabularInline):
+  model = UploadPart
+  
+class ArchiveUploadPartInline(admin.TabularInline):
+  model = ArchiveUploadPart
+
+class ArchiveUploadInline(admin.TabularInline):
+  model = ArchiveUpload
 
 @admin.register(Job)
 class JobAdmin(admin.ModelAdmin):
   date_hierarchy = 'creationDate'
   list_display = ('id','jobId', 'action', 'statusCode', 'completed', 'retrievedOutput', 'available')
   list_filter = ('action', 'statusCode', 'completed', 'retrievedOutput', 'creationDate')
+  inlines = [InventoryRetrievalInline, ArchiveRetrievalInline]
 
 @admin.register(Inventory)
 class InventoryAdmin(admin.ModelAdmin):
   date_hierarchy = 'date'
   list_display = ('id','date','output')
   list_filter = ('date', )
+  inlines = [InventoryRetrievalInline]
   
 @admin.register(Archive)
 class ArchiveAdmin(admin.ModelAdmin):
   date_hierarchy = 'creationDate'
   list_display = ('id', 'archiveId', 'size', 'sha256TreeHash', 'description', 'creationDate', 'available')
   list_filter = ('creationDate', 'deletedDate')
+  inlines = [ArchiveUploadInline, ArchiveRetrievalInline]
   
   def available(self,obj):
     return obj.deletedDate is None
@@ -69,3 +88,34 @@ class ArchiveRetrievalAdmin(admin.ModelAdmin):
 class AWSGlacierRequestResponseAdmin(admin.ModelAdmin):
   date_hierarchy = 'date'
   list_display = ('id', 'requestId', 'endpoint', 'statusCode', 'retryAttempts', 'responseContentType', 'responseLength')
+  list_filter = ('date', 'endpoint', 'statusCode', 'responseContentType')
+
+@admin.register(ArchiveUploadRequest)
+class ArchiveUploadRequestAdmin(admin.ModelAdmin):
+  date_hierarchy='lastModifiedDate'
+  list_display = ('id', 'uploadId', 'description', 'filePath', 'size')
+  inlines = [UploadPartInline, ArchiveUploadInline]
+
+@admin.register(ArchiveUploadPart)
+class ArchiveUploadPartAdmin(admin.ModelAdmin):
+  date_hierarchy = 'lastModifiedDate'
+  list_display = ('id', 'index', 'startByte', 'endByte')
+  inlines = [UploadPartInline]
+
+@admin.register(UploadPart)
+class UploadPartAdmin(admin.ModelAdmin):
+  date_hierarchy = 'lastModifiedDate'
+  list_display = ('id', 'upload_id', 'part_id', 'sha256')
+  def upload_id(self,obj):
+    return obj.upload.id
+  def part_id(self,obj):
+    return obj.part.id
+
+@admin.register(ArchiveUpload)
+class ArchiveUploadAdmin(admin.ModelAdmin):
+  date_hierarchy = 'lastModifiedDate'
+  list_display = ('id', 'upload_id', 'archive_id')
+  def upload_id(self,obj):
+    return obj.upload.id
+  def archive_id(self,obj):
+    return obj.archive.id
