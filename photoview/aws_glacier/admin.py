@@ -40,7 +40,7 @@ class InventoryRetrievalAdmin(admin.ModelAdmin):
   list_filter = ('lastModifiedDate', )
   
   def job_id(self, obj):
-    return obj.job.jobId
+    return obj.job.id
   def inventory_id(self, obj):
     return obj.inventory.id
 
@@ -51,9 +51,9 @@ class ArchiveRetrievalAdmin(admin.ModelAdmin):
   list_filter = ('lastModifiedDate', )
   
   def job_id(self, obj):
-    return obj.job.jobId
+    return obj.job.id
   def archive_id(self, obj):
-    return obj.archive.archiveId
+    return obj.archive.id
   def content_file_name(self,obj):
     try:
       return obj.content.file.name
