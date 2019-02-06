@@ -16,7 +16,7 @@ class Command(BaseCommand):
   help = "Download archive"
   
   def add_arguments(self, parser):
-    parser.add_argument('--detect', nargs='+', action='append', default=[], help="Objects to detect. Eg. 'faces', 'labels', 'text'")
+    parser.add_argument('--detect', nargs='+', action='append', default=[], help="Objects to detect. Eg. 'faces', 'labels', 'text', 'celebrities'")
     parser.add_argument('--image', nargs='?', type=str)
     parser.add_argument('--attributes', nargs='?', type=str, default="DEFAULT")
   
@@ -43,16 +43,21 @@ class Command(BaseCommand):
       fd.seek(0)
       
       rek_conn = boto3.client('rekognition')
-    
+      
+      endpoint = 'detect_{}'.format(detect)
+      
       if detect == 'faces':
         res = rek_conn.detect_faces(Image={'Bytes': fd.read()})
       elif detect == 'labels':
         res = rek_conn.detect_labels(Image={'Bytes': fd.read()})
       elif detect == 'text':
         res = rek_conn.detect_text(Image={'Bytes': fd.read()})
+      elif detect == 'celebrities':
+        res = rek_conn.recognize_celebrities(Image={'Bytes': fd.read()})
+        endpoint = 'recognize_celebrities'
     
       meta = res['ResponseMetadata']
       headers = meta['HTTPHeaders']
-      AWSRekognitionRequestResponse.objects.create(requestId=meta['RequestId'], endpoint = 'detect_{}'.format(detect), date = dateutil.parser.parse(headers['date']), statusCode = meta['HTTPStatusCode'], retryAttempts = meta['RetryAttempts'], responseLength = headers['content-length'], responseContentType = headers['content-type'], responseBody=json.dumps(res))
+      AWSRekognitionRequestResponse.objects.create(requestId=meta['RequestId'], endpoint = endpoint, date = dateutil.parser.parse(headers['date']), statusCode = meta['HTTPStatusCode'], retryAttempts = meta['RetryAttempts'], responseLength = headers['content-length'], responseContentType = headers['content-type'], responseBody=json.dumps(res))
     
       print(json.dumps(res))
