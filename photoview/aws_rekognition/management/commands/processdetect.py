@@ -5,14 +5,19 @@ from datetime import datetime
 import json
 import base64
 import hashlib
+import mimetypes
+import tempfile
 
 import boto3
 from PIL import Image
 
 from django.core.management.base import BaseCommand, CommandError
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.files import File
 
 from aws_rekognition.models import AWSRekognitionRequestResponse
+from aws_rekognition.models import IndexedImage, ConvertedImage
+from aws_rekognition.models import DetectionType, Detection, ImageDetection
 
 def calcBB((width, height), featureBB):
   bb = (featureBB['Left'], featureBB['Top'], featureBB['Left']+featureBB['Width'], featureBB['Top'] + featureBB['Height'])
@@ -42,6 +47,48 @@ def drawBB(img, color, bb, calc=False, width=None, height=None):
   for y in range(upper, lower):
     img[left, y] = color
 
+def detectedFace((img, width, height), index, face, type=DetectionType.FACE):
+
+  (detection, createdDetection) = Detection.objects.get_or_create(type=type)
+  
+  bb = face['BoundingBox']
+  
+  idet = ImageDetection.objects.create(image=index, detection=detection, confidence=face['Confidence'], boundingBoxTop=bb['Top'], boundingBoxHeight=bb['Height'], boundingBoxWidth=bb['Width'], boundingBoxLeft=bb['Left'], metadata=json.dumps(face))
+  
+  bb = calcBB((width, height), bb)
+  
+  with tempfile.SpooledTemporaryFile(max_size=10000000, mode='w+b') as t:
+    img.crop(bb).save(t, 'png')
+    t.flush()
+    t.seek(0)
+    
+    fname = 'uface'
+    if type == DetectionType.FACE:
+      fname = 'face'
+    elif type == DetectionType.FACE_UNKNOWN:
+      fname = 'uface'
+    elif type == DetectionType.CELEBRITY:
+      fname = 'celeb'
+    
+    idet.file.save(fname, File(t))
+
+def determineThumbsSize(width):
+  sizes = []
+  sz = width
+  while sz > 32: #dont go smaller than 16 pixels, too small to see anything useful!
+    sz = sz/2
+    sizes.append(sz)
+  # convert to nearest base 2 sizes
+  sizes2 = []
+  for i in sizes:
+    exp = 1
+    base = 2
+    while i > base:
+      i = i / base
+      exp = exp + 1
+    sizes2.append(2**exp)
+  return sizes2
+
 class Command(BaseCommand):
   help = "Download archive"
   
@@ -66,6 +113,7 @@ class Command(BaseCommand):
     imgPixels = None
     imgWidth = None
     imgHeight = None
+    indexedImage = None
     if options['image']:
       img = Image.open(options['image'])
       imgBB = img.getbbox()
@@ -84,6 +132,23 @@ class Command(BaseCommand):
       print("IMAGE HASH", hasher.hexdigest())
       fd.close()
       fd = None
+      
+      indexedImage = IndexedImage.objects.create(filePath=os.path.realpath(options['image']), sha256=hasher.hexdigest(), width=imgWidth, height=imgHeight, contentType=mimetypes.guess_type(options['image'])[0])
+      
+      for tsize in determineThumbsSize(imgWidth):
+      
+        thumb = ConvertedImage.objects.create(orig=indexedImage)
+        with tempfile.SpooledTemporaryFile(max_size=10000000, mode='w+b') as t:
+          cpy = img.copy()
+          cpy.thumbnail((tsize, tsize))
+          cpy.save(t, 'png')
+          t.flush()
+          t.seek(0)
+          thumb.file.save('thumb{}'.format(tsize), File(t))
+      
+      
+      
+      
     
     for detect in options['detect']:
       detect = detect[0]
@@ -115,17 +180,36 @@ class Command(BaseCommand):
         for face in res['FaceDetails']:
           print(face)
           if img:
+            detectedFace((img, imgWidth, imgHeight), indexedImage, face, DetectionType.FACE)
+            
             bb = calcBB((imgWidth, imgHeight), face['BoundingBox'])
+            drawBB(imgPixels, (0,0,255), bb) #BLUE
+            
             #f = img.crop(bb)
             #f.show()
-            drawBB(imgPixels, (0,0,255), bb) #BLUE
       if 'TextDetections' in res:
+      
         for text in res['TextDetections']:
           print(text['DetectedText'], text['Confidence'], text['Type'], text['Id'])
           if img:
+            (detection, createdDetection) = Detection.objects.get_or_create(type=DetectionType.TEXT_LINE)
             color = (0,100,0) #LINE DARKGREEN
             if text['Type'] == "WORD":
+              (detection, createdDetection) = Detection.objects.get_or_create(type=DetectionType.TEXT_WORD)
               color = (50,205,50) #LIMEGREEN
+            
+            bb = text["Geometry"]["BoundingBox"]
+            
+            idet = ImageDetection.objects.create(image=indexedImage, detection=detection, confidence=text['Confidence'], identifier=text['Id'], boundingBoxTop=bb['Top'], boundingBoxHeight=bb['Height'], boundingBoxWidth=bb['Width'], boundingBoxLeft=bb['Left'], metadata=json.dumps(text))
+            
+            bb = calcBB((imgWidth, imgHeight), bb)
+            
+            with tempfile.SpooledTemporaryFile(max_size=10000000, mode='w+b') as t:
+              img.crop(bb).save(t, 'png')
+              t.flush()
+              t.seek(0)
+              idet.file.save('png', File(t))
+            
             drawBB(imgPixels, color, text["Geometry"]["BoundingBox"], True, imgWidth, imgHeight)
       if 'Labels' in res:
         for label in res['Labels']:
@@ -133,10 +217,30 @@ class Command(BaseCommand):
           for parent in label['Parents']:
             parentsList.append(parent['Name'])
           parentsList.append(label['Name'])
+          
+          (detection, createdDetection) = Detection.objects.get_or_create(type=DetectionType.LABEL)
+          idet = ImageDetection.objects.create(image=indexedImage, detection=detection, confidence=label['Confidence'], identifier=label['Name'], metadata=json.dumps(label))
+          
+          
           print("->".join(parentsList), label['Confidence'], len(label['Instances']))
           for instance in label['Instances']:
             if img:
               print("  ", instance['Confidence'])
+              
+              (detection, createdDetection) = Detection.objects.get_or_create(type=DetectionType.LABEL)
+              
+              bb = instance['BoundingBox']
+              
+              idet = ImageDetection.objects.create(image=indexedImage, detection=detection, confidence=instance['Confidence'], identifier=label['Name'], boundingBoxTop=bb['Top'], boundingBoxHeight=bb['Height'], boundingBoxWidth=bb['Width'], boundingBoxLeft=bb['Left'], metadata=json.dumps(instance))
+              
+              bb = calcBB((imgWidth, imgHeight), bb)
+              
+              with tempfile.SpooledTemporaryFile(max_size=10000000, mode='w+b') as t:
+                img.crop(bb).save(t, 'png')
+                t.flush()
+                t.seek(0)
+                idet.file.save('png', File(t))
+              
               drawBB(imgPixels, (255,0,0), instance["BoundingBox"], True, imgWidth, imgHeight) #RED
             else:
               print("  ",instance['Confidence'])
@@ -144,12 +248,18 @@ class Command(BaseCommand):
         for face in res['CelebrityFaces']:
           print("CELEBRITY",face)
           if img:
+            # face but probably has an identifier of some sort?
+            detectedFace((img, imgWidth, imgHeight), indexedImage, face, DetectionType.CELEBRITY)
+            
             bb = calcBB((imgWidth, imgHeight), face['BoundingBox'])
             drawBB(imgPixels, (135,206,250), bb) #LIGHTSKYBLUE
       if 'UnrecognizedFaces' in res:
         for face in res['UnrecognizedFaces']:
           print("UNRECOGNISED",face)
           if img:
+          
+            detectedFace((img, imgWidth, imgHeight), indexedImage, face, DetectionType.FACE_UNKNOWN)
+            
             bb = calcBB((imgWidth, imgHeight), face['BoundingBox'])
             drawBB(imgPixels, (70,130,180), bb) #STEELEBLUE
         
