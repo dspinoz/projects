@@ -4,6 +4,7 @@ import dateutil
 from datetime import datetime
 import json
 import base64
+import hashlib
 
 import boto3
 from PIL import Image
@@ -72,6 +73,17 @@ class Command(BaseCommand):
       
       imgWidth = imgBB[2] - imgBB[0]
       imgHeight = imgBB[3] - imgBB[1]
+      
+      fd = open(options['image'], 'r+b')
+      hasher = hashlib.sha256()
+      while True:
+        b = fd.read()
+        if not b:
+          break
+        hasher.update(b"".join(b))
+      print("IMAGE HASH", hasher.hexdigest())
+      fd.close()
+      fd = None
     
     for detect in options['detect']:
       detect = detect[0]
