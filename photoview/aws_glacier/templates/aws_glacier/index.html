@@ -44,7 +44,22 @@
 			<td>{{archive.description}}</td>
 			<td>{{archive.creationDate}}</td>
 			<td>{% if archive.uploadList|length %}True{% else %}False{% endif %}</td>
-			<td>{{archive.retrievalList|length}}</td>
+			<td>
+			{% if archive.retrievalList|length == 0 %}
+			None
+			{% else %}
+				<table>
+					<tr>
+						<th>Range</th>
+					</tr>
+				{% for r in archive.retrievalList %}
+					<tr>
+						<td>{{ r.startByte }}-&gt;{{ r.endByte }}</td>
+					</tr>
+				{% endfor %}
+				</table>
+			{% endif %}
+			</td>
 			{% if archive.uploadList|length == 0 %}
 			None
 			{% else %}
