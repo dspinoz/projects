@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 import os
+import json
 
 from enum import Enum
 from datetime import datetime
@@ -31,6 +32,15 @@ class IndexedImage(models.Model):
   metadata = models.TextField(blank=True, default=None, null=True)
   creationDate = models.DateTimeField(default=datetime.today)
   lastModifiedDate = models.DateTimeField(auto_now=True)
+  
+  def fileName(self):
+    return os.path.basename(self.filePath)
+    
+  def getConversions(self):
+    return ConvertedImage.objects.filter(orig=self.id)
+    
+  def getDetections(self):
+    return ImageDetection.objects.filter(image=self.id).order_by('-confidence')
 
 class ConvertedImage(models.Model):
   orig = models.ForeignKey(IndexedImage, models.CASCADE)
@@ -38,6 +48,11 @@ class ConvertedImage(models.Model):
   metadata = models.TextField(blank=True, default=None, null=True)
   creationDate = models.DateTimeField(default=datetime.today)
   lastModifiedDate = models.DateTimeField(auto_now=True)
+  
+  def metadataObj(self):
+    if self.metadata:
+      return json.loads(self.metadata)
+    return None
 
 class DetectionType(Enum):
   FACE = "FACE"
@@ -53,6 +68,9 @@ class Detection(models.Model):
   type = models.CharField(max_length=15, choices=[(tag, tag.value) for tag in DetectionType])
   creationDate = models.DateTimeField(default=datetime.today)
   lastModifiedDate = models.DateTimeField(auto_now=True)
+  
+  def typeShort(self):
+    return self.type.split('.')[1]
 
 class ImageDetection(models.Model):
   image = models.ForeignKey(IndexedImage, on_delete=models.CASCADE)

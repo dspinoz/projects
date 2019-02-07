@@ -1,5 +1,69 @@
 <html>
 <body>
 	<h1>{{ title }}</h1>
+	
+	<h2>Images</h2>
+	<table>
+		{% if images|length == 0 %}
+			<tr><th>None currently available</th></tr>
+		{% else %}
+		<tr>
+			<th>Id</th>
+			<th>Type</th>
+			<th>Name</th>
+			<th>Conversions</th>
+			<th>Detections</th>
+		</tr>
+		{%for img in images %}
+		<tr>
+			<td>{{img.id}}</td>
+			<td>{{img.contentType}}</td>
+			<td title="{{img.filePath}}">{{img.fileName}}</td>
+			<td>
+				{% if img.getConversions|length == 0 %}
+				None
+				{% else %}
+				<table>
+					<tr>
+						<th>Date</th>
+						<th>Metadata</th>
+						<th>View</th>
+					</tr>
+					{% for c in img.getConversions %}
+					<tr>
+						<td>{{c.creationDate}}</td>
+						<td>{% if c.metadataObj %}{{c.metadataObj.Type}}{% endif %}</td>
+						<td><img src="{{c.file.url}}"/></td>
+					</tr>
+					{% endfor %}
+				</table>
+				{% endif %}
+			</td>
+			<td>
+				{% if img.getDetections|length == 0 %}
+				None
+				{% else %}
+				<table>
+					<tr>
+						<th>Type</th>
+						<th>Id</th>
+						<th>Confidence</th>
+						<th>View</th>
+					</tr>
+					{% for d in img.getDetections %}
+					<tr>
+						<td>{{d.detection.typeShort}}</td>
+						<td>{{d.identifier}}</td>
+						<td>{{d.confidence}}</td>
+						<td>{% if d.file %}<img src="{{d.file.url}}"/>{% else %}None{% endif %}</td>
+					</tr>
+					{% endfor %}
+				</table>
+				{% endif %}
+			</td>
+		</tr>
+		{% endfor %}
+		{% endif %}
+	</table>
 </body>
 </html>

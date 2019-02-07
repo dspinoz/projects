@@ -148,10 +148,11 @@ class Command(BaseCommand):
       
       
       
-      
+    detections = []
     
     for detect in options['detect']:
       detect = detect[0]
+      detections.append(detect)
       print("Detecting {} from image".format(detect))
     
       res = None
@@ -264,5 +265,14 @@ class Command(BaseCommand):
             drawBB(imgPixels, (70,130,180), bb) #STEELEBLUE
         
     
+    with tempfile.SpooledTemporaryFile(max_size=10000000, mode='w+b') as t:
+      cpy = img.copy()
+      cpy.thumbnail((256, 256))
+      cpy.save(t, 'png')
+      t.flush()
+      t.seek(0)
+      detectionsThumb = ConvertedImage.objects.create(orig=indexedImage,metadata=json.dumps({"Type":"detections", "Detections":detections}))
+      detectionsThumb.file.save('dthumb{}'.format(256), File(t))
+  
     if img:
       img.show()

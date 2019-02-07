@@ -8,6 +8,7 @@ import aws_rekognition
 def index(request):
   context = {
     'title': 'Rekognition',
+    'images': aws_rekognition.models.IndexedImage.objects.all(),
   }
   
   return render(request, 'aws_rekognition/index.html', context)
