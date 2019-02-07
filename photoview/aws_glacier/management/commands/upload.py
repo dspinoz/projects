@@ -21,6 +21,7 @@ class Command(BaseCommand):
     parser.add_argument('--content', nargs='?', type=str)
     parser.add_argument('--description', nargs='?', type=str)
     parser.add_argument('--partsize', nargs='?', type=int, default=1048576)
+    parser.add_argument('--test', action='store_true', default=False, help="Test mode - disable communications with AWS")
     parser.add_argument('account-id')
     parser.add_argument('vault-name')
   
@@ -40,20 +41,24 @@ class Command(BaseCommand):
       print("THIS IS NOT A FILE!")
       sys.exit(1)
     
+    if options['test']:
+      print("OPERATING IN TEST MODE - AWS COMMS DISABLED")
     
     fd = open(options['content'],"r+b")
     
-    res = glacier_conn.initiate_multipart_upload(archiveDescription=options['description'], partSize=str(options['partsize']), accountId=options['account-id'], vaultName=options['vault-name'])
-    
-    meta = res['ResponseMetadata']
-    headers = meta['HTTPHeaders']
-    resLength = 0
-    if 'content-length' in headers:
-      resLength = headers['content-length']
-    resType = ''
-    if 'content-type' in headers:
-      resType = headers['content-type']
-    AWSGlacierRequestResponse.objects.create(requestId = meta['RequestId'], endpoint = 'initiate_multipart_upload', retryAttempts = meta['RetryAttempts'], statusCode = meta['HTTPStatusCode'], date = dateutil.parser.parse(headers['date']), responseLength = resLength, responseContentType = resType, responseBody = json.dumps(res), accountId = options['account-id'], vaultName = options['vault-name'])
+    res = {'uploadId': 'testuploadid'}
+    if not options['test']:
+      res = glacier_conn.initiate_multipart_upload(archiveDescription=options['description'], partSize=str(options['partsize']), accountId=options['account-id'], vaultName=options['vault-name'])
+      
+      meta = res['ResponseMetadata']
+      headers = meta['HTTPHeaders']
+      resLength = 0
+      if 'content-length' in headers:
+        resLength = headers['content-length']
+      resType = ''
+      if 'content-type' in headers:
+        resType = headers['content-type']
+      AWSGlacierRequestResponse.objects.create(requestId = meta['RequestId'], endpoint = 'initiate_multipart_upload', retryAttempts = meta['RetryAttempts'], statusCode = meta['HTTPStatusCode'], date = dateutil.parser.parse(headers['date']), responseLength = resLength, responseContentType = resType, responseBody = json.dumps(res), accountId = options['account-id'], vaultName = options['vault-name'])
     
     uploadId = res['uploadId']
     print("NEW MULTIPART UPLOAD", uploadId)
@@ -81,17 +86,19 @@ class Command(BaseCommand):
       chunkHasher = hashlib.sha256()
       chunkHasher.update(b"".join(b))
       
-      res = glacier_conn.upload_multipart_part(uploadId=uploadId, range=rangeHeader, body=b''.join(b), accountId=options['account-id'], vaultName=options['vault-name'])
-      
-      meta = res['ResponseMetadata']
-      headers = meta['HTTPHeaders']
-      resLength = 0
-      if 'content-length' in headers:
-        resLength = headers['content-length']
-      resType = ''
-      if 'content-type' in headers:
-        resType = headers['content-type']
-      AWSGlacierRequestResponse.objects.create(requestId = meta['RequestId'], endpoint = 'upload_multipart_part', retryAttempts = meta['RetryAttempts'], statusCode = meta['HTTPStatusCode'], date = dateutil.parser.parse(headers['date']), responseLength = resLength, responseContentType = resType, responseBody = json.dumps(res), accountId = options['account-id'], vaultName = options['vault-name'])
+      res = {'checksum': 'testchecksum'}
+      if not options['test']:
+        res = glacier_conn.upload_multipart_part(uploadId=uploadId, range=rangeHeader, body=b''.join(b), accountId=options['account-id'], vaultName=options['vault-name'])
+        
+        meta = res['ResponseMetadata']
+        headers = meta['HTTPHeaders']
+        resLength = 0
+        if 'content-length' in headers:
+          resLength = headers['content-length']
+        resType = ''
+        if 'content-type' in headers:
+          resType = headers['content-type']
+        AWSGlacierRequestResponse.objects.create(requestId = meta['RequestId'], endpoint = 'upload_multipart_part', retryAttempts = meta['RetryAttempts'], statusCode = meta['HTTPStatusCode'], date = dateutil.parser.parse(headers['date']), responseLength = resLength, responseContentType = resType, responseBody = json.dumps(res), accountId = options['account-id'], vaultName = options['vault-name'])
       
       resChunkCheck = res['checksum']
       print("UPLOADED PART", resChunkCheck)
@@ -108,22 +115,23 @@ class Command(BaseCommand):
     
     print("COMPLETED UPLOADING FILE IN",len(parts),"PARTS")
     
-    # can only be done while the upload is valid - before marked as completed
-    res = glacier_conn.list_parts(uploadId=uploadId, accountId=options['account-id'], vaultName=options['vault-name'])
-    
-    meta = res['ResponseMetadata']
-    headers = meta['HTTPHeaders']
-    resLength = 0
-    if 'content-length' in headers:
-      resLength = headers['content-length']
-    resType = ''
-    if 'content-type' in headers:
-      resType = headers['content-type']
-    AWSGlacierRequestResponse.objects.create(requestId = meta['RequestId'], endpoint = 'list_parts', retryAttempts = meta['RetryAttempts'], statusCode = meta['HTTPStatusCode'], date = dateutil.parser.parse(headers['date']), responseLength = resLength, responseContentType = resType, responseBody = json.dumps(res), accountId = options['account-id'], vaultName = options['vault-name'])
+    if not options['test']:
+      # can only be done while the upload is valid - before marked as completed
+      res = glacier_conn.list_parts(uploadId=uploadId, accountId=options['account-id'], vaultName=options['vault-name'])
       
-    print("PARTS LIST")
-    for part in res['Parts']:
-      print("PART", json.dumps(part))
+      meta = res['ResponseMetadata']
+      headers = meta['HTTPHeaders']
+      resLength = 0
+      if 'content-length' in headers:
+        resLength = headers['content-length']
+      resType = ''
+      if 'content-type' in headers:
+        resType = headers['content-type']
+      AWSGlacierRequestResponse.objects.create(requestId = meta['RequestId'], endpoint = 'list_parts', retryAttempts = meta['RetryAttempts'], statusCode = meta['HTTPStatusCode'], date = dateutil.parser.parse(headers['date']), responseLength = resLength, responseContentType = resType, responseBody = json.dumps(res), accountId = options['account-id'], vaultName = options['vault-name'])
+        
+      print("PARTS LIST")
+      for part in res['Parts']:
+        print("PART", json.dumps(part))
     
     
     print("CHECKSUM",archiveSize,"bytes","HASH", archiveHasher.hexdigest())
@@ -172,18 +180,19 @@ class Command(BaseCommand):
     print("MY TREEHASH", mytreehash)
     
     
-    
-    res = glacier_conn.complete_multipart_upload(uploadId=uploadId, archiveSize=str(archiveSize), checksum=mytreehash, accountId=options['account-id'], vaultName=options['vault-name'])
-    
-    meta = res['ResponseMetadata']
-    headers = meta['HTTPHeaders']
-    resLength = 0
-    if 'content-length' in headers:
-      resLength = headers['content-length']
-    resType = ''
-    if 'content-type' in headers:
-      resType = headers['content-type']
-    AWSGlacierRequestResponse.objects.create(requestId = meta['RequestId'], endpoint = 'complete_multipart_upload', retryAttempts = meta['RetryAttempts'], statusCode = meta['HTTPStatusCode'], date = dateutil.parser.parse(headers['date']), responseLength = resLength, responseContentType = resType, responseBody = json.dumps(res), accountId = options['account-id'], vaultName = options['vault-name'])
+    res = {'archiveId': 'testarchiveid', 'checksum': 'testarchivechecksum'}
+    if not options['test']:
+      res = glacier_conn.complete_multipart_upload(uploadId=uploadId, archiveSize=str(archiveSize), checksum=mytreehash, accountId=options['account-id'], vaultName=options['vault-name'])
+      
+      meta = res['ResponseMetadata']
+      headers = meta['HTTPHeaders']
+      resLength = 0
+      if 'content-length' in headers:
+        resLength = headers['content-length']
+      resType = ''
+      if 'content-type' in headers:
+        resType = headers['content-type']
+      AWSGlacierRequestResponse.objects.create(requestId = meta['RequestId'], endpoint = 'complete_multipart_upload', retryAttempts = meta['RetryAttempts'], statusCode = meta['HTTPStatusCode'], date = dateutil.parser.parse(headers['date']), responseLength = resLength, responseContentType = resType, responseBody = json.dumps(res), accountId = options['account-id'], vaultName = options['vault-name'])
     
     newArchiveId = res['archiveId']
     resChecksum = res['checksum']
