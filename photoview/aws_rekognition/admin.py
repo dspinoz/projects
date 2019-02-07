@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 from django.contrib import admin
+from django.utils.html import format_html
 
 # Register your models here.
 
@@ -33,13 +34,18 @@ class IndexedImageAdmin(admin.ModelAdmin):
 @admin.register(ConvertedImage)
 class ConvertedImageAdmin(admin.ModelAdmin):
   date_hierarchy = 'creationDate'
-  list_display = ('id', 'image_id', 'file_name')
+  list_display = ('id', 'image_id', 'file_name', 'file_link')
   
   def image_id(self,obj):
     return obj.orig.id
   def file_name(self,obj):
     try:
-      return obj.file.name
+      return obj.file.url
+    except ValueError:
+      return "NOT_SET"
+  def file_link(self,obj):
+    try:
+      return format_html(u'<a href="{}">view</a>', obj.file.url)
     except ValueError:
       return "NOT_SET"
 

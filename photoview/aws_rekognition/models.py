@@ -34,7 +34,7 @@ class IndexedImage(models.Model):
 
 class ConvertedImage(models.Model):
   orig = models.ForeignKey(IndexedImage, models.CASCADE)
-  file = models.ImageField(upload_to='uploads/%Y/%m/%d/')
+  file = models.ImageField(upload_to='aws_rek/%Y/%m/%d/')
   metadata = models.TextField(blank=True, default=None, null=True)
   creationDate = models.DateTimeField(default=datetime.today)
   lastModifiedDate = models.DateTimeField(auto_now=True)
@@ -57,7 +57,7 @@ class Detection(models.Model):
 class ImageDetection(models.Model):
   image = models.ForeignKey(IndexedImage, on_delete=models.CASCADE)
   detection = models.ForeignKey(Detection, on_delete=models.CASCADE)
-  file = models.ImageField(upload_to='uploads/%Y/%m/%d/')
+  file = models.ImageField(upload_to='aws_rek/%Y/%m/%d/')
   confidence = models.FloatField(default=0.0)
   identifier = models.TextField(blank=True, null=True, default=None)
   boundingBoxTop = models.FloatField(blank=True, null=True, default=None)
