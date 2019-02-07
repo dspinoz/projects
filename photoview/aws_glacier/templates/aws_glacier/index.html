@@ -1,5 +1,26 @@
 <html>
 <body>
 	<h1>{{ title }}</h1>
+	<h2>Jobs</h2>
+	<table>
+		{% if jobs|length == 0 %}
+			<tr><th>None currently available</th></tr>
+		{% else %}
+		<tr>
+			<th>Id</th>
+			<th>Action</th>
+			<th>Status</th>
+			<th>Available</th>
+		</tr>
+		{%for job in jobs %}
+		<tr>
+			<td>{{job.jobId}}</td>
+			<td>{{job.action}}</td>
+			<td>{{job.statusCode}}{% if job.retrievedOutput%}, Retrieved{%endif%}</td>
+			<td>{{job.availableDate}}</td>
+		</tr>
+		{% endfor %}
+		{% endif %}
+	</table>
 </body>
 </html>
