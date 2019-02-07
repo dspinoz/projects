@@ -39,38 +39,6 @@ class ConvertedImage(models.Model):
   creationDate = models.DateTimeField(default=datetime.today)
   lastModifiedDate = models.DateTimeField(auto_now=True)
 
-@receiver(models.signals.post_delete, sender=ConvertedImage)
-def auto_delete_file_on_delete(sender, instance, **kwargs):
-  """
-  Deletes file from filesystem
-  when corresponding `ConvertedImage` object is deleted.
-  """
-  if instance.file:
-    if os.path.isfile(instance.file.path):
-      instance.file.delete()
-
-@receiver(models.signals.pre_save, sender=ConvertedImage)
-def auto_delete_file_on_change(sender, instance, **kwargs):
-  """
-  Deletes old file from filesystem
-  when corresponding `ConvertedImage` object is updated
-  with new file.
-  """
-  if not instance.pk:
-    return False
-
-  try:
-    old_file = ConvertedImage.objects.get(pk=instance.pk).file
-  except ConvertedImage.DoesNotExist:
-    return False
-  try:
-    new_file = instance.file
-    if not old_file == new_file:
-      if os.path.isfile(old_file.path):
-        os.remove(old_file.path)
-  except ValueError:
-    return False
-
 class DetectionType(Enum):
   FACE = "FACE"
   LABEL = "LABEL"
@@ -101,33 +69,12 @@ class ImageDetection(models.Model):
   lastModifiedDate = models.DateTimeField(auto_now=True)
 
 @receiver(models.signals.post_delete, sender=ImageDetection)
+@receiver(models.signals.post_delete, sender=ConvertedImage)
 def auto_delete_file_on_delete(sender, instance, **kwargs):
   """
-  Deletes file from filesystem
-  when corresponding `ImageDetection` object is deleted.
+  Deletes file from filesystem when corresponding object is deleted.
   """
   if instance.file:
     if os.path.isfile(instance.file.path):
-      instance.file.delete()
-
-@receiver(models.signals.pre_save, sender=ImageDetection)
-def auto_delete_file_on_change(sender, instance, **kwargs):
-  """
-  Deletes old file from filesystem
-  when corresponding `ImageDetection` object is updated
-  with new file.
-  """
-  if not instance.pk:
-    return False
-
-  try:
-    old_file = ImageDetection.objects.get(pk=instance.pk).file
-  except ImageDetection.DoesNotExist:
-    return False
-  try:
-    new_file = instance.file
-    if not old_file == new_file:
-      if os.path.isfile(old_file.path):
-        os.remove(old_file.path)
-  except ValueError:
-    return False
+      if os.path.isfile(instance.file.path):
+        os.remove(instance.file.path)
