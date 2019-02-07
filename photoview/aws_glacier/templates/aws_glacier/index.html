@@ -33,6 +33,7 @@
 			<th>Size</th>
 			<th>Description</th>
 			<th>Created On</th>
+			<th>Was Uploaded</th>
 		</tr>
 		{%for archive in archives %}
 		<tr>
@@ -40,6 +41,7 @@
 			<td>{{archive.size}}</td>
 			<td>{{archive.description}}</td>
 			<td>{{archive.creationDate}}</td>
+			<td>{% if archive.uploadList|length %}True{% else %}False{% endif %}</td>
 		</tr>
 		{% endfor %}
 		{% endif %}

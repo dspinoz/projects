@@ -57,6 +57,9 @@ class Archive(AWSGlacierModel):
   deletedDate = models.DateTimeField(null=True, blank=True)
   partSize = models.BigIntegerField(null=True, blank=True, default=None)
   available = models.BooleanField(default=True)
+  
+  def uploadList(self):
+    return ArchiveUpload.objects.filter(archive=self.id)
 
 class InventoryRetrieval(models.Model):
   job = models.ForeignKey(Job, on_delete=models.CASCADE)
