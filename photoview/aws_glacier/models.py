@@ -49,6 +49,17 @@ class Job(AWSGlacierModel):
   available = models.BooleanField(default=True)
   availableDate = models.DateTimeField(default=datetime.today)
   lastModifiedDate = models.DateTimeField(auto_now=True)
+  
+  def getChildObject(self):
+    return (InventoryRetrieval.objects.filter(job=self.id),
+            ArchiveRetrieval.objects.filter(job=self.id))
+  
+  def hasChildObject(self):
+    children = self.getChildObject()
+    for c in children:
+      if c.count() > 0:
+        return True
+    return False
 
 class Archive(AWSGlacierModel):
   archiveId = models.CharField(max_length=255)

@@ -11,6 +11,7 @@
 			<th>Action</th>
 			<th>Status</th>
 			<th>Available</th>
+			<th>Allocated</th>
 		</tr>
 		{%for job in jobs %}
 		<tr>
@@ -18,6 +19,7 @@
 			<td>{{job.action}}</td>
 			<td>{{job.statusCode}}{% if job.retrievedOutput%}, Retrieved{%endif%}</td>
 			<td>{{job.available}}</td>
+			<td>{{job.hasChildObject}}</td>
 		</tr>
 		{% endfor %}
 		{% endif %}
