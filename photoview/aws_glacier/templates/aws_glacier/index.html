@@ -14,12 +14,32 @@
 		</tr>
 		{%for job in jobs %}
 		<tr>
-			<td>{{job.jobId}}</td>
+			<td>{{job.jobId|slice:"0:10"}}</td>
 			<td>{{job.action}}</td>
 			<td>{{job.statusCode}}{% if job.retrievedOutput%}, Retrieved{%endif%}</td>
 			<td>{{job.available}}</td>
 		</tr>
 		{% endfor %}
+		{% endif %}
+	</table>
+	
+	<h2>Inventory</h2>
+	<table>
+		{% if not inventory %}
+			<tr><th>None currently available</th></tr>
+		{% else %}
+			<table>
+				<tr><th colspan=4>{{inventory.outputObj.VaultARN}}</th></td>
+				<tr><th colspan=4>{{inventory.date}}{% if not inventory.processed %} (Not Processed){% endif %}</th></td>
+				{% for a in inventory.outputObj.ArchiveList %}
+					<tr>
+						<td>{{a.ArchiveId|slice:"0:10"}}</td>
+						<td>{{a.ArchiveDescription}}</td>
+						<td>{{a.Size}}</td>
+						<td>{{a.CreationDate}}</td>
+					</tr>
+				{% endfor %}
+			</table>
 		{% endif %}
 	</table>
 	
@@ -39,7 +59,7 @@
 		</tr>
 		{%for archive in archives %}
 		<tr>
-			<td>{{archive.archiveId}}</td>
+			<td>{{archive.archiveId|slice:"0:10"}}</td>
 			<td>{{archive.size}}</td>
 			<td>{{archive.description}}</td>
 			<td>{{archive.creationDate}}</td>
@@ -66,11 +86,13 @@
 			<td>
 				<table>
 					<tr>
+						<th>Id</th>
 						<th>Path</th>
 						<th>Parts</th>
 					</tr>
 					{% for up in archive.uploadList %}
 					<tr>
+						<td>{{up.upload.uploadId|slice:"0:10"}}</td>
 						<td>{{up.upload.filePath}}</td>
 						<td>
 							<table>

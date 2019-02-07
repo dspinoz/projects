@@ -30,6 +30,9 @@ class Inventory(AWSGlacierModel):
   output = models.TextField(null=True, default=None)
   date = models.DateTimeField(default=datetime.today)
   processed = models.BooleanField(default=False)
+  
+  def outputObj(self):
+    return json.loads(self.output)
 
 class Job(AWSGlacierModel):
   jobId = models.CharField(max_length=255)
