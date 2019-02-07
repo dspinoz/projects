@@ -60,6 +60,9 @@ class Archive(AWSGlacierModel):
   
   def uploadList(self):
     return ArchiveUpload.objects.filter(archive=self.id)
+  
+  def retrievalList(self):
+    return ArchiveRetrieval.objects.filter(archive=self.id)
 
 class InventoryRetrieval(models.Model):
   job = models.ForeignKey(Job, on_delete=models.CASCADE)
