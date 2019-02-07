@@ -10,6 +10,7 @@ def index(request):
   context = {
     'title': 'Glacier',
     'jobs': aws_glacier.models.Job.objects.filter(available=True),
+    'archives': aws_glacier.models.Archive.objects.filter(deletedDate=None),
   }
   
   return render(request, 'aws_glacier/index.html', context)

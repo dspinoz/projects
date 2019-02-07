@@ -17,7 +17,29 @@
 			<td>{{job.jobId}}</td>
 			<td>{{job.action}}</td>
 			<td>{{job.statusCode}}{% if job.retrievedOutput%}, Retrieved{%endif%}</td>
-			<td>{{job.availableDate}}</td>
+			<td>{{job.available}}</td>
+		</tr>
+		{% endfor %}
+		{% endif %}
+	</table>
+	
+	<h2>Archives</h2>
+	<table>
+		{% if archives|length == 0 %}
+			<tr><th>None currently available</th></tr>
+		{% else %}
+		<tr>
+			<th>Id</th>
+			<th>Size</th>
+			<th>Description</th>
+			<th>Created On</th>
+		</tr>
+		{%for archive in archives %}
+		<tr>
+			<td>{{archive.archiveId}}</td>
+			<td>{{archive.size}}</td>
+			<td>{{archive.description}}</td>
+			<td>{{archive.creationDate}}</td>
 		</tr>
 		{% endfor %}
 		{% endif %}
