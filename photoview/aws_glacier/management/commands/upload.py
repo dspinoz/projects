@@ -73,7 +73,7 @@ class Command(BaseCommand):
         print("BREAK, REACHED EOF")
         break
       
-      part = ArchiveUploadPart.objects.create(index=len(parts), startByte=archiveSize, endByte=archiveSize + len(b) - 1, accountId=options['account-id'], vaultName=options['vault-name'])
+      part = ArchiveUploadPart.objects.create(req=uploadRequest, index=len(parts), startByte=archiveSize, endByte=archiveSize + len(b) - 1, accountId=options['account-id'], vaultName=options['vault-name'])
       
       rangeHeader = 'bytes {}-{}/*'.format(part.startByte, part.endByte)
       print("RANGE",rangeHeader)

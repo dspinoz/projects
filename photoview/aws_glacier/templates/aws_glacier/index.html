@@ -77,13 +77,13 @@
 								<tr>
 									<th>Index</th>
 									<th>Range</th>
-									<th>Hash</th>
+									<th>Uploaded</th>
 								</tr>
 								{% for p in up.upload.partList %}
 								<tr>
-									<td>{{p.part.index}}</td>
-									<td>{{p.part.startByte}}-&gt;{{p.part.endByte}}</td>
-									<td>{{p.sha256}}</td>
+									<td>{{p.index}}</td>
+									<td>{{p.startByte}}-&gt;{{p.endByte}}</td>
+									<td>{{p.isUploaded}}</td>
 								</tr>
 								{% endfor %}
 							</table>

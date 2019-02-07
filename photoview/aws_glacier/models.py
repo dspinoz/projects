@@ -89,13 +89,23 @@ class ArchiveUploadRequest(AWSGlacierModel):
   lastModifiedDate = models.DateTimeField(auto_now=True)
   
   def partList(self):
-    return UploadPart.objects.filter(upload=self.id)
+    return ArchiveUploadPart.objects.filter(req=self.id)
   
+  def uploadedPartList(self):
+    return UploadPart.objects.filter(upload=self.id)
+
 class ArchiveUploadPart(AWSGlacierModel):
   index = models.BigIntegerField(default=0)
   startByte = models.BigIntegerField(default=0)
   endByte = models.BigIntegerField()
   lastModifiedDate = models.DateTimeField(auto_now=True)
+  req = models.ForeignKey(ArchiveUploadRequest, on_delete=models.CASCADE, default=None, null=True)
+  
+  def isUploaded(self):
+    return self.getUpload().count > 0
+  
+  def getUpload(self):
+    return UploadPart.objects.filter(part=self.id)
 
 class UploadPart(models.Model):
   upload = models.ForeignKey(ArchiveUploadRequest, on_delete=models.CASCADE)
