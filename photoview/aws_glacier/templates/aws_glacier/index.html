@@ -34,7 +34,8 @@
 			<th>Description</th>
 			<th>Created On</th>
 			<th>Was Uploaded</th>
-			<th>Retrievals</th>
+			<th>#Retrievals</th>
+			<th>#Uploads</th>
 		</tr>
 		{%for archive in archives %}
 		<tr>
@@ -44,6 +45,39 @@
 			<td>{{archive.creationDate}}</td>
 			<td>{% if archive.uploadList|length %}True{% else %}False{% endif %}</td>
 			<td>{{archive.retrievalList|length}}</td>
+			{% if archive.uploadList|length == 0 %}
+			None
+			{% else %}
+			<td>
+				<table>
+					<tr>
+						<th>Path</th>
+						<th>Parts</th>
+					</tr>
+					{% for up in archive.uploadList %}
+					<tr>
+						<td>{{up.upload.filePath}}</td>
+						<td>
+							<table>
+								<tr>
+									<th>Index</th>
+									<th>Range</th>
+									<th>Hash</th>
+								</tr>
+								{% for p in up.upload.partList %}
+								<tr>
+									<td>{{p.part.index}}</td>
+									<td>{{p.part.startByte}}-&gt;{{p.part.endByte}}</td>
+									<td>{{p.sha256}}</td>
+								</tr>
+								{% endfor %}
+							</table>
+						</td>
+					</tr>
+					{% endfor %}
+				</table>
+			</td>
+			{% endif %}
 		</tr>
 		{% endfor %}
 		{% endif %}

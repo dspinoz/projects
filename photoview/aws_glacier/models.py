@@ -87,7 +87,10 @@ class ArchiveUploadRequest(AWSGlacierModel):
   sha256 = models.CharField(max_length=255, blank=True)
   sha256TreeHash = models.CharField(max_length=255, blank=True)
   lastModifiedDate = models.DateTimeField(auto_now=True)
-
+  
+  def partList(self):
+    return UploadPart.objects.filter(upload=self.id)
+  
 class ArchiveUploadPart(AWSGlacierModel):
   index = models.BigIntegerField(default=0)
   startByte = models.BigIntegerField(default=0)
