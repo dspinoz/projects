@@ -44,4 +44,4 @@ class Command(BaseCommand):
       
       fd.seek(0)
       
-      print(json.dumps(u.detect(fd, detect)))
+      u.detect(options['image'], fd)
