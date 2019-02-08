@@ -33,7 +33,7 @@
 					<tr>
 						<td>{{c.creationDate}}</td>
 						<td>{% if c.metadataObj %}{{c.metadataObj.Type}}{% endif %}</td>
-						<td><img src="{{c.file.url}}"/></td>
+						<td>{% if c.file %}<img src="{{c.file.url}}"/>{% else %}None{% endif %}</td>
 					</tr>
 					{% endfor %}
 				</table>
