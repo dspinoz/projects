@@ -239,11 +239,11 @@ def detect(path, fd=None, detections=['faces'], hasher=hashlib.sha256(), generat
   if imgDetections:
     with tempfile.SpooledTemporaryFile(max_size=10000000, mode='w+b') as t:
       size = determineThumbsSize(imgWidth)[0]
-      imgDetections.thumbnail((size, size))
+      imgDetections.resize((size, size))
       imgDetections.save(t, 'png')
       t.flush()
       t.seek(0)
-      detectionsThumb = ConvertedImage.objects.create(orig=indexedImage,metadata=json.dumps({"Type":"detections", "Detections":detections}))
+      detectionsThumb = ConvertedImage.objects.create(orig=indexedImage,metadata=json.dumps({"Type":"detections", "DetectionsInfo":detections}))
       detectionsThumb.file.save('dthumb{}'.format(256), File(t))
   
   

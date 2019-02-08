@@ -32,7 +32,13 @@
 					{% for c in img.getConversions %}
 					<tr>
 						<td>{{c.creationDate}}</td>
-						<td>{% if c.metadataObj %}{{c.metadataObj.Type}}{% endif %}</td>
+						<td>
+							{% if c.metadataObj %}
+								{{c.metadataObj.Type}}
+								{% if c.metadataObj.Type == "detections" %}
+								{{c.metadataObj.DetectionsInfo}}
+								{% endif %}
+							{% endif %}</td>
 						<td>{% if c.file %}<img src="{{c.file.url}}"/>{% else %}None{% endif %}</td>
 					</tr>
 					{% endfor %}
