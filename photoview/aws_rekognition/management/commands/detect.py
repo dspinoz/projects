@@ -13,7 +13,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from aws_rekognition.models import AWSRekognitionRequestResponse
 
 class Command(BaseCommand):
-  help = "Download archive"
+  help = "Image detection"
   
   def add_arguments(self, parser):
     parser.add_argument('--detect', nargs='+', action='append', default=[], help="Objects to detect. Eg. 'faces', 'labels', 'text', 'celebrities'")
@@ -42,22 +42,4 @@ class Command(BaseCommand):
       
       fd.seek(0)
       
-      rek_conn = boto3.client('rekognition')
-      
-      endpoint = 'detect_{}'.format(detect)
-      
-      if detect == 'faces':
-        res = rek_conn.detect_faces(Image={'Bytes': fd.read()})
-      elif detect == 'labels':
-        res = rek_conn.detect_labels(Image={'Bytes': fd.read()})
-      elif detect == 'text':
-        res = rek_conn.detect_text(Image={'Bytes': fd.read()})
-      elif detect == 'celebrities':
-        res = rek_conn.recognize_celebrities(Image={'Bytes': fd.read()})
-        endpoint = 'recognize_celebrities'
-    
-      meta = res['ResponseMetadata']
-      headers = meta['HTTPHeaders']
-      AWSRekognitionRequestResponse.objects.create(requestId=meta['RequestId'], endpoint = endpoint, date = dateutil.parser.parse(headers['date']), statusCode = meta['HTTPStatusCode'], retryAttempts = meta['RetryAttempts'], responseLength = headers['content-length'], responseContentType = headers['content-type'], responseBody=json.dumps(res))
-    
-      print(json.dumps(res))
+      print(json.dumps(u.detect(fd, detect)))
