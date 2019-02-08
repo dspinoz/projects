@@ -12,6 +12,8 @@ from django.core.exceptions import ObjectDoesNotExist
 
 from aws_rekognition.models import AWSRekognitionRequestResponse
 
+import aws_rekognition.utils as u
+
 class Command(BaseCommand):
   help = "Image detection"
   

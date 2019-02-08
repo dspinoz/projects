@@ -19,6 +19,8 @@ from aws_rekognition.models import AWSRekognitionRequestResponse
 from aws_rekognition.models import IndexedImage, ConvertedImage
 from aws_rekognition.models import DetectionType, Detection, ImageDetection
 
+import aws_rekognition.utils as u
+
 def calcBB((width, height), featureBB):
   bb = (featureBB['Left'], featureBB['Top'], featureBB['Left']+featureBB['Width'], featureBB['Top'] + featureBB['Height'])
   

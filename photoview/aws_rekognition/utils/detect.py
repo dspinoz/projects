@@ -1,11 +1,6 @@
-import json
-import dateutil
-
 import boto3
 
-from aws_rekognition.models import AWSRekognitionRequestResponse
-
-import log_response
+from log_response import log_response
 
 def detect(fd, detect='faces', rek_conn=boto3.client('rekognition')):
   
