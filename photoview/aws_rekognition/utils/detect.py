@@ -3,6 +3,7 @@ import json
 import os
 import mimetypes
 import tempfile
+import sys
 
 import boto3
 from PIL import Image
@@ -11,7 +12,7 @@ from django.core.files import File
 
 from aws_rekognition.models import AWSRekognitionRequestResponse
 from aws_rekognition.models import IndexedImage, ConvertedImage
-from aws_rekognition.models import DetectionType, Detection, ImageDetection
+from aws_rekognition.models import DetectionType, Detection, ImageDetection, DetectionRun
 
 from log_response import log_response
 
@@ -104,8 +105,19 @@ def determineThumbsSize(width):
       exp = exp + 1
     sizes2.append(2**exp)
   return sizes2
-  
-def detect(path, fd=None, detections=['faces'], hasher=hashlib.sha256(), generateThumbs=True, captureDetections=True, rek_conn=boto3.client('rekognition')):
+
+def get_detection_object(type):
+  if type == 'faces':
+    return Detection.objects.get_or_create(type=DetectionType.FACE)[0]
+  if type == 'labels':
+    return Detection.objects.get_or_create(type=DetectionType.LABEL)[0]
+  if type == 'text':
+    return Detection.objects.get_or_create(type=DetectionType.TEXT_ANY)[0]
+  if type == 'celebrities':
+    return Detection.objects.get_or_create(type=DetectionType.CELEBRITY)[0]
+  return None
+
+def detect(path, fd=None, detections=['faces'], hasher=hashlib.sha256(), generateThumbs=True, captureDetections=True, rerun=False, rek_conn=boto3.client('rekognition')):
   
   if not fd:
     fd = open(path, 'r+b')
@@ -133,10 +145,23 @@ def detect(path, fd=None, detections=['faces'], hasher=hashlib.sha256(), generat
         break
       hasher.update(b"".join(b))
     hexdigest = hasher.hexdigest()
-    
-  indexedImage = IndexedImage.objects.create(filePath=os.path.realpath(path), sha256=hexdigest, width=imgWidth, height=imgHeight, contentType=mimetypes.guess_type(path)[0])
   
-  if generateThumbs:
+  
+  (indexedImage, createdIndexedImage) = IndexedImage.objects.get_or_create(filePath=os.path.realpath(path), sha256=hexdigest, width=imgWidth, height=imgHeight, contentType=mimetypes.guess_type(path)[0])
+  
+  if not rerun:
+    for detect in detections:
+      runs = DetectionRun.objects.filter(image=indexedImage, detection=get_detection_object(detect))
+      
+      if runs.count() > 0:
+        print("{} detection has already been run".format(detect))
+        sys.exit(0)
+  
+  if not createdIndexedImage:
+    print("Image already indexed")
+  
+  
+  if createdIndexedImage and generateThumbs:
     for tsize in determineThumbsSize(imgWidth):
       thumb = ConvertedImage.objects.create(orig=indexedImage)
       with tempfile.SpooledTemporaryFile(max_size=10000000, mode='w+b') as t:
@@ -152,6 +177,8 @@ def detect(path, fd=None, detections=['faces'], hasher=hashlib.sha256(), generat
     fd.seek(0)
     res = request_detection(fd, detect, rek_conn)
     
+    DetectionRun.objects.create(detection=get_detection_object(detect), image=indexedImage)
+    
     print(json.dumps(res))
     
     if 'FaceDetails' in res and res['FaceDetails'] is not None:
@@ -164,9 +191,14 @@ def detect(path, fd=None, detections=['faces'], hasher=hashlib.sha256(), generat
     
     
     if 'CelebrityFaces' in res:
-      for face in res['CelebrityFaces']:
-        # face but probably has an identifier of some sort?
-        detectedFace((img, imgWidth, imgHeight), indexedImage, face, DetectionType.CELEBRITY)
+      for celeb in res['CelebrityFaces']:
+        
+        (detection, createdDetection) = Detection.objects.get_or_create(type=DetectionType.CELEBRITY)
+        
+        idet = ImageDetection.objects.create(image=indexedImage, detection=detection, confidence=celeb['MatchConfidence'], identifier=celeb['Name'], metadata=json.dumps(celeb))
+        
+        face = celeb['Face']
+        detectedFace((img, imgWidth, imgHeight), indexedImage, face, DetectionType.CELEBRITY_FACE)
           
         if capturePixels:
           bb = calcBB((imgWidth, imgHeight), face['BoundingBox'])

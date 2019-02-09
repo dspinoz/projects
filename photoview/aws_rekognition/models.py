@@ -59,7 +59,9 @@ class DetectionType(Enum):
   LABEL = "LABEL"
   TEXT_WORD = "TEXT_WORD"
   TEXT_LINE = "TEXT_LINE"
-  CELEBRITY = "FACE_CELEBRITY"
+  TEXT_ANY = "TEXT"
+  CELEBRITY = "CELEBRITY"
+  CELEBRITY_FACE = "FACE_CELEBRITY"
   LANDMARK = "FACE_LANDMARK"
   FACE_UNKNOWN = "FACE_UNKNOWN"
   UNKNOWN = "UNKNOWN"
@@ -71,6 +73,11 @@ class Detection(models.Model):
   
   def typeShort(self):
     return self.type.split('.')[1]
+
+class DetectionRun(models.Model):
+  image = models.ForeignKey(IndexedImage, on_delete=models.CASCADE)
+  detection = models.ForeignKey(Detection, on_delete=models.CASCADE)
+  lastModifiedDate = models.DateTimeField(auto_now=True)
 
 class ImageDetection(models.Model):
   image = models.ForeignKey(IndexedImage, on_delete=models.CASCADE)

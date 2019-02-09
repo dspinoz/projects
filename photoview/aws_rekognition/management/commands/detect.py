@@ -21,6 +21,7 @@ class Command(BaseCommand):
     parser.add_argument('--detect', nargs='+', action='append', default=[], help="Objects to detect. Eg. 'faces', 'labels', 'text', 'celebrities'")
     parser.add_argument('--image', nargs='?', type=str)
     parser.add_argument('--attributes', nargs='?', type=str, default="DEFAULT")
+    parser.add_argument('--force', action='store_true', default=False)
   
   def handle(self, *args, **options):
     if options['image'] is None:
@@ -44,4 +45,4 @@ class Command(BaseCommand):
       
       fd.seek(0)
       
-      u.detect(options['image'], fd)
+      u.detect(options['image'], fd, [detect], rerun=options['force'])
