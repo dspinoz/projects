@@ -28,6 +28,7 @@ class IndexedImage(models.Model):
   sha256 = models.CharField(max_length=255)
   width = models.IntegerField()
   height = models.IntegerField()
+  size = models.BigIntegerField()
   contentType = models.CharField(max_length=255)
   metadata = models.TextField(blank=True, default=None, null=True)
   creationDate = models.DateTimeField(default=datetime.today)
@@ -45,6 +46,7 @@ class IndexedImage(models.Model):
 class ConvertedImage(models.Model):
   orig = models.ForeignKey(IndexedImage, models.CASCADE)
   file = models.ImageField(upload_to='aws_rek/%Y/%m/%d/')
+  size = models.BigIntegerField()
   metadata = models.TextField(blank=True, default=None, null=True)
   creationDate = models.DateTimeField(default=datetime.today)
   lastModifiedDate = models.DateTimeField(auto_now=True)

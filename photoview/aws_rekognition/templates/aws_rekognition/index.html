@@ -34,7 +34,7 @@
 						<td>{{c.creationDate}}</td>
 						<td>
 							{% if c.metadataObj %}
-								{{c.metadataObj.Type}}
+								{{c.metadataObj.Type}}, {{c.metadataObj.Width}}
 								{% if c.metadataObj.Type == "detections" %}
 								{{c.metadataObj.DetectionsInfo}}
 								{% endif %}

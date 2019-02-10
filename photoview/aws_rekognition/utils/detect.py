@@ -147,14 +147,14 @@ def detect(path, fd=None, detections=['faces'], hasher=hashlib.sha256(), generat
     hexdigest = hasher.hexdigest()
   
   
-  (indexedImage, createdIndexedImage) = IndexedImage.objects.get_or_create(filePath=os.path.realpath(path), sha256=hexdigest, width=imgWidth, height=imgHeight, contentType=mimetypes.guess_type(path)[0])
+  (indexedImage, createdIndexedImage) = IndexedImage.objects.get_or_create(filePath=os.path.realpath(path), sha256=hexdigest, width=imgWidth, height=imgHeight, contentType=mimetypes.guess_type(path)[0], size=fd.tell())
   
   if not rerun:
     for detect in detections:
       runs = DetectionRun.objects.filter(image=indexedImage, detection=get_detection_object(detect))
       
       if runs.count() > 0:
-        print("{} detection has already been run".format(detect))
+        print("{} detection has been run".format(detect))
         sys.exit(0)
   
   if not createdIndexedImage:
@@ -163,12 +163,13 @@ def detect(path, fd=None, detections=['faces'], hasher=hashlib.sha256(), generat
   
   if createdIndexedImage and generateThumbs:
     for tsize in determineThumbsSize(imgWidth):
-      thumb = ConvertedImage.objects.create(orig=indexedImage)
       with tempfile.SpooledTemporaryFile(max_size=10000000, mode='w+b') as t:
         cpy = img.copy()
         cpy.thumbnail((tsize, tsize))
         cpy.save(t, 'png')
         t.flush()
+        thumb = ConvertedImage.objects.create(orig=indexedImage, size=t.tell(), metadata=json.dumps({'Type':'thumbnail', 'Width':tsize}))
+        
         t.seek(0)
         thumb.file.save('thumb{}'.format(tsize), File(t))
   
@@ -274,9 +275,9 @@ def detect(path, fd=None, detections=['faces'], hasher=hashlib.sha256(), generat
       imgDetections.resize((size, size))
       imgDetections.save(t, 'png')
       t.flush()
+      detectionsThumb = ConvertedImage.objects.create(orig=indexedImage,size=t.tell(),metadata=json.dumps({"Type":"detections", "DetectionsInfo":detections, "Width": size}))
       t.seek(0)
-      detectionsThumb = ConvertedImage.objects.create(orig=indexedImage,metadata=json.dumps({"Type":"detections", "DetectionsInfo":detections}))
-      detectionsThumb.file.save('dthumb{}'.format(256), File(t))
+      detectionsThumb.file.save('dthumb{}'.format(size), File(t))
   
   
   return indexedImage
