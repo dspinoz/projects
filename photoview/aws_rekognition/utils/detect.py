@@ -9,6 +9,7 @@ import boto3
 from PIL import Image
 
 from django.core.files import File
+from django.conf import settings
 
 from aws_rekognition.models import AWSRekognitionRequestResponse
 from aws_rekognition.models import IndexedImage, ConvertedImage
@@ -172,6 +173,29 @@ def detect(path, fd=None, detections=['faces'], hasher=hashlib.sha256(), generat
         
         t.seek(0)
         thumb.file.save('thumb{}'.format(tsize), File(t))
+  
+  
+  # use a converted image within the bounds for the detection API
+  forDetect = ConvertedImage.objects.filter(orig=indexedImage).filter(size__lte=2000000).order_by("-size")
+  forDetect = forDetect[0]
+  
+  fd.close()
+  fd = open(os.path.join(settings.MEDIA_ROOT,forDetect.file.name), 'r+b')
+  
+  img = Image.open(fd)
+  
+  imgBB = img.getbbox()
+  imgPixels = img.load()
+  
+  imgWidth = imgBB[2] - imgBB[0]
+  imgHeight = imgBB[3] - imgBB[1]
+  
+  imgDetections = None
+  capturePixels = None
+  if captureDetections:
+    imgDetections = img.copy()
+    capturePixels = imgDetections.load()
+  
   
   for detect in detections:
     
