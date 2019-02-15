@@ -1,0 +1,27 @@
+<html>
+<body>
+	<h1>{{ title }}</h1>
+	
+	<h2>Conversions</h2>
+	<table>
+		<tr>
+			<th>Date</th>
+			<th>Metadata</th>
+			<th>View</th>
+		</tr>
+		{% for c in tiles %}
+		<tr>
+			<td>{{c.creationDate}}</td>
+			<td>
+				{% if c.metadataObj %}
+					{{c.metadataObj.Type}}, {{c.metadataObj.Width}}
+					{% if c.metadataObj.Type == "detections" %}
+					{{c.metadataObj.DetectionsInfo}}
+					{% endif %}
+				{% endif %}</td>
+			<td>{% if c.file %}<img src="{{c.file.url}}"/>{% else %}None{% endif %}</td>
+		</tr>
+		{% endfor %}
+	</table>
+</body>
+</html>
