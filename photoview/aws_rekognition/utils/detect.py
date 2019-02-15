@@ -70,6 +70,7 @@ def detectedFace((img, width, height), index, face, type=DetectionType.FACE):
       fname = 'celeb'
     
     idet.file.save(fname, File(t))
+    print("Saved {} '{}' as detection image".format(type, fname))
 
 
 def request_detection(fd, detect='faces', rek_conn=boto3.client('rekognition')):
@@ -119,10 +120,65 @@ def get_detection_object(type):
     return Detection.objects.get_or_create(type=DetectionType.CELEBRITY)[0]
   return None
 
-def detect(path, fd=None, detections=['faces'], hasher=hashlib.sha256(), generateThumbs=True, captureDetections=True, rerun=False, rek_conn=boto3.client('rekognition'), runExifTool=True):
+def detect(path, fd=None, detections=['faces'], hasher=hashlib.sha256(), generateThumbs=True, captureDetections=True, rerun=False, rek_conn=boto3.client('rekognition'), runExifTool=True, convertUnknownImages=True):
   
-  if not fd:
-    fd = open(path, 'r+b')
+  createdIndexedImage = False
+  indexedImage = None
+  try:
+    indexedImage = IndexedImage.objects.get(filePath=os.path.realpath(path))
+    print("Image already indexed")
+  except IndexedImage.DoesNotExist:
+    
+    if fd is None:
+      fd = open(os.path.realpath(path), 'r+b')
+    
+    hexdigest = None
+    if hasher:
+      fd.seek(0)
+      while True:
+        b = fd.read()
+        if not b:
+          break
+        hasher.update(b"".join(b))
+      hexdigest = hasher.hexdigest()
+    
+    
+    exifinfo = None
+    if runExifTool:
+      exifinfostr = subprocess.Popen("exiftool -j '{}'".format(os.path.realpath(path)), shell=True, stdout=subprocess.PIPE).stdout.read()
+      if len(exifinfostr) == 0:
+        print("WARNING: Could not generate exif metadata from {}".format(path))
+      else:
+        exifinfo = json.loads(exifinfostr)[0]
+    
+    
+    indexedImage = IndexedImage.objects.create(filePath=os.path.realpath(path), sha256=hexdigest, width=exifinfo['ImageWidth'], height=exifinfo['ImageHeight'], contentType=mimetypes.guess_type(path)[0], size=fd.tell())
+    createdIndexedImage = True
+    
+  
+    previewImageBytes = subprocess.Popen("exiftool -Composite:PreviewImage -b '{}'".format(os.path.realpath(path)), shell=True, stdout=subprocess.PIPE).stdout.read()
+    if len(previewImageBytes) > 0:
+      with tempfile.NamedTemporaryFile(mode='w+b', suffix=".jpg") as t:
+        t.write(previewImageBytes)
+        t.flush()
+        
+        prev = ConvertedImage.objects.create(orig=indexedImage, size=t.tell(), metadata=json.dumps({'Type':'preview', 'Width':exifinfo['ImageWidth'], 'GeneratedBy': 'exiftool'}))
+        
+        t.seek(0)
+        prev.file.save('prev', File(t))
+        print("Saved {} '{}' as converted image".format('preview', 'exiftool'))
+  
+  
+  
+  for conv in indexedImage.getConversions():
+    m = json.loads(conv.metadata)
+    if m['Type'] == 'preview':
+      fd = open(os.path.join(settings.MEDIA_ROOT,conv.file.name), 'r+b')
+      print("Using preview image: {}", conv.file.name)
+  
+  if fd is None:
+    fd = open(os.path.realpath(path), 'r+b')
+  
   
   img = Image.open(fd)
   
@@ -138,18 +194,6 @@ def detect(path, fd=None, detections=['faces'], hasher=hashlib.sha256(), generat
     imgDetections = img.copy()
     capturePixels = imgDetections.load()
   
-  hexdigest = None
-  if hasher:
-    fd.seek(0)
-    while True:
-      b = fd.read()
-      if not b:
-        break
-      hasher.update(b"".join(b))
-    hexdigest = hasher.hexdigest()
-  
-  
-  (indexedImage, createdIndexedImage) = IndexedImage.objects.get_or_create(filePath=os.path.realpath(path), sha256=hexdigest, width=imgWidth, height=imgHeight, contentType=mimetypes.guess_type(path)[0], size=fd.tell())
   
   detectionsToRun = []
   
@@ -163,20 +207,7 @@ def detect(path, fd=None, detections=['faces'], hasher=hashlib.sha256(), generat
         print("{} detection can run".format(detect))
         detectionsToRun.append(detect)
   
-  if not createdIndexedImage:
-    print("Image already indexed")
   
-  if createdIndexedImage and runExifTool:
-    exifinfo = subprocess.Popen("exiftool -j '{}'".format(os.path.realpath(path)), shell=True, stdout=subprocess.PIPE).stdout.read()
-    
-    if len(exifinfo) > 0:
-      metaObj = {}
-      if indexedImage.metadata is not None and len(indexedImage.metadata) > 0:
-        metaObj = json.loads(indexedImage.metadata)
-      
-      metaObj['Exif'] = json.loads(exifinfo)[0]
-      indexedImage.metadata = json.dumps(metaObj)
-      indexedImage.save()
   
   if createdIndexedImage and generateThumbs:
     for tsize in determineThumbsSize(imgWidth):
@@ -189,11 +220,12 @@ def detect(path, fd=None, detections=['faces'], hasher=hashlib.sha256(), generat
         
         t.seek(0)
         thumb.file.save('thumb{}'.format(tsize), File(t))
+        print("Saved {} '{}' as converted image".format('thumbnail', tsize))
   
   
-  # use a converted image within the bounds for the detection API
-  forDetect = ConvertedImage.objects.filter(orig=indexedImage).filter(size__lte=2000000).order_by("-size")
+  forDetect = ConvertedImage.objects.filter(orig=indexedImage).filter(metadata__iregex=r'"Type": "thumbnail"').filter(size__lte=2000000).order_by("-size")
   forDetect = forDetect[0]
+  print("Selected conversion (id={}) for detections: {}".format(forDetect.id, os.path.join(settings.MEDIA_ROOT,forDetect.file.name)))
   
   fd.close()
   fd = open(os.path.join(settings.MEDIA_ROOT,forDetect.file.name), 'r+b')
@@ -212,17 +244,16 @@ def detect(path, fd=None, detections=['faces'], hasher=hashlib.sha256(), generat
     imgDetections = img.copy()
     capturePixels = imgDetections.load()
   
-  if len(detections) == 0:
+  if len(detectionsToRun) == 0:
     print("WARNING: No detections to run")
   
-  for detect in detections:
+  for detect in detectionsToRun:
     
     fd.seek(0)
     res = request_detection(fd, detect, rek_conn)
     
     DetectionRun.objects.create(detection=get_detection_object(detect), image=indexedImage)
     
-    print(json.dumps(res))
     
     if 'FaceDetails' in res and res['FaceDetails'] is not None:
       for face in res['FaceDetails']:
@@ -279,6 +310,7 @@ def detect(path, fd=None, detections=['faces'], hasher=hashlib.sha256(), generat
           t.flush()
           t.seek(0)
           idet.file.save('png', File(t))
+          print("Saved {} '{}' as detection image".format(text['Type'], text['DetectedText']))
         
         if capturePixels:
           drawBB(capturePixels, color, bb)
@@ -306,6 +338,7 @@ def detect(path, fd=None, detections=['faces'], hasher=hashlib.sha256(), generat
             t.flush()
             t.seek(0)
             idet.file.save('png', File(t))
+            print("Saved {} '{}' as detection image".format(DetectionType.LABEL, label['Name']))
           
           if capturePixels:
             drawBB(capturePixels, (255,0,0), bb) #RED
@@ -320,6 +353,7 @@ def detect(path, fd=None, detections=['faces'], hasher=hashlib.sha256(), generat
       detectionsThumb = ConvertedImage.objects.create(orig=indexedImage,size=t.tell(),metadata=json.dumps({"Type":"detections", "DetectionsInfo":detectionsToRun, "Width": size}))
       t.seek(0)
       detectionsThumb.file.save('dthumb{}'.format(size), File(t))
+      print("Saved {} '{}' as converted image".format('detections', detectionsToRun))
   
   
   return indexedImage
