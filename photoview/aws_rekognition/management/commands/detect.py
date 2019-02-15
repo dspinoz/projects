@@ -39,10 +39,16 @@ class Command(BaseCommand):
       print("COULD NOT OPEN IMAGE FILE")
       sys.exit(1)
     
-    for detect in options['detect']:
-      detect = detect[0]
-      print("Detecting {} from image".format(detect))
-      
-      fd.seek(0)
-      
-      u.detect(options['image'], fd, [detect], rerun=options['force'])
+    detections = []
+    
+    if len(options['detect']) == 1 and options['detect'][0][0] == 'none':
+      # leave detections empty
+      pass
+    else:
+      for detect in options['detect']:
+        detections.append(detect[0])
+    
+    
+    print("Detecting {} from image".format(detections))
+    u.detect(options['image'], fd, detections, rerun=options['force'])
+

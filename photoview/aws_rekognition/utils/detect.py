@@ -150,13 +150,17 @@ def detect(path, fd=None, detections=['faces'], hasher=hashlib.sha256(), generat
   
   (indexedImage, createdIndexedImage) = IndexedImage.objects.get_or_create(filePath=os.path.realpath(path), sha256=hexdigest, width=imgWidth, height=imgHeight, contentType=mimetypes.guess_type(path)[0], size=fd.tell())
   
+  detectionsToRun = []
+  
   if not rerun:
     for detect in detections:
       runs = DetectionRun.objects.filter(image=indexedImage, detection=get_detection_object(detect))
       
       if runs.count() > 0:
-        print("{} detection has been run".format(detect))
-        sys.exit(0)
+        print("{} detection has already been run".format(detect))
+      else:
+        print("{} detection can run".format(detect))
+        detectionsToRun.append(detect)
   
   if not createdIndexedImage:
     print("Image already indexed")
@@ -196,6 +200,8 @@ def detect(path, fd=None, detections=['faces'], hasher=hashlib.sha256(), generat
     imgDetections = img.copy()
     capturePixels = imgDetections.load()
   
+  if len(detections) == 0:
+    print("WARNING: No detections to run")
   
   for detect in detections:
     
@@ -293,13 +299,13 @@ def detect(path, fd=None, detections=['faces'], hasher=hashlib.sha256(), generat
             drawBB(capturePixels, (255,0,0), bb) #RED
   
   
-  if imgDetections:
+  if len(detectionsToRun) and imgDetections:
     with tempfile.SpooledTemporaryFile(max_size=10000000, mode='w+b') as t:
       size = determineThumbsSize(imgWidth)[0]
       imgDetections.thumbnail((size, size))
       imgDetections.save(t, 'png')
       t.flush()
-      detectionsThumb = ConvertedImage.objects.create(orig=indexedImage,size=t.tell(),metadata=json.dumps({"Type":"detections", "DetectionsInfo":detections, "Width": size}))
+      detectionsThumb = ConvertedImage.objects.create(orig=indexedImage,size=t.tell(),metadata=json.dumps({"Type":"detections", "DetectionsInfo":detectionsToRun, "Width": size}))
       t.seek(0)
       detectionsThumb.file.save('dthumb{}'.format(size), File(t))
   
