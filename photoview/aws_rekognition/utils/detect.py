@@ -4,6 +4,7 @@ import os
 import mimetypes
 import tempfile
 import sys
+import subprocess
 
 import boto3
 from PIL import Image
@@ -118,7 +119,7 @@ def get_detection_object(type):
     return Detection.objects.get_or_create(type=DetectionType.CELEBRITY)[0]
   return None
 
-def detect(path, fd=None, detections=['faces'], hasher=hashlib.sha256(), generateThumbs=True, captureDetections=True, rerun=False, rek_conn=boto3.client('rekognition')):
+def detect(path, fd=None, detections=['faces'], hasher=hashlib.sha256(), generateThumbs=True, captureDetections=True, rerun=False, rek_conn=boto3.client('rekognition'), runExifTool=True):
   
   if not fd:
     fd = open(path, 'r+b')
@@ -165,6 +166,17 @@ def detect(path, fd=None, detections=['faces'], hasher=hashlib.sha256(), generat
   if not createdIndexedImage:
     print("Image already indexed")
   
+  if createdIndexedImage and runExifTool:
+    exifinfo = subprocess.Popen("exiftool -j '{}'".format(os.path.realpath(path)), shell=True, stdout=subprocess.PIPE).stdout.read()
+    
+    if len(exifinfo) > 0:
+      metaObj = {}
+      if indexedImage.metadata is not None and len(indexedImage.metadata) > 0:
+        metaObj = json.loads(indexedImage.metadata)
+      
+      metaObj['Exif'] = json.loads(exifinfo)[0]
+      indexedImage.metadata = json.dumps(metaObj)
+      indexedImage.save()
   
   if createdIndexedImage and generateThumbs:
     for tsize in determineThumbsSize(imgWidth):
