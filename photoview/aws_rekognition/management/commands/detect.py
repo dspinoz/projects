@@ -4,6 +4,8 @@ import dateutil
 from datetime import datetime
 import json
 import base64
+import tempfile
+import subprocess
 
 import boto3
 
@@ -49,6 +51,33 @@ class Command(BaseCommand):
         detections.append(detect[0])
     
     
-    print("Detecting {} from image".format(detections))
-    u.detect(options['image'], fd, detections, rerun=options['force'])
-
+    image = options['image']
+    attemptedConversion = False
+          
+    while True:
+      with tempfile.NamedTemporaryFile(mode='w+b', suffix=".jpg") as t:
+      
+        try:
+          if attemptedConversion:
+            print("Retrying image detection")
+          else:
+            print("Detecting {} from image".format(detections))
+            
+          u.detect(image, fd, detections, rerun=options['force'])
+          
+          break
+        except IOError as e:
+          if attemptedConversion:
+            raise e
+          if not e.message.startswith("cannot identify image file"):
+            raise e
+          
+          print("Generating image preview...")
+          previewImageBytes = subprocess.Popen("exiftool -Composite:PreviewImage -b '{}'".format(os.path.realpath(image)), shell=True, stdout=subprocess.PIPE).stdout.read()
+        
+          t.write(previewImageBytes)
+          t.flush()
+          
+          attemptedConversion = True
+          image = t.name
+          fd = open(t.name, 'r+b')
