@@ -152,7 +152,11 @@ def detect(path, fd=None, detections=['faces'], hasher=hashlib.sha256(), generat
         exifinfo = json.loads(exifinfostr)[0]
     
     
-    indexedImage = IndexedImage.objects.create(filePath=os.path.realpath(path), sha256=hexdigest, width=exifinfo['ImageWidth'], height=exifinfo['ImageHeight'], contentType=mimetypes.guess_type(path)[0], size=fd.tell())
+    metadata = {}
+    metadata['Exif'] = exifinfo
+    
+    
+    indexedImage = IndexedImage.objects.create(filePath=os.path.realpath(path), sha256=hexdigest, width=exifinfo['ImageWidth'], height=exifinfo['ImageHeight'], contentType=mimetypes.guess_type(path)[0], size=fd.tell(), metadata=json.dumps(metadata))
     createdIndexedImage = True
     
   
