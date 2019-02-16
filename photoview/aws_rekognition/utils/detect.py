@@ -96,9 +96,9 @@ def request_detection(fd, detect='faces', rek_conn=boto3.client('rekognition')):
 def determineThumbsSize(width):
   sizes = []
   sz = width
-  while sz > 32: #dont go smaller than 16 pixels, too small to see anything useful!
-    sz = sz/2
+  while sz > 20: #dont go smaller than 16 pixels, too small to see anything useful!
     sizes.append(sz)
+    sz = sz/2
   # convert to nearest base 2 sizes
   sizes2 = []
   for i in sizes:
