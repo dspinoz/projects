@@ -1,3 +1,4 @@
+import dateutil
 import hashlib
 import json
 import os
@@ -145,7 +146,7 @@ def detect(path, fd=None, detections=['faces'], hasher=hashlib.sha256(), generat
     
     exifinfo = None
     if runExifTool:
-      exifinfostr = subprocess.Popen("exiftool -j '{}'".format(os.path.realpath(path)), shell=True, stdout=subprocess.PIPE).stdout.read()
+      exifinfostr = subprocess.Popen("exiftool -d '%a, %d %b %Y %H:%M:%S %Z' -j '{}'".format(os.path.realpath(path)), shell=True, stdout=subprocess.PIPE).stdout.read()
       if len(exifinfostr) == 0:
         print("WARNING: Could not generate exif metadata from {}".format(path))
       else:
@@ -156,7 +157,7 @@ def detect(path, fd=None, detections=['faces'], hasher=hashlib.sha256(), generat
     metadata['Exif'] = exifinfo
     
     
-    indexedImage = IndexedImage.objects.create(filePath=os.path.realpath(path), sha256=hexdigest, width=exifinfo['ImageWidth'], height=exifinfo['ImageHeight'], contentType=mimetypes.guess_type(path)[0], size=fd.tell(), metadata=json.dumps(metadata))
+    indexedImage = IndexedImage.objects.create(filePath=os.path.realpath(path), sha256=hexdigest, creationDate=dateutil.parser.parse(exifinfo['DateTimeOriginal']), width=exifinfo['ImageWidth'], height=exifinfo['ImageHeight'], contentType=mimetypes.guess_type(path)[0], size=fd.tell(), metadata=json.dumps(metadata))
     createdIndexedImage = True
     
   

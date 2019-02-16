@@ -11,7 +11,7 @@
 		</tr>
 		{% for c in tiles %}
 		<tr>
-			<td>{{c.creationDate}}</td>
+			<td>{{c.getImageCreationDate}}</td>
 			<td>
 				{% if c.metadataObj %}
 					{{c.metadataObj.Type}}, {{c.metadataObj.Width}}

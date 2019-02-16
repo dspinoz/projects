@@ -55,6 +55,10 @@ class ConvertedImage(models.Model):
     if self.metadata:
       return json.loads(self.metadata)
     return None
+    
+  def getImageCreationDate(self):
+    img = IndexedImage.objects.get(id=self.orig.id)
+    return img.creationDate
 
 class DetectionType(Enum):
   FACE = "FACE"
