@@ -8,7 +8,7 @@ import aws_rekognition
 def tiles(request):
   context = {
     'title': 'Rekognition',
-    'tiles': aws_rekognition.models.ConvertedImage.objects.filter(metadata__iregex=r'"Type": "thumbnail"').filter(metadata__iregex=r'"Width": 256').order_by('creationDate'),
+    'tiles': sorted(aws_rekognition.models.ConvertedImage.objects.filter(metadata__iregex=r'"Type": "thumbnail"').filter(metadata__iregex=r'"Width": 128'), key=lambda a: a.getImageCreationDate()),
   }
   
   return render(request, 'aws_rekognition/tiles.html', context)
