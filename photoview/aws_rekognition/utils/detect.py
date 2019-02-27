@@ -1,3 +1,4 @@
+from datetime import datetime
 import dateutil
 import hashlib
 import json
@@ -13,8 +14,9 @@ from PIL import Image
 from django.core.files import File
 from django.conf import settings
 
+from photoview.models import IndexedImage, ConvertedImage
+
 from aws_rekognition.models import AWSRekognitionRequestResponse
-from aws_rekognition.models import IndexedImage, ConvertedImage
 from aws_rekognition.models import DetectionType, Detection, ImageDetection, DetectionRun
 
 from log_response import log_response
@@ -155,9 +157,17 @@ def detect(path, fd=None, detections=['faces'], hasher=hashlib.sha256(), generat
     
     metadata = {}
     metadata['Exif'] = exifinfo
+    exifdate = datetime.today()
+    try:
+      exifdate = dateutil.parser.parse(exifinfo['DateTimeOriginal'])
+    except:
+      try:
+        exifdate = dateutil.parser.parse(exifinfo['ProfileDateTime'])
+      except:
+        pass
     
     
-    indexedImage = IndexedImage.objects.create(filePath=os.path.realpath(path), sha256=hexdigest, creationDate=dateutil.parser.parse(exifinfo['DateTimeOriginal']), width=exifinfo['ImageWidth'], height=exifinfo['ImageHeight'], contentType=mimetypes.guess_type(path)[0], size=fd.tell(), metadata=json.dumps(metadata))
+    indexedImage = IndexedImage.objects.create(filePath=os.path.realpath(path), sha256=hexdigest, creationDate=exifdate, width=exifinfo['ImageWidth'], height=exifinfo['ImageHeight'], contentType=mimetypes.guess_type(path)[0], size=fd.tell(), metadata=json.dumps(metadata))
     createdIndexedImage = True
     
   

@@ -15,8 +15,9 @@ from django.core.management.base import BaseCommand, CommandError
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files import File
 
+from photoview.models import IndexedImage, ConvertedImage
+
 from aws_rekognition.models import AWSRekognitionRequestResponse
-from aws_rekognition.models import IndexedImage, ConvertedImage
 from aws_rekognition.models import DetectionType, Detection, ImageDetection
 
 import aws_rekognition.utils as u
