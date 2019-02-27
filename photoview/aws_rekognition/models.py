@@ -10,6 +10,9 @@ from datetime import datetime
 from django.db import models
 from django.dispatch import receiver
 
+from photoview.models import IndexedImage
+from photoview.models import ConvertedImage
+
 # Create your models here.
 
 class AWSRekognitionRequestResponse(models.Model):
@@ -22,43 +25,6 @@ class AWSRekognitionRequestResponse(models.Model):
   responseLength = models.IntegerField(default=0)
   responseContentType = models.CharField(max_length=255, blank=True)
   responseBody = models.TextField(blank=True)
-
-class IndexedImage(models.Model):
-  filePath = models.TextField()
-  sha256 = models.CharField(max_length=255)
-  width = models.IntegerField()
-  height = models.IntegerField()
-  size = models.BigIntegerField()
-  contentType = models.CharField(max_length=255)
-  metadata = models.TextField(blank=True, default=None, null=True)
-  creationDate = models.DateTimeField(default=datetime.today)
-  lastModifiedDate = models.DateTimeField(auto_now=True)
-  
-  def fileName(self):
-    return os.path.basename(self.filePath)
-    
-  def getConversions(self):
-    return ConvertedImage.objects.filter(orig=self.id)
-    
-  def getDetections(self):
-    return ImageDetection.objects.filter(image=self.id).order_by('-confidence')
-
-class ConvertedImage(models.Model):
-  orig = models.ForeignKey(IndexedImage, models.CASCADE)
-  file = models.ImageField(upload_to='aws_rek/%Y/%m/%d/')
-  size = models.BigIntegerField()
-  metadata = models.TextField(blank=True, default=None, null=True)
-  creationDate = models.DateTimeField(default=datetime.today)
-  lastModifiedDate = models.DateTimeField(auto_now=True)
-  
-  def metadataObj(self):
-    if self.metadata:
-      return json.loads(self.metadata)
-    return None
-    
-  def getImageCreationDate(self):
-    img = IndexedImage.objects.get(id=self.orig.id)
-    return img.creationDate
 
 class DetectionType(Enum):
   FACE = "FACE"
@@ -100,7 +66,6 @@ class ImageDetection(models.Model):
   lastModifiedDate = models.DateTimeField(auto_now=True)
 
 @receiver(models.signals.post_delete, sender=ImageDetection)
-@receiver(models.signals.post_delete, sender=ConvertedImage)
 def auto_delete_file_on_delete(sender, instance, **kwargs):
   """
   Deletes file from filesystem when corresponding object is deleted.

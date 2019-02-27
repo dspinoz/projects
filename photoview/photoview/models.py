@@ -6,6 +6,7 @@ import json
 from datetime import datetime
 
 from django.db import models
+from django.dispatch import receiver
 
 # Create your models here.
 
@@ -42,3 +43,13 @@ class ConvertedImage(models.Model):
   def getImageCreationDate(self):
     img = IndexedImage.objects.get(id=self.orig.id)
     return img.creationDate
+
+@receiver(models.signals.post_delete, sender=ConvertedImage)
+def auto_delete_file_on_delete(sender, instance, **kwargs):
+  """
+  Deletes file from filesystem when corresponding object is deleted.
+  """
+  if instance.file:
+    if os.path.isfile(instance.file.path):
+      if os.path.isfile(instance.file.path):
+        os.remove(instance.file.path)

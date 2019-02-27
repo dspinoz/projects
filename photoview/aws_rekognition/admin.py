@@ -6,11 +6,11 @@ import json
 from django.contrib import admin
 from django.utils.html import format_html
 
+from photoview.admin import ConvertedImageInline
+
 # Register your models here.
 
 from .models import AWSRekognitionRequestResponse
-from .models import ConvertedImage
-from .models import IndexedImage
 from .models import Detection
 from .models import ImageDetection
 
@@ -20,40 +20,11 @@ class AWSRekognitionRequestResponseAdmin(admin.ModelAdmin):
   list_display = ('id', 'requestId', 'endpoint', 'statusCode', 'retryAttempts', 'responseContentType', 'responseLength')
   list_filter = ('date', 'endpoint', 'statusCode', 'responseContentType')
 
-class ConvertedImageInline(admin.TabularInline):
-  model = ConvertedImage
-
 class ImageDetectionInline(admin.TabularInline):
   model = ImageDetection
 
-@admin.register(IndexedImage)
-class IndexedImageAdmin(admin.ModelAdmin):
-  date_hierarchy = 'creationDate'
-  list_display = ('id','filePath', 'width', 'height', 'contentType', 'size')
-  list_filter = ('contentType', 'width', 'height')
-  inlines = [ConvertedImageInline, ImageDetectionInline]
-
-@admin.register(ConvertedImage)
-class ConvertedImageAdmin(admin.ModelAdmin):
-  date_hierarchy = 'creationDate'
-  list_display = ('id', 'image_id', 'file_name', 'size', 'Type', 'Width', 'file_link')
-  
-  def image_id(self,obj):
-    return obj.orig.id
-  def file_name(self,obj):
-    try:
-      return obj.file.url
-    except ValueError:
-      return "NOT_SET"
-  def file_link(self,obj):
-    try:
-      return format_html(u'<a href="{}">view</a>', obj.file.url)
-    except ValueError:
-      return "NOT_SET"
-  def Type(self,obj):
-    return json.loads(obj.metadata)['Type']
-  def Width(self,obj):
-    return json.loads(obj.metadata)['Width']
+# TODO need to add ImageDetectionInline to IndexedImageAdmin!
+#  inlines = [ImageDetectionInline]
 
 @admin.register(Detection)
 class DetectionAdmin(admin.ModelAdmin):
