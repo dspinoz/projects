@@ -24,6 +24,7 @@ urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^aws_glacier/', include('aws_glacier.urls')),
     url(r'^aws_rekognition/', include('aws_rekognition.urls')),
+    url(r'/', include('photoview.urls')),
 ]
 
 urlpatterns += staticfiles_urlpatterns()
