@@ -36,11 +36,15 @@ class Command(BaseCommand):
       print("NO DETECTIONS PROVIDED")
       sys.exit(1)
 
-    fd = open(options['image'], 'r+b')
-    if fd is None:
-      print("COULD NOT OPEN IMAGE FILE")
+    try:
+      fd = open(options['image'], 'r+b')
+      if fd is None:
+        print("COULD NOT OPEN IMAGE FILE")
+        sys.exit(1)
+      fd.close()
+    except IOError as e:
+      print("Error: ",e)
       sys.exit(1)
-    fd.close()
     
     detections = []
     
@@ -51,6 +55,6 @@ class Command(BaseCommand):
       for detect in options['detect']:
         detections.append(detect[0])
     
-    print("Detecting {} from image".format(detections))
+    print("Detecting {} from image {}".format(detections, options['image']))
     u.detect(options['image'], detections, rerun=options['force'])
     
