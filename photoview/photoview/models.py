@@ -8,6 +8,9 @@ from datetime import datetime
 from django.db import models
 from django.dispatch import receiver
 
+# TODO: do not import this package! check usages
+import aws_rekognition
+
 # Create your models here.
 
 class IndexedImage(models.Model):
@@ -26,6 +29,11 @@ class IndexedImage(models.Model):
     
   def getConversions(self):
     return ConvertedImage.objects.filter(orig=self.id)
+  
+  # TODO: Fix circular dependency between photoview and aws_rekognition!
+  def getDetections(self):
+    return aws_rekognition.models.ImageDetection.objects.filter(image=self.id).order_by('-confidence')
+
 
 class ConvertedImage(models.Model):
   orig = models.ForeignKey(IndexedImage, models.CASCADE)
