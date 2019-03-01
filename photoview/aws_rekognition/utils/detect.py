@@ -170,14 +170,14 @@ def detect(path, fd=None, detections=['faces'], hasher=hashlib.sha256(), generat
     indexedImage = IndexedImage.objects.create(filePath=os.path.realpath(path), sha256=hexdigest, creationDate=exifdate, width=exifinfo['ImageWidth'], height=exifinfo['ImageHeight'], contentType=mimetypes.guess_type(path)[0], size=fd.tell(), metadata=json.dumps(metadata))
     createdIndexedImage = True
     
-  
+    previewType = 'JPEG'
     previewImageBytes = subprocess.Popen("exiftool -Composite:PreviewImage -b '{}'".format(os.path.realpath(path)), shell=True, stdout=subprocess.PIPE).stdout.read()
     if len(previewImageBytes) > 0:
-      with tempfile.NamedTemporaryFile(mode='w+b', suffix=".jpg") as t:
+      with tempfile.NamedTemporaryFile(mode='w+b', suffix=".{}".format(previewType)) as t:
         t.write(previewImageBytes)
         t.flush()
         
-        prev = ConvertedImage.objects.create(orig=indexedImage, size=t.tell(), metadata=json.dumps({'Type':'preview', 'Width':exifinfo['ImageWidth'], 'GeneratedBy': 'exiftool'}))
+        prev = ConvertedImage.objects.create(orig=indexedImage, size=t.tell(), metadata=json.dumps({'Type':'preview', 'Width':exifinfo['ImageWidth'], 'GeneratedBy': 'exiftool', 'FileType': previewType}))
         
         t.seek(0)
         prev.file.save('prev', File(t))
@@ -223,15 +223,15 @@ def detect(path, fd=None, detections=['faces'], hasher=hashlib.sha256(), generat
         detectionsToRun.append(detect)
   
   
-  
+  thumbType = 'JPEG' # or 'png'
   if createdIndexedImage and generateThumbs:
     for tsize in determineThumbsSize(imgWidth):
       with tempfile.SpooledTemporaryFile(max_size=10000000, mode='w+b') as t:
         cpy = img.copy()
         cpy.thumbnail((tsize, tsize))
-        cpy.save(t, 'png')
+        cpy.save(t, thumbType)
         t.flush()
-        thumb = ConvertedImage.objects.create(orig=indexedImage, size=t.tell(), metadata=json.dumps({'Type':'thumbnail', 'Width':tsize}))
+        thumb = ConvertedImage.objects.create(orig=indexedImage, size=t.tell(), metadata=json.dumps({'Type':'thumbnail', 'Width':tsize, 'FileType': thumbType}))
         
         t.seek(0)
         thumb.file.save('thumb{}'.format(tsize), File(t))
