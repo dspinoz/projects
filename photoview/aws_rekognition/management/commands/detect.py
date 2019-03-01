@@ -40,6 +40,7 @@ class Command(BaseCommand):
     if fd is None:
       print("COULD NOT OPEN IMAGE FILE")
       sys.exit(1)
+    fd.close()
     
     detections = []
     
@@ -51,5 +52,5 @@ class Command(BaseCommand):
         detections.append(detect[0])
     
     print("Detecting {} from image".format(detections))
-    u.detect(options['image'], fd, detections, rerun=options['force'])
+    u.detect(options['image'], detections, rerun=options['force'])
     

@@ -15,6 +15,7 @@ from django.core.files import File
 from django.conf import settings
 
 from photoview.models import IndexedImage, ConvertedImage
+import photoview.utils
 
 from aws_rekognition.models import AWSRekognitionRequestResponse
 from aws_rekognition.models import DetectionType, Detection, ImageDetection, DetectionRun
@@ -94,23 +95,6 @@ def request_detection(fd, detect='faces', rek_conn=boto3.client('rekognition')):
   
   #TODO debug(json.dumps(res))
   return res
-  
-def determineThumbsSize(width):
-  sizes = []
-  sz = width
-  while sz > 20: #dont go smaller than 16 pixels, too small to see anything useful!
-    sizes.append(sz)
-    sz = sz/2
-  # convert to nearest base 2 sizes
-  sizes2 = []
-  for i in sizes:
-    exp = 1
-    base = 2
-    while i > base:
-      i = i / base
-      exp = exp + 1
-    sizes2.append(2**exp)
-  return sizes2
 
 def get_detection_object(type):
   if type == 'faces':
@@ -123,92 +107,10 @@ def get_detection_object(type):
     return Detection.objects.get_or_create(type=DetectionType.CELEBRITY)[0]
   return None
 
-def detect(path, fd=None, detections=['faces'], hasher=hashlib.sha256(), generateThumbs=True, captureDetections=True, rerun=False, rek_conn=boto3.client('rekognition'), runExifTool=True, convertUnknownImages=True):
+
+def detect(path, detections=['faces'], hasher=hashlib.sha256(), generateThumbs=True, captureDetections=True, rerun=False, rek_conn=boto3.client('rekognition'), runExifTool=True, convertUnknownImages=True):
   
-  createdIndexedImage = False
-  indexedImage = None
-  try:
-    indexedImage = IndexedImage.objects.get(filePath=os.path.realpath(path))
-    print("Image already indexed")
-  except IndexedImage.DoesNotExist:
-    
-    if fd is None:
-      fd = open(os.path.realpath(path), 'r+b')
-    
-    hexdigest = None
-    if hasher:
-      fd.seek(0)
-      while True:
-        b = fd.read()
-        if not b:
-          break
-        hasher.update(b"".join(b))
-      hexdigest = hasher.hexdigest()
-    
-    
-    exifinfo = None
-    if runExifTool:
-      exifinfostr = subprocess.Popen("exiftool -d '%a, %d %b %Y %H:%M:%S %Z' -j '{}'".format(os.path.realpath(path)), shell=True, stdout=subprocess.PIPE).stdout.read()
-      if len(exifinfostr) == 0:
-        print("WARNING: Could not generate exif metadata from {}".format(path))
-      else:
-        exifinfo = json.loads(exifinfostr)[0]
-    
-    
-    metadata = {}
-    metadata['Exif'] = exifinfo
-    exifdate = datetime.today()
-    try:
-      exifdate = dateutil.parser.parse(exifinfo['DateTimeOriginal'])
-    except:
-      try:
-        exifdate = dateutil.parser.parse(exifinfo['ProfileDateTime'])
-      except:
-        pass
-    
-    
-    indexedImage = IndexedImage.objects.create(filePath=os.path.realpath(path), sha256=hexdigest, creationDate=exifdate, width=exifinfo['ImageWidth'], height=exifinfo['ImageHeight'], contentType=mimetypes.guess_type(path)[0], size=fd.tell(), metadata=json.dumps(metadata))
-    createdIndexedImage = True
-    
-    previewType = 'JPEG'
-    previewImageBytes = subprocess.Popen("exiftool -Composite:PreviewImage -b '{}'".format(os.path.realpath(path)), shell=True, stdout=subprocess.PIPE).stdout.read()
-    if len(previewImageBytes) > 0:
-      with tempfile.NamedTemporaryFile(mode='w+b', suffix=".{}".format(previewType)) as t:
-        t.write(previewImageBytes)
-        t.flush()
-        
-        prev = ConvertedImage.objects.create(orig=indexedImage, size=t.tell(), metadata=json.dumps({'Type':'preview', 'Width':exifinfo['ImageWidth'], 'GeneratedBy': 'exiftool', 'FileType': previewType}))
-        
-        t.seek(0)
-        prev.file.save('prev', File(t))
-        print("Saved {} '{}' as converted image".format('preview', 'exiftool'))
-  
-  
-  
-  for conv in indexedImage.getConversions():
-    m = json.loads(conv.metadata)
-    if m['Type'] == 'preview':
-      fd = open(os.path.join(settings.MEDIA_ROOT,conv.file.name), 'r+b')
-      print("Using preview image: {}", conv.file.name)
-  
-  if fd is None:
-    fd = open(os.path.realpath(path), 'r+b')
-  
-  
-  img = Image.open(fd)
-  
-  imgBB = img.getbbox()
-  imgPixels = img.load()
-  
-  imgWidth = imgBB[2] - imgBB[0]
-  imgHeight = imgBB[3] - imgBB[1]
-  
-  imgDetections = None
-  capturePixels = None
-  if captureDetections:
-    imgDetections = img.copy()
-    capturePixels = imgDetections.load()
-  
+  (indexedImage, createdIndexedImage) = photoview.utils.getIndexedImage(path)
   
   detectionsToRun = []
   
@@ -222,27 +124,14 @@ def detect(path, fd=None, detections=['faces'], hasher=hashlib.sha256(), generat
         print("{} detection can run".format(detect))
         detectionsToRun.append(detect)
   
-  
-  thumbType = 'JPEG' # or 'png'
-  if createdIndexedImage and generateThumbs:
-    for tsize in determineThumbsSize(imgWidth):
-      with tempfile.SpooledTemporaryFile(max_size=10000000, mode='w+b') as t:
-        cpy = img.copy()
-        cpy.thumbnail((tsize, tsize))
-        cpy.save(t, thumbType)
-        t.flush()
-        thumb = ConvertedImage.objects.create(orig=indexedImage, size=t.tell(), metadata=json.dumps({'Type':'thumbnail', 'Width':tsize, 'FileType': thumbType}))
-        
-        t.seek(0)
-        thumb.file.save('thumb{}'.format(tsize), File(t))
-        print("Saved {} '{}' as converted image".format('thumbnail', tsize))
-  
+  if len(detectionsToRun) == 0:
+    return indexedImage
   
   forDetect = ConvertedImage.objects.filter(orig=indexedImage).filter(metadata__iregex=r'"Type": "thumbnail"').filter(size__lte=2000000).order_by("-size")
   forDetect = forDetect[0]
   print("Selected conversion (id={}) for detections: {}".format(forDetect.id, os.path.join(settings.MEDIA_ROOT,forDetect.file.name)))
   
-  fd.close()
+  
   fd = open(os.path.join(settings.MEDIA_ROOT,forDetect.file.name), 'r+b')
   
   img = Image.open(fd)
@@ -361,7 +250,7 @@ def detect(path, fd=None, detections=['faces'], hasher=hashlib.sha256(), generat
   
   if len(detectionsToRun) and imgDetections:
     with tempfile.SpooledTemporaryFile(max_size=10000000, mode='w+b') as t:
-      size = determineThumbsSize(imgWidth)[0]
+      size = photoview.utils.determineThumbsSize(imgWidth)[0]
       imgDetections.thumbnail((size, size))
       imgDetections.save(t, 'png')
       t.flush()
@@ -372,5 +261,3 @@ def detect(path, fd=None, detections=['faces'], hasher=hashlib.sha256(), generat
   
   
   return indexedImage
-
-
