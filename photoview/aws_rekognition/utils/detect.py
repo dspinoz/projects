@@ -32,7 +32,7 @@ def calcBB((width, height), featureBB):
   
   return (left, upper, right, lower)
   
-def drawBB(img, color, bb, calc=False, width=None, height=None):
+def drawBB(img, color, bb, calc=False, width=None, height=None, imageBB=None):
   if calc:
     bb = calcBB((width, height), bb)
   
@@ -40,6 +40,15 @@ def drawBB(img, color, bb, calc=False, width=None, height=None):
   upper = bb[1]
   right = bb[2]
   lower = bb[3]
+  
+  if left < imageBB[0]:
+    left = imageBB[0]
+  if upper < imageBB[1]:
+    upper = imageBB[1]
+  if right > imageBB[2]:
+    right = imageBB[2] - 1
+  if lower > imageBB[3]:
+    lower = imageBB[3] - 1
   
   for x in range(left, right):
     img[x,upper] = color
@@ -79,6 +88,7 @@ def detectedFace((img, width, height), index, face, type=DetectionType.FACE):
 
 def request_detection(fd, detect='faces', rek_conn=boto3.client('rekognition')):
   
+  res = None
   endpoint = 'detect_{}'.format(detect)
   
   if detect == 'faces':
@@ -165,7 +175,7 @@ def detect(path, detections=['faces'], hasher=hashlib.sha256(), generateThumbs=T
         
         if capturePixels:
           bb = calcBB((imgWidth, imgHeight), face['BoundingBox'])
-          drawBB(capturePixels, (0,0,255), bb) #BLUE
+          drawBB(capturePixels, (0,0,255), bb, imageBB=imgBB) #BLUE
     
     
     if 'CelebrityFaces' in res:
@@ -180,7 +190,7 @@ def detect(path, detections=['faces'], hasher=hashlib.sha256(), generateThumbs=T
           
         if capturePixels:
           bb = calcBB((imgWidth, imgHeight), face['BoundingBox'])
-          drawBB(capturePixels, (135,206,250), bb) #LIGHTSKYBLUE
+          drawBB(capturePixels, (135,206,250), bb, imageBB=imgBB) #LIGHTSKYBLUE
     
     
     if 'UnrecognizedFaces' in res:
@@ -189,7 +199,7 @@ def detect(path, detections=['faces'], hasher=hashlib.sha256(), generateThumbs=T
           
       if capturePixels:
         bb = calcBB((imgWidth, imgHeight), face['BoundingBox'])
-        drawBB(capturePixels, (70,130,180), bb) #STEELEBLUE
+        drawBB(capturePixels, (70,130,180), bb, imageBB=imgBB) #STEELEBLUE
     
     
     if 'TextDetections' in res:
@@ -217,7 +227,7 @@ def detect(path, detections=['faces'], hasher=hashlib.sha256(), generateThumbs=T
           print("Saved {} '{}' as detection image".format(text['Type'], text['DetectedText']))
         
         if capturePixels:
-          drawBB(capturePixels, color, bb)
+          drawBB(capturePixels, color, bb, imageBB=imgBB)
     
     
     if 'Labels' in res:
@@ -245,7 +255,7 @@ def detect(path, detections=['faces'], hasher=hashlib.sha256(), generateThumbs=T
             print("Saved {} '{}' as detection image".format(DetectionType.LABEL, label['Name']))
           
           if capturePixels:
-            drawBB(capturePixels, (255,0,0), bb) #RED
+            drawBB(capturePixels, (255,0,0), bb, imageBB=imgBB) #RED
   
   
   if len(detectionsToRun) and imgDetections:
