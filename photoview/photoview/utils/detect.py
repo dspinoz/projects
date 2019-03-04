@@ -9,7 +9,7 @@ import sys
 import subprocess
 
 import boto3
-from PIL import Image
+from PIL import Image, ExifTags
 
 from django.core.files import File
 from django.conf import settings
@@ -60,6 +60,10 @@ def getIndexedImage(path, hasher=hashlib.sha256(), generateThumbs=True, runExifT
         print("WARNING: Could not generate exif metadata from {}".format(path))
       else:
         exifinfo = json.loads(exifinfostr)[0]
+        
+        if 'Error' in exifinfo:
+          print('Error: processing file {}: {}'.format(path,exifinfo['Error']))
+          return (None,None)
     
     
     metadata = {}
@@ -104,6 +108,36 @@ def getIndexedImage(path, hasher=hashlib.sha256(), generateThumbs=True, runExifT
     img = Image.open(fd)
     imgBB = img.getbbox()
     imgWidth = imgBB[2] - imgBB[0]
+    
+    
+    try:
+      for orientation in ExifTags.TAGS.keys():
+          if ExifTags.TAGS[orientation]=='Orientation':
+              break
+      exif=dict(img._getexif().items())
+
+      if exif[orientation] == 3:
+        img=img.rotate(180, expand=True)
+      elif exif[orientation] == 6:
+        img=img.rotate(270, expand=True)
+      elif exif[orientation] == 8:
+        img=img.rotate(90, expand=True)
+        
+      previewType = 'JPEG'
+      with tempfile.NamedTemporaryFile(mode='w+b', suffix=".{}".format(previewType)) as t:
+        rot = img.copy();
+        rot.save(t, previewType)
+        t.flush()
+        
+        prev = ConvertedImage.objects.create(orig=indexedImage, size=t.tell(), metadata=json.dumps({'Type':'preview', 'Width':exifinfo['ImageWidth'], 'GeneratedBy': 'orientation', 'FileType': previewType}))
+        
+        t.seek(0)
+        prev.file.save('prev', File(t))
+        print("Saved {} '{}' as converted image".format('preview', 'orientation'))
+    except (AttributeError, KeyError, IndexError):
+      # cases: image don't have getexif
+      pass
+    
     
     if generateThumbs:
       thumbType = 'JPEG' # or 'png'
