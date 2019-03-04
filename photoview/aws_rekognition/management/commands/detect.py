@@ -43,7 +43,7 @@ class Command(BaseCommand):
         sys.exit(1)
       fd.close()
     except IOError as e:
-      print("Error: ",e)
+      print("Error: Opening file {}".format(e))
       sys.exit(1)
     
     detections = []
