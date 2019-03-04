@@ -1,0 +1,11 @@
+<html>
+<body>
+  <h1>{{ title }}</h1>
+  <h2>pic#{{ mainpic.id }} <small>{{ mainpic.creationDate }}</small></h2>
+  <img src="{{ mainpic_view.file.url}}" />
+  <hr/>
+  {% for c in tiles %}
+    {% if c.file %}<a href="{% url 'see' c.orig.id %}"><img src="{{c.file.url}}"/></a>{% else %}None{% endif %}
+  {% endfor %}
+</body>
+</html>

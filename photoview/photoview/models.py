@@ -30,6 +30,33 @@ class IndexedImage(models.Model):
   def getConversions(self):
     return ConvertedImage.objects.filter(orig=self.id)
   
+  
+  def determineThumbsSize(self, width):
+    sizes = []
+    sz = width
+    while sz > 20: #dont go smaller than 16 pixels, too small to see anything useful!
+      sizes.append(sz)
+      sz = sz/2
+    # convert to nearest base 2 sizes
+    sizes2 = []
+    for i in sizes:
+      exp = 1
+      base = 2
+      while i > base:
+        i = i / base
+        exp = exp + 1
+      sizes2.append(2**exp)
+    return sizes2
+  
+  def getConversion(self, size):
+    qs = ConvertedImage.objects.filter(orig=self.id).filter(metadata__iregex=r'"Type": "thumbnail"')
+    sizes = self.determineThumbsSize(int(size))
+    for s in sizes:
+      match = qs.filter(metadata__iregex=r'"Width": {}'.format(s))
+      if match.count():
+        return match[0]
+    return None
+    
   # TODO: Fix circular dependency between photoview and aws_rekognition!
   def getDetections(self):
     return aws_rekognition.models.ImageDetection.objects.filter(image=self.id).order_by('-confidence')

@@ -7,4 +7,6 @@ from . import views
 urlpatterns = [
     url(r'^$', views.index, name='index'),
     url(r'^tiles$', views.tiles, name='tiles'),
+    url(r'^see/([0-9]+)/([0-9]+)$', views.see, name='see'),
+    url(r'^see/([0-9]+)/$', views.see, name='see'),
 ]
