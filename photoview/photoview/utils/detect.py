@@ -15,6 +15,7 @@ from django.core.files import File
 from django.conf import settings
 
 from photoview.models import IndexedImage, ConvertedImage
+from photoview.models import IndexedImage, ConvertedImage, DelayedCompute, DelayedComputeType
 
 def determineThumbsSize(width):
   sizes = []
@@ -43,6 +44,7 @@ def getIndexedImage(path, hasher=hashlib.sha256(), generateThumbs=True, runExifT
     
     fd = open(os.path.realpath(path), 'r+b')
     
+    hash_compute = DelayedCompute.objects.create(image=indexedImage, type=DelayedComputeType.CHECKSUM)
     hexdigest = None
     if hasher:
       fd.seek(0)
@@ -52,14 +54,21 @@ def getIndexedImage(path, hasher=hashlib.sha256(), generateThumbs=True, runExifT
           break
         hasher.update(b"".join(b))
       hexdigest = hasher.hexdigest()
+    hash_compute.completionDate = datetime.today()
+    hash_compute.save()
     
     exifinfo = None
+    
+    exif_compute = DelayedCompute.objects.create(image=indexedImage, type=DelayedComputeType.EXIF_METADATA)
+    
     if runExifTool:
       exifinfostr = subprocess.Popen("exiftool -d '%a, %d %b %Y %H:%M:%S %Z' -j '{}'".format(os.path.realpath(path)), shell=True, stdout=subprocess.PIPE).stdout.read()
       if len(exifinfostr) == 0:
         print("WARNING: Could not generate exif metadata from {}".format(path))
       else:
         exifinfo = json.loads(exifinfostr)[0]
+        exif_compute.completionDate = datetime.today()
+        exif_compute.save()
         
         if 'Error' in exifinfo:
           print('Error: processing file {}: {}'.format(path,exifinfo['Error']))
@@ -81,7 +90,12 @@ def getIndexedImage(path, hasher=hashlib.sha256(), generateThumbs=True, runExifT
     indexedImage = IndexedImage.objects.create(filePath=os.path.realpath(path), sha256=hexdigest, creationDate=exifdate, width=exifinfo['ImageWidth'], height=exifinfo['ImageHeight'], contentType=mimetypes.guess_type(path)[0], size=fd.tell(), metadata=json.dumps(metadata))
     createdIndexedImage = True
     
+    for c in [exif_compute, hash_compute]:
+      c.image = indexedImage
+      c.save()
+    
     if convertUnknownImages:
+      prev_compute = DelayedCompute.objects.create(image=indexedImage, type=DelayedComputeType.PREVIEW)
       previewType = 'JPEG'
       previewImageBytes = subprocess.Popen("exiftool -Composite:PreviewImage -b '{}'".format(os.path.realpath(path)), shell=True, stdout=subprocess.PIPE).stdout.read()
       if len(previewImageBytes) > 0:
@@ -94,6 +108,13 @@ def getIndexedImage(path, hasher=hashlib.sha256(), generateThumbs=True, runExifT
           t.seek(0)
           prev.file.save('prev', File(t))
           print("Saved {} '{}' as converted image".format('preview', 'exiftool'))
+          
+          prev_compute.metadata = json.dumps({'Message':'Successfully generated preview image', 'ConvertedImage': prev.id})
+      else:
+        prev_compute.metadata = json.dumps({'Message':'No preview image available'})
+      
+      prev_compute.completionDate = datetime.today()
+      prev_compute.save()
     
     
     for conv in indexedImage.getConversions():
@@ -123,6 +144,8 @@ def getIndexedImage(path, hasher=hashlib.sha256(), generateThumbs=True, runExifT
       elif exif[orientation] == 8:
         img=img.rotate(90, expand=True)
         
+      orient_compute = DelayedCompute.objects.create(image=indexedImage, type=DelayedComputeType.ORIENTATION)
+      
       previewType = 'JPEG'
       with tempfile.NamedTemporaryFile(mode='w+b', suffix=".{}".format(previewType)) as t:
         rot = img.copy();
@@ -134,6 +157,9 @@ def getIndexedImage(path, hasher=hashlib.sha256(), generateThumbs=True, runExifT
         t.seek(0)
         prev.file.save('prev', File(t))
         print("Saved {} '{}' as converted image".format('preview', 'orientation'))
+        
+      orient_compute.completionDate = datetime.today()
+      orient_compute.save()
     except (AttributeError, KeyError, IndexError):
       # cases: image don't have getexif
       pass
@@ -143,6 +169,7 @@ def getIndexedImage(path, hasher=hashlib.sha256(), generateThumbs=True, runExifT
       thumbType = 'JPEG' # or 'png'
       if createdIndexedImage and generateThumbs:
         for tsize in determineThumbsSize(imgWidth):
+          thumb_compute = DelayedCompute.objects.create(image=indexedImage, type=DelayedComputeType.THUMBNAIL)
           with tempfile.SpooledTemporaryFile(max_size=10000000, mode='w+b') as t:
             cpy = img.copy()
             cpy.thumbnail((tsize, tsize))
@@ -153,6 +180,9 @@ def getIndexedImage(path, hasher=hashlib.sha256(), generateThumbs=True, runExifT
             t.seek(0)
             thumb.file.save('thumb{}'.format(tsize), File(t))
             print("Saved {} '{}' as converted image".format('thumbnail', tsize))
+          thumb_compute.metadata = json.dumps({'Message': 'Successfully saved thumbnail', 'Width': tsize, 'FileType': thumbType})
+          thumb_compute.completionDate = datetime.today()
+          thumb_compute.save()
     
     fd.close()
   

@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 import os
 import json
 from datetime import datetime
+from enum import Enum
 
 from django.db import models
 from django.dispatch import receiver
@@ -88,3 +89,19 @@ def auto_delete_file_on_delete(sender, instance, **kwargs):
     if os.path.isfile(instance.file.path):
       if os.path.isfile(instance.file.path):
         os.remove(instance.file.path)
+
+class DelayedComputeType(Enum):
+  PREVIEW = "prev"
+  THUMBNAIL = "thu"
+  EXIF_METADATA = "exif"
+  ORIENTATION = "orit"
+  CHECKSUM = "hash"
+  UNKNOWN = "UNKNOWN"
+  
+class DelayedCompute(models.Model):
+  image = models.ForeignKey(IndexedImage, models.CASCADE, null=True, blank=True, default=None)
+  type = models.CharField(max_length=4, choices=[(tag, tag.value) for tag in DelayedComputeType])
+  metadata = models.TextField(blank=True, default=None, null=True)
+  creationDate = models.DateTimeField(default=datetime.today)
+  completionDate = models.DateTimeField(null=True, blank=True)
+  lastModifiedDate = models.DateTimeField(auto_now=True)

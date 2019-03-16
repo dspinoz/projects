@@ -10,16 +10,20 @@ from django.utils.html import format_html
 
 from .models import ConvertedImage
 from .models import IndexedImage
+from .models import DelayedCompute
 
 class ConvertedImageInline(admin.TabularInline):
   model = ConvertedImage
+
+class DelayedComputeInline(admin.TabularInline):
+  model = DelayedCompute
 
 @admin.register(IndexedImage)
 class IndexedImageAdmin(admin.ModelAdmin):
   date_hierarchy = 'creationDate'
   list_display = ('id','filePath', 'width', 'height', 'contentType', 'size')
   list_filter = ('contentType', 'width', 'height')
-  inlines = [ConvertedImageInline]
+  inlines = [ConvertedImageInline, DelayedComputeInline]
 
 @admin.register(ConvertedImage)
 class ConvertedImageAdmin(admin.ModelAdmin):
@@ -42,3 +46,15 @@ class ConvertedImageAdmin(admin.ModelAdmin):
     return json.loads(obj.metadata)['Type']
   def Width(self,obj):
     return json.loads(obj.metadata)['Width']
+
+@admin.register(DelayedCompute)
+class DelayedComputeAdmin(admin.ModelAdmin):
+  date_hierarchy = 'creationDate'
+  list_display = ('id', 'image', 'type_value', 'metadata', 'completionDate', 'duration')
+  
+  def type_value(self,obj):
+    return str(obj.type)
+  def duration(self,obj):
+    if obj.completionDate is None:
+      return '-'
+    return (obj.completionDate - obj.creationDate).total_seconds()
