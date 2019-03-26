@@ -105,3 +105,27 @@ class DelayedCompute(models.Model):
   creationDate = models.DateTimeField(default=datetime.today)
   completionDate = models.DateTimeField(null=True, blank=True)
   lastModifiedDate = models.DateTimeField(auto_now=True)
+
+  def run(self):
+    retval = None
+    meta = json.loads(self.metadata)
+
+    if self.type == DelayedComputeType.CHECKSUM:
+      hasher = hashlib.sha256()
+      fd = open(meta['path'])
+      while True:
+        b = fd.read()
+        if not b:
+          break
+        hasher.update(b"".join(b))
+      retval = hasher.hexdigest()
+      meta['type'] = 'sha256'
+      meta['result'] = retval
+    
+    self.metadata = json.dumps(meta)
+    self.completionDate = datetime.today()
+    self.save()
+
+    return retval
+
+

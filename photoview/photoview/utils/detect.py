@@ -44,18 +44,10 @@ def getIndexedImage(path, hasher=hashlib.sha256(), generateThumbs=True, runExifT
     
     fd = open(os.path.realpath(path), 'r+b')
     
-    hash_compute = DelayedCompute.objects.create(image=indexedImage, type=DelayedComputeType.CHECKSUM)
-    hexdigest = None
-    if hasher:
-      fd.seek(0)
-      while True:
-        b = fd.read()
-        if not b:
-          break
-        hasher.update(b"".join(b))
-      hexdigest = hasher.hexdigest()
-    hash_compute.completionDate = datetime.today()
-    hash_compute.save()
+    hash_compute = DelayedCompute.objects.create(image=indexedImage, type=DelayedComputeType.CHECKSUM, metadata=json.dumps({'path': os.path.realpath(path)}))
+
+    hexdigest = hash_compute.run()
+
     
     exifinfo = None
     
