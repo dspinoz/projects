@@ -58,27 +58,8 @@ def getIndexedImage(path, hasher=hashlib.sha256(), generateThumbs=True, runExifT
       c.image = indexedImage
       c.save()
     
-    if convertUnknownImages:
-      prev_compute = DelayedCompute.objects.create(image=indexedImage, type=DelayedComputeType.PREVIEW)
-      previewType = 'JPEG'
-      previewImageBytes = subprocess.Popen("exiftool -Composite:PreviewImage -b '{}'".format(os.path.realpath(path)), shell=True, stdout=subprocess.PIPE).stdout.read()
-      if len(previewImageBytes) > 0:
-        with tempfile.NamedTemporaryFile(mode='w+b', suffix=".{}".format(previewType)) as t:
-          t.write(previewImageBytes)
-          t.flush()
-          
-          prev = ConvertedImage.objects.create(orig=indexedImage, size=t.tell(), metadata=json.dumps({'Type':'preview', 'Width':exifinfo['ImageWidth'], 'GeneratedBy': 'exiftool', 'FileType': previewType}))
-          
-          t.seek(0)
-          prev.file.save('prev', File(t))
-          print("Saved {} '{}' as converted image".format('preview', 'exiftool'))
-          
-          prev_compute.metadata = json.dumps({'Message':'Successfully generated preview image', 'ConvertedImage': prev.id})
-      else:
-        prev_compute.metadata = json.dumps({'Message':'No preview image available'})
-      
-      prev_compute.completionDate = datetime.today()
-      prev_compute.save()
+    prev_compute = DelayedCompute.objects.create(image=indexedImage, type=DelayedComputeType.PREVIEW, metadata=json.dumps({'previewType':'JPEG', 'width': exifinfo['ImageWidth']}))
+    prev_compute.run()
     
     
     for conv in indexedImage.getConversions():

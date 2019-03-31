@@ -146,6 +146,25 @@ class DelayedCompute(models.Model):
           except:
             pass
     
+    elif self.type == DelayedComputeType.PREVIEW:
+    
+      previewImageBytes = subprocess.Popen("exiftool -Composite:PreviewImage -b '{}'".format(os.path.realpath(self.image.filePath)), shell=True, stdout=subprocess.PIPE).stdout.read()
+      if len(previewImageBytes) > 0:
+        with tempfile.NamedTemporaryFile(mode='w+b', suffix=".{}".format(meta['previewType'])) as t:
+          t.write(previewImageBytes)
+          t.flush()
+          
+          prev = ConvertedImage.objects.create(orig=self.image, size=t.tell(), metadata=json.dumps({'Type':'preview', 'Width':meta['width'], 'GeneratedBy': 'exiftool', 'FileType': meta['previewType']}))
+          
+          t.seek(0)
+          prev.file.save('prev', File(t))
+          print("Saved {} '{}' as converted image".format('preview', 'exiftool'))
+          
+          meta['message'] = 'Successfully generated preview image'
+          meta['convertedImage'] = prev.id
+      else:
+        meta['message'] = 'No preview image available'
+    
     
     
     
