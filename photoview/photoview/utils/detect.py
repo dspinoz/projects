@@ -45,41 +45,13 @@ def getIndexedImage(path, hasher=hashlib.sha256(), generateThumbs=True, runExifT
     fd = open(os.path.realpath(path), 'r+b')
     
     hash_compute = DelayedCompute.objects.create(image=indexedImage, type=DelayedComputeType.CHECKSUM, metadata=json.dumps({'path': os.path.realpath(path)}))
-
     hexdigest = hash_compute.run()
-
     
-    exifinfo = None
+    exif_compute = DelayedCompute.objects.create(image=indexedImage, type=DelayedComputeType.EXIF_METADATA, metadata=json.dumps({'path':os.path.realpath(path)}))
+    exifinfo = json.loads(exif_compute.run())
+    exifdate = json.loads(exif_compute.metadata)['date']
     
-    exif_compute = DelayedCompute.objects.create(image=indexedImage, type=DelayedComputeType.EXIF_METADATA)
-    
-    if runExifTool:
-      exifinfostr = subprocess.Popen("exiftool -d '%a, %d %b %Y %H:%M:%S %Z' -j '{}'".format(os.path.realpath(path)), shell=True, stdout=subprocess.PIPE).stdout.read()
-      if len(exifinfostr) == 0:
-        print("WARNING: Could not generate exif metadata from {}".format(path))
-      else:
-        exifinfo = json.loads(exifinfostr)[0]
-        exif_compute.completionDate = datetime.today()
-        exif_compute.save()
-        
-        if 'Error' in exifinfo:
-          print('Error: processing file {}: {}'.format(path,exifinfo['Error']))
-          return (None,None)
-    
-    
-    metadata = {}
-    metadata['Exif'] = exifinfo
-    exifdate = datetime.today()
-    try:
-      exifdate = dateutil.parser.parse(exifinfo['DateTimeOriginal'])
-    except:
-      try:
-        exifdate = dateutil.parser.parse(exifinfo['ProfileDateTime'])
-      except:
-        pass
-    
-    
-    indexedImage = IndexedImage.objects.create(filePath=os.path.realpath(path), sha256=hexdigest, creationDate=exifdate, width=exifinfo['ImageWidth'], height=exifinfo['ImageHeight'], contentType=mimetypes.guess_type(path)[0], size=fd.tell(), metadata=json.dumps(metadata))
+    indexedImage = IndexedImage.objects.create(filePath=os.path.realpath(path), sha256=hexdigest, creationDate=exifdate, width=exifinfo['ImageWidth'], height=exifinfo['ImageHeight'], contentType=mimetypes.guess_type(path)[0], size=fd.tell(), metadata=json.dumps(exifinfo))
     createdIndexedImage = True
     
     for c in [exif_compute, hash_compute]:

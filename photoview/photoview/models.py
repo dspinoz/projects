@@ -121,6 +121,36 @@ class DelayedCompute(models.Model):
       retval = hasher.hexdigest()
       meta['type'] = 'sha256'
       meta['result'] = retval
+   
+    elif self.type == DelayedComputeType.EXIF_METADATA:
+      
+      exifinfostr = subprocess.Popen("exiftool -d '%a, %d %b %Y %H:%M:%S %Z' -j '{}'".format(os.path.realpath(meta['path'])), shell=True, stdout=subprocess.PIPE).stdout.read()
+      if len(exifinfostr) == 0:
+        meta['error'] = "Could not generate exif metadata from {}".format(meta['path'])
+      else:
+        exifinfo = json.loads(exifinfostr)[0]
+        exif_compute.completionDate = datetime.today()
+        exif_compute.save()
+        
+        if 'Error' in exifinfo:
+          meta['error'] = exifinfo['Error']
+        
+        retval = json.dumps(exifinfo)
+      
+        meta['date'] = datetime.today()
+        try:
+          meta['date'] = dateutil.parser.parse(exifinfo['DateTimeOriginal'])
+        except:
+          try:
+            meta['date'] = dateutil.parser.parse(exifinfo['ProfileDateTime'])
+          except:
+            pass
+    
+    
+    
+    
+    
+    meta['result'] = retval
     
     self.metadata = json.dumps(meta)
     self.completionDate = datetime.today()
