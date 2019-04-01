@@ -85,6 +85,7 @@ class IndexedImage(models.Model):
       print("Loaded cached image: {} {}", self.id, self.img)
       return self.img
     
+    #TODO what if orientation has been performed!?
     prev = self.getPreviewPath()
     if prev:
       fd = open(prev, 'r+b')
@@ -219,8 +220,6 @@ class DelayedCompute(models.Model):
           img=img.rotate(270, expand=True)
         elif exif[orientation] == 8:
           img=img.rotate(90, expand=True)
-          
-        orient_compute = DelayedCompute.objects.create(image=self.image, type=DelayedComputeType.ORIENTATION, metadata=json.dumps({'previewType':'JPEG'}))
         
         with tempfile.NamedTemporaryFile(mode='w+b', suffix=".{}".format(meta['previewType'])) as t:
           rot = img.copy();
