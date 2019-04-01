@@ -191,7 +191,37 @@ class DelayedCompute(models.Model):
       else:
         meta['message'] = 'No preview image available'
     
-    
+    elif self.type == DelayedComputeType.ORIENTATION:
+      img = self.image.getImg()
+      try:
+        for orientation in ExifTags.TAGS.keys():
+            if ExifTags.TAGS[orientation]=='Orientation':
+                break
+        exif=dict(img._getexif().items())
+
+        if exif[orientation] == 3:
+          img=img.rotate(180, expand=True)
+        elif exif[orientation] == 6:
+          img=img.rotate(270, expand=True)
+        elif exif[orientation] == 8:
+          img=img.rotate(90, expand=True)
+          
+        orient_compute = DelayedCompute.objects.create(image=indexedImage, type=DelayedComputeType.ORIENTATION, metadata=json.dumps({'previewType':'JPEG'}))
+        
+        with tempfile.NamedTemporaryFile(mode='w+b', suffix=".{}".format(meta['previewType'])) as t:
+          rot = img.copy();
+          rot.save(t, meta['previewType'])
+          t.flush()
+          
+          prev = ConvertedImage.objects.create(orig=self.image, size=t.tell(), metadata=json.dumps({'Type':'preview', 'Width':exifinfo['ImageWidth'], 'GeneratedBy': 'orientation', 'FileType': meta['previewType']}))
+          
+          t.seek(0)
+          prev.file.save('prev', File(t))
+          meta['message'] = "Saved {} '{}' as converted image".format('preview', 'orientation')
+          
+      except (AttributeError, KeyError, IndexError):
+        # cases: image don't have getexif
+        meta['message'] = "No getexif for {}".format(self.image.id)
     
     
     
