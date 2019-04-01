@@ -61,34 +61,18 @@ def getIndexedImage(path, hasher=hashlib.sha256(), generateThumbs=True, runExifT
     
     
     img = indexedImage.getImg()
-    imgBB = img.getbbox()
-    imgWidth = imgBB[2] - imgBB[0]
     
     
     orient_compute = DelayedCompute.objects.create(image=indexedImage, type=DelayedComputeType.ORIENTATION, metadata=json.dumps({'previewType':'JPEG'}))
     orient_compute.run()
     
     
-    if generateThumbs:
-      thumbType = 'JPEG' # or 'png'
-      if createdIndexedImage and generateThumbs:
-        for tsize in determineThumbsSize(imgWidth):
-          thumb_compute = DelayedCompute.objects.create(image=indexedImage, type=DelayedComputeType.THUMBNAIL)
-          with tempfile.SpooledTemporaryFile(max_size=10000000, mode='w+b') as t:
-            cpy = img.copy()
-            cpy.thumbnail((tsize, tsize))
-            cpy.save(t, thumbType)
-            t.flush()
-            thumb = ConvertedImage.objects.create(orig=indexedImage, size=t.tell(), metadata=json.dumps({'Type':'thumbnail', 'Width':tsize, 'FileType': thumbType}))
-            
-            t.seek(0)
-            thumb.file.save('thumb{}'.format(tsize), File(t))
-            print("Saved {} '{}' as converted image".format('thumbnail', tsize))
-          thumb_compute.metadata = json.dumps({'Message': 'Successfully saved thumbnail', 'Width': tsize, 'FileType': thumbType})
-          thumb_compute.completionDate = datetime.today()
-          thumb_compute.save()
+    imgBB = img.getbbox()
+    imgWidth = imgBB[2] - imgBB[0]
     
-    fd.close()
+    for tsize in photoview.utils.determineThumbsSize(imgWidth):
+      thumb_compute = DelayedCompute.objects.create(image=indexedImage, type=DelayedComputeType.THUMBNAIL, metadata=json.dumps({'thumbType':'JPEG', 'width': tsize}))
+      thumb_compute.run()
   
   return (indexedImage,createdIndexedImage)
   

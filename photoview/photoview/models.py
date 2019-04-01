@@ -188,8 +188,10 @@ class DelayedCompute(models.Model):
           
           meta['message'] = 'Successfully generated preview image'
           meta['convertedImage'] = prev.id
+          retval = True
       else:
         meta['message'] = 'No preview image available'
+        retval = False
     
     elif self.type == DelayedComputeType.ORIENTATION:
       img = self.image.getImg()
@@ -218,13 +220,28 @@ class DelayedCompute(models.Model):
           t.seek(0)
           prev.file.save('prev', File(t))
           meta['message'] = "Saved {} '{}' as converted image".format('preview', 'orientation')
+          retval = True
           
       except (AttributeError, KeyError, IndexError):
         # cases: image don't have getexif
         meta['message'] = "No getexif for {}".format(self.image.id)
+        retval = False
     
-    
-    
+    elif self.type == DelayedComputeType.THUMBNAIL:
+      img = self.image.getImg()
+      with tempfile.SpooledTemporaryFile(max_size=10000000, mode='w+b') as t:
+        cpy = img.copy()
+        cpy.thumbnail((meta['width'], meta['width']))
+        cpy.save(t, meta['thumbType'])
+        t.flush()
+        thumb = ConvertedImage.objects.create(orig=self.image, size=t.tell(), metadata=json.dumps({'Type':'thumbnail', 'Width':meta['width'], 'FileType': meta['thumbType']}))
+        
+        t.seek(0)
+        thumb.file.save('thumb{}'.format(meta['width']), File(t))
+        meta['message'] = "Saved {} '{}' as converted image".format('thumbnail', meta['width'])
+        retval = True
+      
+      
     meta['result'] = retval
     
     self.metadata = json.dumps(meta)
