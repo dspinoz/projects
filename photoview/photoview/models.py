@@ -61,7 +61,13 @@ class IndexedImage(models.Model):
   # TODO: Fix circular dependency between photoview and aws_rekognition!
   def getDetections(self):
     return aws_rekognition.models.ImageDetection.objects.filter(image=self.id).order_by('-confidence')
-
+    
+  def getPreviewPath(self):
+    for conv in self.getConversions():
+      m = json.loads(conv.metadata)
+      if m['Type'] == 'preview':
+        return os.path.join(settings.MEDIA_ROOT,conv.file.name)
+    return None
 
 class ConvertedImage(models.Model):
   orig = models.ForeignKey(IndexedImage, models.CASCADE)

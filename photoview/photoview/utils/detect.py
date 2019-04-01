@@ -62,12 +62,12 @@ def getIndexedImage(path, hasher=hashlib.sha256(), generateThumbs=True, runExifT
     prev_compute.run()
     
     
-    for conv in indexedImage.getConversions():
-      m = json.loads(conv.metadata)
-      if m['Type'] == 'preview':
-        fd.close()
-        fd = open(os.path.join(settings.MEDIA_ROOT,conv.file.name), 'r+b')
-        print("Using preview image: {}", conv.file.name)
+    previewPath = indexedImage.getPreviewPath()
+    
+    if previewPath:
+      fd.close()
+      fd = open(previewPath, 'r+b')
+      print("Using preview image: {}", conv.file.name)
     
     
     fd.seek(0)
