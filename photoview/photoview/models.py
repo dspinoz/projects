@@ -3,14 +3,25 @@ from __future__ import unicode_literals
 
 import os
 import json
-from datetime import datetime
+import datetime
 from enum import Enum
+import hashlib
+import subprocess
+import tempfile
 
 from django.db import models
 from django.dispatch import receiver
+from django.core.files import File
 
 # TODO: do not import this package! check usages
 import aws_rekognition
+from PIL import Image, ExifTags
+
+# util functions
+
+def defaultDateTime(o):
+    if isinstance(o, (datetime.date, datetime.datetime)):
+        return o.isoformat()
 
 # Create your models here.
 
@@ -22,7 +33,7 @@ class IndexedImage(models.Model):
   size = models.BigIntegerField()
   contentType = models.CharField(max_length=255)
   metadata = models.TextField(blank=True, default=None, null=True)
-  creationDate = models.DateTimeField(default=datetime.today)
+  creationDate = models.DateTimeField(default=datetime.datetime.today)
   lastModifiedDate = models.DateTimeField(auto_now=True)
   
   def fileName(self):
@@ -70,21 +81,25 @@ class IndexedImage(models.Model):
     return None
     
   def getImg(self):
-    if self.img:
-      print("Loaded cached image: {}", self.id)
+    if hasattr(self,'img') and self.img is not None:
+      print("Loaded cached image: {} {}", self.id, self.img)
       return self.img
     
     prev = self.getPreviewPath()
     if prev:
       fd = open(prev, 'r+b')
-      print("Loading preview image: {}", self.id)
+      print("Loading preview image: {} {}", self.id, prev)
     else:
       fd = open(self.filePath, 'r+b')
       print("Loading image: {}", self.id)
     
     self.img = Image.open(fd)
     
+    cpy = self.img.copy()
+    
     fd.close()
+    
+    self.img = cpy
     
     return self.img
     
@@ -94,7 +109,7 @@ class ConvertedImage(models.Model):
   file = models.ImageField(upload_to='photoview/%Y/%m/%d/')
   size = models.BigIntegerField()
   metadata = models.TextField(blank=True, default=None, null=True)
-  creationDate = models.DateTimeField(default=datetime.today)
+  creationDate = models.DateTimeField(default=datetime.datetime.today)
   lastModifiedDate = models.DateTimeField(auto_now=True)
   
   def metadataObj(self):
@@ -128,7 +143,7 @@ class DelayedCompute(models.Model):
   image = models.ForeignKey(IndexedImage, models.CASCADE, null=True, blank=True, default=None)
   type = models.CharField(max_length=4, choices=[(tag, tag.value) for tag in DelayedComputeType])
   metadata = models.TextField(blank=True, default=None, null=True)
-  creationDate = models.DateTimeField(default=datetime.today)
+  creationDate = models.DateTimeField(default=datetime.datetime.today)
   completionDate = models.DateTimeField(null=True, blank=True)
   lastModifiedDate = models.DateTimeField(auto_now=True)
 
@@ -137,6 +152,7 @@ class DelayedCompute(models.Model):
     meta = json.loads(self.metadata)
 
     if self.type == DelayedComputeType.CHECKSUM:
+      meta['type'] = 'sha256'
       hasher = hashlib.sha256()
       fd = open(meta['path'])
       while True:
@@ -145,8 +161,6 @@ class DelayedCompute(models.Model):
           break
         hasher.update(b"".join(b))
       retval = hasher.hexdigest()
-      meta['type'] = 'sha256'
-      meta['result'] = retval
    
     elif self.type == DelayedComputeType.EXIF_METADATA:
       
@@ -155,15 +169,13 @@ class DelayedCompute(models.Model):
         meta['error'] = "Could not generate exif metadata from {}".format(meta['path'])
       else:
         exifinfo = json.loads(exifinfostr)[0]
-        exif_compute.completionDate = datetime.today()
-        exif_compute.save()
         
         if 'Error' in exifinfo:
           meta['error'] = exifinfo['Error']
         
         retval = json.dumps(exifinfo)
       
-        meta['date'] = datetime.today()
+        meta['date'] = datetime.datetime.today()
         try:
           meta['date'] = dateutil.parser.parse(exifinfo['DateTimeOriginal'])
         except:
@@ -208,7 +220,7 @@ class DelayedCompute(models.Model):
         elif exif[orientation] == 8:
           img=img.rotate(90, expand=True)
           
-        orient_compute = DelayedCompute.objects.create(image=indexedImage, type=DelayedComputeType.ORIENTATION, metadata=json.dumps({'previewType':'JPEG'}))
+        orient_compute = DelayedCompute.objects.create(image=self.image, type=DelayedComputeType.ORIENTATION, metadata=json.dumps({'previewType':'JPEG'}))
         
         with tempfile.NamedTemporaryFile(mode='w+b', suffix=".{}".format(meta['previewType'])) as t:
           rot = img.copy();
@@ -244,8 +256,8 @@ class DelayedCompute(models.Model):
       
     meta['result'] = retval
     
-    self.metadata = json.dumps(meta)
-    self.completionDate = datetime.today()
+    self.metadata = json.dumps(meta, default=defaultDateTime)
+    self.completionDate = datetime.datetime.today()
     self.save()
 
     return retval

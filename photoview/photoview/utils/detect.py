@@ -1,21 +1,16 @@
 from datetime import datetime
 import dateutil
-import hashlib
 import json
 import os
 import mimetypes
-import tempfile
 import sys
-import subprocess
-
-import boto3
-from PIL import Image, ExifTags
+import hashlib
 
 from django.core.files import File
 from django.conf import settings
 
-from photoview.models import IndexedImage, ConvertedImage
 from photoview.models import IndexedImage, ConvertedImage, DelayedCompute, DelayedComputeType
+import photoview.utils
 
 def determineThumbsSize(width):
   sizes = []
@@ -39,8 +34,10 @@ def getIndexedImage(path, hasher=hashlib.sha256(), generateThumbs=True, runExifT
   indexedImage = None
   try:
     indexedImage = IndexedImage.objects.get(filePath=os.path.realpath(path))
-    print("Image already indexed")
+    print("Image already indexed, {}", indexedImage.id)
   except IndexedImage.DoesNotExist:
+    
+    st = os.stat(os.path.realpath(path))
     
     hash_compute = DelayedCompute.objects.create(image=indexedImage, type=DelayedComputeType.CHECKSUM, metadata=json.dumps({'path': os.path.realpath(path)}))
     hexdigest = hash_compute.run()
@@ -49,21 +46,31 @@ def getIndexedImage(path, hasher=hashlib.sha256(), generateThumbs=True, runExifT
     exifinfo = json.loads(exif_compute.run())
     exifdate = json.loads(exif_compute.metadata)['date']
     
-    indexedImage = IndexedImage.objects.create(filePath=os.path.realpath(path), sha256=hexdigest, creationDate=exifdate, width=exifinfo['ImageWidth'], height=exifinfo['ImageHeight'], contentType=mimetypes.guess_type(path)[0], size=fd.tell(), metadata=json.dumps(exifinfo))
+    mt = mimetypes.guess_type(path)
+    ftype = mt[0]
+    
+    if ftype is None:
+      raise Exception("Unidentified image type {}".format(path))
+    
+    saveType = 'JPEG'
+    if mt[0] == 'image/png':
+      saveType = 'PNG'
+    
+    indexedImage = IndexedImage.objects.create(filePath=os.path.realpath(path), sha256=hexdigest, creationDate=exifdate, width=exifinfo['ImageWidth'], height=exifinfo['ImageHeight'], contentType=ftype, size=st.st_size, metadata=json.dumps(exifinfo))
     createdIndexedImage = True
     
     for c in [exif_compute, hash_compute]:
       c.image = indexedImage
       c.save()
     
-    prev_compute = DelayedCompute.objects.create(image=indexedImage, type=DelayedComputeType.PREVIEW, metadata=json.dumps({'previewType':'JPEG', 'width': exifinfo['ImageWidth']}))
+    prev_compute = DelayedCompute.objects.create(image=indexedImage, type=DelayedComputeType.PREVIEW, metadata=json.dumps({'previewType':saveType, 'width': exifinfo['ImageWidth']}))
     prev_compute.run()
     
     
     img = indexedImage.getImg()
     
     
-    orient_compute = DelayedCompute.objects.create(image=indexedImage, type=DelayedComputeType.ORIENTATION, metadata=json.dumps({'previewType':'JPEG'}))
+    orient_compute = DelayedCompute.objects.create(image=indexedImage, type=DelayedComputeType.ORIENTATION, metadata=json.dumps({'previewType':saveType}))
     orient_compute.run()
     
     
@@ -71,7 +78,7 @@ def getIndexedImage(path, hasher=hashlib.sha256(), generateThumbs=True, runExifT
     imgWidth = imgBB[2] - imgBB[0]
     
     for tsize in photoview.utils.determineThumbsSize(imgWidth):
-      thumb_compute = DelayedCompute.objects.create(image=indexedImage, type=DelayedComputeType.THUMBNAIL, metadata=json.dumps({'thumbType':'JPEG', 'width': tsize}))
+      thumb_compute = DelayedCompute.objects.create(image=indexedImage, type=DelayedComputeType.THUMBNAIL, metadata=json.dumps({'thumbType':saveType, 'width': tsize}))
       thumb_compute.run()
   
   return (indexedImage,createdIndexedImage)
