@@ -68,6 +68,26 @@ class IndexedImage(models.Model):
       if m['Type'] == 'preview':
         return os.path.join(settings.MEDIA_ROOT,conv.file.name)
     return None
+    
+  def getImg(self):
+    if self.img:
+      print("Loaded cached image: {}", self.id)
+      return self.img
+    
+    prev = self.getPreviewPath()
+    if prev:
+      fd = open(prev, 'r+b')
+      print("Loading preview image: {}", self.id)
+    else:
+      fd = open(self.filePath, 'r+b')
+      print("Loading image: {}", self.id)
+    
+    self.img = Image.open(fd)
+    
+    fd.close()
+    
+    return self.img
+    
 
 class ConvertedImage(models.Model):
   orig = models.ForeignKey(IndexedImage, models.CASCADE)

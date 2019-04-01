@@ -42,8 +42,6 @@ def getIndexedImage(path, hasher=hashlib.sha256(), generateThumbs=True, runExifT
     print("Image already indexed")
   except IndexedImage.DoesNotExist:
     
-    fd = open(os.path.realpath(path), 'r+b')
-    
     hash_compute = DelayedCompute.objects.create(image=indexedImage, type=DelayedComputeType.CHECKSUM, metadata=json.dumps({'path': os.path.realpath(path)}))
     hexdigest = hash_compute.run()
     
@@ -62,16 +60,7 @@ def getIndexedImage(path, hasher=hashlib.sha256(), generateThumbs=True, runExifT
     prev_compute.run()
     
     
-    previewPath = indexedImage.getPreviewPath()
-    
-    if previewPath:
-      fd.close()
-      fd = open(previewPath, 'r+b')
-      print("Using preview image: {}", conv.file.name)
-    
-    
-    fd.seek(0)
-    img = Image.open(fd)
+    img = indexedImage.getImg()
     imgBB = img.getbbox()
     imgWidth = imgBB[2] - imgBB[0]
     
