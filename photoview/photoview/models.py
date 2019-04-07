@@ -147,6 +147,12 @@ class DelayedCompute(models.Model):
   creationDate = models.DateTimeField(default=datetime.datetime.today)
   completionDate = models.DateTimeField(null=True, blank=True)
   lastModifiedDate = models.DateTimeField(auto_now=True)
+  next_compute = models.ForeignKey('self', null=True, blank=True, default=None)
+
+  def get_duration(self):
+    if self.completionDate is None:
+      return None
+    return (self.completionDate - self.creationDate).total_seconds()
 
   def run(self):
     retval = None
@@ -174,7 +180,7 @@ class DelayedCompute(models.Model):
         if 'Error' in exifinfo:
           meta['error'] = exifinfo['Error']
         
-        retval = json.dumps(exifinfo)
+        retval = exifinfo
       
         meta['date'] = datetime.datetime.today()
         try:
@@ -258,6 +264,10 @@ class DelayedCompute(models.Model):
     self.metadata = json.dumps(meta, default=defaultDateTime)
     self.completionDate = datetime.datetime.today()
     self.save()
+    
+    if self.next_compute:
+      print("launching next compute, {}", self.next_compute.id)
+      self.next_compute.run()
 
     return retval
 

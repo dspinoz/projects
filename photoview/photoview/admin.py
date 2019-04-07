@@ -50,11 +50,18 @@ class ConvertedImageAdmin(admin.ModelAdmin):
 @admin.register(DelayedCompute)
 class DelayedComputeAdmin(admin.ModelAdmin):
   date_hierarchy = 'creationDate'
-  list_display = ('id', 'image', 'type_value', 'metadata', 'completionDate', 'duration')
+  list_display = ('id', 'next', 'image_id', 'type_value', 'metadata', 'completionDate', 'duration')
+  list_filter = ('type', 'creationDate', 'completionDate')
   
+  def next(self,obj):
+    if obj.next_compute:
+      return obj.next_compute.id
+    return None
+  def image_id(self,obj):
+    if obj.image is None:
+      return '-'
+    return obj.image.id
   def type_value(self,obj):
     return str(obj.type)
   def duration(self,obj):
-    if obj.completionDate is None:
-      return '-'
-    return (obj.completionDate - obj.creationDate).total_seconds()
+    return obj.get_duration()

@@ -40,12 +40,19 @@ def getIndexedImage(path, hasher=hashlib.sha256(), generateThumbs=True, runExifT
     st = os.stat(os.path.realpath(path))
     
     hash_compute = DelayedCompute.objects.create(image=indexedImage, type=DelayedComputeType.CHECKSUM, metadata=json.dumps({'path': os.path.realpath(path)}))
-    hexdigest = hash_compute.run()
-    
     exif_compute = DelayedCompute.objects.create(image=indexedImage, type=DelayedComputeType.EXIF_METADATA, metadata=json.dumps({'path':os.path.realpath(path)}))
-    exifinfo = json.loads(exif_compute.run())
-    exifdate = json.loads(exif_compute.metadata)['date']
     
+    hash_compute.next_compute = exif_compute
+    hash_compute.save()
+    
+    hexdigest = hash_compute.run()
+    exifmeta = json.loads(exif_compute.metadata)
+    exifinfo = exifmeta['result']
+    exifdate = exifmeta['date']
+    
+    
+    
+    # TODO move mimetype to compute
     mt = mimetypes.guess_type(path)
     ftype = mt[0]
     
