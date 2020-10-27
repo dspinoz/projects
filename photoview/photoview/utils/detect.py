@@ -12,23 +12,6 @@ from django.conf import settings
 from photoview.models import IndexedImage, ConvertedImage, DelayedCompute, DelayedComputeType
 import photoview.utils
 
-def determineThumbsSize(width):
-  sizes = []
-  sz = width
-  while sz > 20: #dont go smaller than 16 pixels, too small to see anything useful!
-    sizes.append(sz)
-    sz = sz/2
-  # convert to nearest base 2 sizes
-  sizes2 = []
-  for i in sizes:
-    exp = 1
-    base = 2
-    while i > base:
-      i = i / base
-      exp = exp + 1
-    sizes2.append(2**exp)
-  return sizes2
-  
 def getIndexedImage(path, hasher=hashlib.sha256(), generateThumbs=True, runExifTool=True, convertUnknownImages=True):
   createdIndexedImage = False
   indexedImage = None
@@ -40,20 +23,29 @@ def getIndexedImage(path, hasher=hashlib.sha256(), generateThumbs=True, runExifT
     st = os.stat(os.path.realpath(path))
     
     hash_compute = DelayedCompute.objects.create(image=indexedImage, type=DelayedComputeType.CHECKSUM, metadata=json.dumps({'path': os.path.realpath(path)}))
+    
     exif_compute = DelayedCompute.objects.create(image=indexedImage, type=DelayedComputeType.EXIF_METADATA, metadata=json.dumps({'path':os.path.realpath(path)}))
     
-    hash_compute.next_compute = exif_compute
-    hash_compute.save()
+    hash_compute.next_computes.add(exif_compute)
+    
+    #hash_compute.save()
+    exif_compute.save()
     
     hexdigest = hash_compute.run()
+    #exif_compute.run()
     exifmeta = json.loads(exif_compute.metadata)
+    print("META",exifmeta)
     exifinfo = exifmeta['result']
     exifdate = exifmeta['date']
+    
+    print("hex",hexdigest,"exifdate", exifdate, "exifinfo",exifinfo)
+    print("width",exifinfo['ImageWidth'])
     
     
     
     # TODO move mimetype to compute
     mt = mimetypes.guess_type(path)
+    print("MIME",mt)
     ftype = mt[0]
     
     if ftype is None:

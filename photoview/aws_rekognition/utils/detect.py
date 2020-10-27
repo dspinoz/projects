@@ -85,6 +85,10 @@ def detectedFace((img, width, height), index, face, type=DetectionType.FACE):
     idet.file.save(fname, File(t))
     print("Saved {} '{}' as detection image".format(type, fname))
 
+def fake_request_detection(detect, responseId):
+  res = AWSRekognitionRequestResponse.objects.get(id=responseId)
+  return json.loads(res.responseBody)
+
 
 def request_detection(fd, detect='faces', rek_conn=boto3.client('rekognition')):
   
@@ -122,6 +126,9 @@ def detect(path, detections=['faces'], hasher=hashlib.sha256(), generateThumbs=T
   
   (indexedImage, createdIndexedImage) = photoview.utils.getIndexedImage(path)
   
+  if not indexedImage:
+    return None
+  
   detectionsToRun = []
   
   if not rerun:
@@ -137,7 +144,7 @@ def detect(path, detections=['faces'], hasher=hashlib.sha256(), generateThumbs=T
   if len(detectionsToRun) == 0:
     return indexedImage
   
-  forDetect = ConvertedImage.objects.filter(orig=indexedImage).filter(metadata__iregex=r'"Type": "thumbnail"').filter(size__lte=2000000).order_by("-size")
+  forDetect = ConvertedImage.objects.filter(orig=indexedImage).filter(metadata__iregex=r'"Type": "thumbnail"').filter(size__lte=50000).order_by("-size")
   forDetect = forDetect[0]
   print("Selected conversion (id={}) for detections: {}".format(forDetect.id, os.path.join(settings.MEDIA_ROOT,forDetect.file.name)))
   
@@ -165,9 +172,12 @@ def detect(path, detections=['faces'], hasher=hashlib.sha256(), generateThumbs=T
     
     fd.seek(0)
     res = request_detection(fd, detect, rek_conn)
+    # /media/daniel/EXPANSION02/EXPANSION/photos/15.01 liliana arrival/IMG_5202.JPG
+    #res = fake_request_detection(detect, 10)
     
     DetectionRun.objects.create(detection=get_detection_object(detect), image=indexedImage)
     
+    #print(json.dumps(res))
     
     if 'FaceDetails' in res and res['FaceDetails'] is not None:
       for face in res['FaceDetails']:
@@ -175,7 +185,11 @@ def detect(path, detections=['faces'], hasher=hashlib.sha256(), generateThumbs=T
         
         if capturePixels:
           bb = calcBB((imgWidth, imgHeight), face['BoundingBox'])
-          drawBB(capturePixels, (0,0,255), bb, imageBB=imgBB) #BLUE
+          try:
+            drawBB(capturePixels, (0,0,255), bb, imageBB=imgBB) #BLUE
+          except:
+            print("GOT EXCEPTION")
+            pass
     
     
     if 'CelebrityFaces' in res:

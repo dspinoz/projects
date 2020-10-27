@@ -139,15 +139,15 @@ class DelayedComputeType(Enum):
   ORIENTATION = "orit"
   CHECKSUM = "hash"
   UNKNOWN = "UNKNOWN"
-  
+
 class DelayedCompute(models.Model):
   image = models.ForeignKey(IndexedImage, models.CASCADE, null=True, blank=True, default=None)
   type = models.CharField(max_length=4, choices=[(tag, tag.value) for tag in DelayedComputeType])
   metadata = models.TextField(blank=True, default=None, null=True)
   creationDate = models.DateTimeField(default=datetime.datetime.today)
-  completionDate = models.DateTimeField(null=True, blank=True)
+  completionDate = models.DateTimeField(null=True, blank=True, default=None)
   lastModifiedDate = models.DateTimeField(auto_now=True)
-  next_compute = models.ForeignKey('self', null=True, blank=True, default=None)
+  next_computes = models.ManyToManyField('self')
 
   def get_duration(self):
     if self.completionDate is None:
@@ -155,8 +155,16 @@ class DelayedCompute(models.Model):
     return (self.completionDate - self.creationDate).total_seconds()
 
   def run(self):
+    self.refresh_from_db()
+            
+    if self.completionDate is not None:
+      print("COMPUTE ALREADY BEEN RUN", self.id, self.completionDate)
+      return False
+      
     retval = None
     meta = json.loads(self.metadata)
+    
+    print("Launching compute {} {}",self.id, self.type, meta, self.type, DelayedComputeType.EXIF_METADATA)
 
     if self.type == DelayedComputeType.CHECKSUM:
       meta['type'] = 'sha256'
@@ -172,6 +180,9 @@ class DelayedCompute(models.Model):
     elif self.type == DelayedComputeType.EXIF_METADATA:
       
       exifinfostr = subprocess.Popen("exiftool -d '%a, %d %b %Y %H:%M:%S %Z' -j '{}'".format(os.path.realpath(meta['path'])), shell=True, stdout=subprocess.PIPE).stdout.read()
+      
+      print("exifinfo",exifinfostr)
+      
       if len(exifinfostr) == 0:
         meta['error'] = "Could not generate exif metadata from {}".format(meta['path'])
       else:
@@ -261,14 +272,26 @@ class DelayedCompute(models.Model):
       
     meta['result'] = retval
     
+    print("Compute result {} {}",self.id, json.dumps(retval))
+    
     self.metadata = json.dumps(meta, default=defaultDateTime)
     self.completionDate = datetime.datetime.today()
     self.save()
     
-    if self.next_compute:
-      print("launching next compute, {}", self.next_compute.id)
-      self.next_compute.run()
+    print("Compute saved {}",self.id)
+    
+    total = self.next_computes.count()
+    current = 1
+    
+    for c in self.next_computes.all():
+      if c.completionDate is None:
+        print("Launching next compute {} - {}/{}, {}", self.id, current, total, c.id)
+        c.run()
+      else:
+        print("Next compute {} - already done {}/{}, {}",self.id, current, total, c.id)
+      current = current + 1
 
+    print("Compute done {}",self.id)
     return retval
 
 

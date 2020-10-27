@@ -54,8 +54,12 @@ class DelayedComputeAdmin(admin.ModelAdmin):
   list_filter = ('type', 'creationDate', 'completionDate')
   
   def next(self,obj):
-    if obj.next_compute:
-      return obj.next_compute.id
+    if obj.next_computes.count():
+      ids = []
+      for c in obj.next_computes.all():
+        print('compute',c.id)
+        ids.append(str(c.id))
+      return ",".join(ids)
     return None
   def image_id(self,obj):
     if obj.image is None:
